@@ -4,6 +4,7 @@
     { "path": "identity" },
     { "path": "ms-identity" },
     { "path": "ms-catalog" },
+    { "path": "ms-inventory" },
     { "path": "catalog" },
     { "path": "inventory" },
     { "path": "cart" },

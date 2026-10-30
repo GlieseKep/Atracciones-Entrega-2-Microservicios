@@ -1,0 +1,46 @@
+# ms-inventory · Inventory & Availability Service (gRPC)
+
+Horarios, turnos, aforo y fechas bloqueadas. Descuenta cupos sin sobreventa y envía cada cambio a Booking Prototipo.
+
+- Contrato: [`Plan/ms_inventory/inventory.proto`](../../../Plan/ms_inventory/inventory.proto), copiado en `packages/contracts/proto/internal/ms-inventory.proto`
+- Contrato externo: [`Plan/PlanBooking/inventory.proto`](../../../Plan/PlanBooking/inventory.proto), copiado en `packages/contracts/proto/booking/inventory.proto`
+- Base de datos: `ms_inventory` ([`Plan/ms_inventory/ms_inventory.sql`](../../../Plan/ms_inventory/ms_inventory.sql); migración en `src/persistence/migrations`)
+- Plan: [`Plan/ms_inventory/PLAN_IMPLEMENTACION.md`](../../../Plan/ms_inventory/PLAN_IMPLEMENTACION.md)
+
+## Reglas
+
+- Cada horario activo genera un turno diario para los próximos 90 días, saltando las fechas bloqueadas.
+- `status`: `AGOTADO` con 0 cupos, `ULTIMOS_CUPOS` con 3 o menos, `DISPONIBLE` en otro caso. No se guarda.
+- Los turnos cerrados o cuya hora ya pasó no se listan.
+- Una fecha bloqueada se compara con la fecha de la actividad, nunca con la de compra. Bloquear cierra los turnos del día sin borrarlos; desbloquear los reabre.
+- Los horarios no se borran ni cambian de hora: se desactivan y se crea otro.
+
+## Cupos
+
+`ReserveSeats` y `ReleaseSeats` son idempotentes por `clave_idempotencia`. El descuento es un `UPDATE` condicionado: sin cupos no toca filas y responde `409 OUT_OF_STOCK`.
+
+## Permisos
+
+La administración es para `ADMIN`, u `OPERADOR` de la atracción. Para un `OPERADOR`, Inventory consulta `catalog.adminGetAttraction` por el ESB con el principal propagado.
+
+## Eventos y stock
+
+- **Bus:** `inventory.CupoBloqueado` e `inventory.CupoLiberado`, por `OutboxRelay`.
+- **Booking Prototipo:** filas `STOCK_BOOKING` del mismo outbox, que entrega `BookingStockSync` por gRPC. No van al bus, para que una caída de Booking no frene los eventos.
+- `PushStockUpdate` para cada venta, cancelación o cambio de aforo; `StreamInventoryChanges` para los lotes del generador.
+- `STALE_TIMESTAMP_IGNORED` cuenta como entregado. `ITEM_NOT_FOUND` e `INVALID_SLOT` se registran y no se reintentan.
+
+## Comunicación con otros servicios
+
+- **Rutas del ESB:** `MS_INVENTORY_ROUTES` (`src/integration/esb-routes.ts`).
+- **Cliente:** `InventoryClient` (`src/integration/inventory-client.ts`).
+
+## Ejecutar
+
+```
+npm run build
+npm run db:migrate -- ms-inventory
+INTERNAL_TOKEN_SECRET=... ESB_URL=... RABBITMQ_URL=... BOOKING_STOCK_GRPC=host:50051 node apps/services/ms-inventory/dist/main.js
+```
+
+Opcionales: `BOOKING_STOCK_TLS=true`, `BOOKING_SERVICE_ID` y `BOOKING_SYNC_ENABLED=false`.

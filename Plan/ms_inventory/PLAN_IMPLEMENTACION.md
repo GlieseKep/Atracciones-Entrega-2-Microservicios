@@ -99,42 +99,44 @@ apps/services/ms-inventory/
 
 ## 5. Fases
 
+**Estado (2026-10-30):** Fases 0 a 4 programadas en `apps/services/ms-inventory`; compila y los `.proto` cargan. Sin pruebas. Falta la Fase 5, excepto las rutas para el ESB y el cliente, que ya están dentro del servicio.
+
 ### Fase 0 · Preparación
 - [x] Cerrar las decisiones de la sección 3.
-- [ ] Copiar `inventory.proto` a `packages/contracts/proto/` y `Plan/PlanBooking/inventory.proto` como contrato externo.
-- [ ] Registrar el servicio en el workspace, la compilación, la creación de bases y el script de arranque.
+- [x] Copiar `inventory.proto` a `packages/contracts/proto/` y `Plan/PlanBooking/inventory.proto` como contrato externo.
+- [x] Registrar el servicio en el workspace, la compilación, la creación de bases y el script de arranque.
 
 ### Fase 1 · Persistencia
-- [ ] Migración con el DDL completo de `ms_inventory.sql`.
-- [ ] `AvailabilityRepository`: turnos por atracción y fecha.
-- [ ] `SeatRepository`:
+- [x] Migración con el DDL completo de `ms_inventory.sql`.
+- [x] `AvailabilityRepository`: turnos por atracción y fecha.
+- [x] `SeatRepository`:
   - **Descontar:** en una transacción, insertar en `bloqueo_cupo` y ejecutar
     `UPDATE disponibilidad SET dis_cupo_reservado = dis_cupo_reservado + $n WHERE ... AND NOT dis_cerrada AND dis_cupo_reservado + $n <= dis_cupo_total`.
     Sin filas actualizadas → `409 OUT_OF_STOCK`.
   - **Clave repetida:** devuelve el resultado anterior sin descontar.
   - **Reintegrar:** marca `blo_liberado_en` una sola vez y resta los cupos.
-- [ ] `ScheduleRepository`: horarios, turnos y fechas bloqueadas.
+- [x] `ScheduleRepository`: horarios, turnos y fechas bloqueadas.
 
 ### Fase 2 · API gRPC
-- [ ] **`GetAvailability`:** responde con los nombres de `DisponibilidadResponse`, incluidos los alias en español. `status` se calcula:
+- [x] **`GetAvailability`:** responde con los nombres de `DisponibilidadResponse`, incluidos los alias en español. `status` se calcula:
       `AGOTADO` con 0 cupos, `ULTIMOS_CUPOS` con 3 o menos, y `DISPONIBLE` en otro caso.
-- [ ] `time` en formato `10:30 a.m.` y `time_24h` en `10:30:00`.
-- [ ] **`FilterAvailableAttractions`:** para el filtro de fechas de Catalog.
-- [ ] **`ReserveSeats`:** un `slot_id` que no existe en esa atracción → `400 SLOT_TIME_MISMATCH`, como indica el contrato.
-- [ ] **`ReleaseSeats`:** idempotente.
-- [ ] **`GetSlotsByIds`:** Booking lee aquí la fecha, la hora y el `slot_id` de sus reservas.
-- [ ] Administración con permisos de `ADMIN`, u `OPERADOR` de la atracción.
-- [ ] `Health` con los campos de `NodeHealthResponse`.
+- [x] `time` en formato `10:30 a.m.` y `time_24h` en `10:30:00`.
+- [x] **`FilterAvailableAttractions`:** para el filtro de fechas de Catalog.
+- [x] **`ReserveSeats`:** un `slot_id` que no existe en esa atracción → `400 SLOT_TIME_MISMATCH`, como indica el contrato.
+- [x] **`ReleaseSeats`:** idempotente.
+- [x] **`GetSlotsByIds`:** Booking lee aquí la fecha, la hora y el `slot_id` de sus reservas.
+- [x] Administración con permisos de `ADMIN`, u `OPERADOR` de la atracción.
+- [x] `Health` con los campos de `NodeHealthResponse`.
 
 ### Fase 3 · Turnos y eventos
-- [ ] Generador de turnos: `INSERT ... ON CONFLICT DO NOTHING`, con `dis_slot_codigo` = `slot-YYYYMMDD-HHMM`.
-- [ ] `CupoBloqueado` y `CupoLiberado` en `outbox`, en la misma transacción que el cambio de cupos.
+- [x] Generador de turnos: `INSERT ... ON CONFLICT DO NOTHING`, con `dis_slot_codigo` = `slot-YYYYMMDD-HHMM`.
+- [x] `CupoBloqueado` y `CupoLiberado` en `outbox`, en la misma transacción que el cambio de cupos.
 
 ### Fase 4 · Stock hacia Booking Prototipo
-- [ ] Cliente de `inventory.InventoryStockService`, host en `BOOKING_STOCK_GRPC` (local: `localhost:50051`).
-- [ ] `PushStockUpdate` con `service_id`, `item_id`, `date`, `time_slot`, `available_units`, `timestamp` en milisegundos y `slot_id`.
-- [ ] `StreamInventoryChanges` para los lotes, con `event_id` UUID v4 y `delta`.
-- [ ] Reintentos según la decisión 5.
+- [x] Cliente de `inventory.InventoryStockService`, host en `BOOKING_STOCK_GRPC` (local: `localhost:50051`).
+- [x] `PushStockUpdate` con `service_id`, `item_id`, `date`, `time_slot`, `available_units`, `timestamp` en milisegundos y `slot_id`.
+- [x] `StreamInventoryChanges` para los lotes, con `event_id` UUID v4 y `delta`.
+- [x] Reintentos según la decisión 5.
 
 ### Fase 5 · Integración
 - [ ] **ESB:** registrar las rutas `inventory.*`.

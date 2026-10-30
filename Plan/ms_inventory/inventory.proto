@@ -14,6 +14,8 @@ service InventoryService {
   // Saga: Booking descuenta por slot_id y reintegra al cancelar. Ambos son idempotentes por clave.
   rpc ReserveSeats (ReserveSeatsRequest) returns (ReserveSeatsResponse);
   rpc ReleaseSeats (ReleaseSeatsRequest) returns (ReleaseSeatsResponse);
+  // Booking lee la fecha, la hora y el slot_id de sus reservas.
+  rpc GetSlotsByIds (GetSlotsByIdsRequest) returns (SlotList);
 
   // Administracion (rol ADMIN, u OPERADOR de la atraccion).
   rpc ListSchedules (ListSchedulesRequest) returns (ScheduleList);

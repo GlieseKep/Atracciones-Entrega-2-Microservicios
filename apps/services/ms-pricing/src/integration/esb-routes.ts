@@ -1,33 +1,23 @@
-/**
- * Rutas del ESB hacia Pricing (`servicio.operación` → RPC), con la misma forma que `GrpcRoute` de
- * `apps/esb/src/routes.ts`. El ESB las registra tal cual en el corte; la entrada JSON es el mensaje del RPC.
- */
+/** Rutas del ESB hacia Pricing (`servicio.operación` → método gRPC), con la misma forma que `GrpcRoute` de `apps/esb/src/routes.ts`. */
 export interface PricingGrpcRoute {
   protocol: 'grpc';
   target: 'pricing';
   proto: 'internal/pricing.proto';
-  service: 'atracciones.pricing.PricingService';
+  service: 'descubre.pricing.PricingService';
   method: string;
   timeoutMs: number;
 }
 
 const route = (method: string, timeoutMs = 2000): PricingGrpcRoute => ({
-  protocol: 'grpc', target: 'pricing', proto: 'internal/pricing.proto', service: 'atracciones.pricing.PricingService', method, timeoutMs,
+  protocol: 'grpc', target: 'pricing', proto: 'internal/pricing.proto', service: 'descubre.pricing.PricingService', method, timeoutMs,
 });
 
 export const MS_PRICING_ROUTES = {
   'pricing.health': route('Health', 1000),
-
-  // Consultas (Catalog, Inventory, Order, Partner API, GraphQL).
-  'pricing.getPriceTable': route('GetPriceTable'),
-  'pricing.getPriceTables': route('GetPriceTables'),
   'pricing.quoteTickets': route('QuoteTickets'),
-
-  // Administración (GraphQL, rol ADMIN).
-  'pricing.listTariffs': route('ListTariffs'),
-  'pricing.setPriceTable': route('SetPriceTable', 3000),
-  'pricing.setTariff': route('SetTariff'),
-  'pricing.closeTariff': route('CloseTariff'),
+  'pricing.getPriceTable': route('GetPriceTable'),
+  'pricing.listTariffs': route('ListTariffs', 5000),
+  'pricing.setPriceTable': route('SetPriceTable', 5000),
 } as const satisfies Record<string, PricingGrpcRoute>;
 
 export type PricingRouteKey = keyof typeof MS_PRICING_ROUTES;

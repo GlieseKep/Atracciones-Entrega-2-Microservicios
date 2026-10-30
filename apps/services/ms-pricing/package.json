@@ -2,7 +2,7 @@
   "name": "@atracciones/ms-pricing-service",
   "version": "1.0.0",
   "private": true,
-  "description": "Pricing Service (gRPC, contrato Plan/ms_pricing/pricing.proto): tarifas versionadas por atracción y tipo de boleto. Base ms_pricing.",
+  "description": "Pricing Service (gRPC, contrato Plan/ms_pricing/pricing.proto): tarifas versionadas por atraccion y tipo de boleto. Base ms_pricing.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "dependencies": {

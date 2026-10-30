@@ -2,7 +2,7 @@
   "name": "@atracciones/ms-billing-profile-service",
   "version": "1.0.0",
   "private": true,
-  "description": "Billing Profile Service (REST, contrato Plan/ms_billing_profile/ms_billing_profile-openapi.yaml): datos de facturación de los usuarios del portal. Base ms_billing_profile.",
+  "description": "Billing Profile Service (REST, contrato Plan/ms_billing_profile/ms_billing_profile-openapi.yaml): datos de facturacion de los usuarios. Base ms_billing_profile.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "dependencies": {

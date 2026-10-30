@@ -1,0 +1,12 @@
+{
+  "name": "@atracciones/ms-inventory-service",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Inventory & Availability Service (gRPC, contrato Plan/ms_inventory/inventory.proto): horarios, turnos, aforo y stock hacia Booking Prototipo. Base ms_inventory.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "dependencies": {
+    "@atracciones/platform": "1.0.0",
+    "typeorm": "0.3.31"
+  }
+}

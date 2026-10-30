@@ -2,7 +2,7 @@
   "name": "@atracciones/ms-review-service",
   "version": "1.0.0",
   "private": true,
-  "description": "Review Service (REST, contrato Plan/ms_review/ms_review-openapi.yaml): reseñas de las atracciones y su resumen; publica review.ResenaPublicada. Base ms_review.",
+  "description": "Review Service (REST, contrato Plan/ms_review/ms_review-openapi.yaml): resenas de atracciones. Base ms_review.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "dependencies": {

@@ -1,79 +1,44 @@
-/** Tipos del contrato `Plan/ms_review/ms_review-openapi.yaml`, compartidos por el servicio y por `ReviewClient`. */
+/** Tipos del contrato `Plan/ms_review/ms_review-openapi.yaml`. */
 
-/** `Breakdown`: pilares del contrato v3, escala 1–10 con un decimal. */
-export interface BreakdownDto {
+/** `ResenaRequest` validado. */
+export interface ResenaInput {
+  puntuacion: number;
   limpieza: number;
   servicio: number;
   calidad_precio: number;
   puntualidad: number;
+  comentario: string;
 }
 
-/** `ReviewCreateRequest`. */
-export interface ReviewCreateRequestDto {
-  reservation_id: string;
-  score: number;
-  breakdown: BreakdownDto;
-  comment?: string | null;
-}
-
-/** `Review`. `hidden_reason` solo sale en "mis reseñas" y en moderación. */
-export interface ReviewDto {
+export interface ResenaDto extends ResenaInput {
   id: number;
-  attraction_id: string;
-  author_name: string;
-  verified_purchase: boolean;
-  score: number;
-  breakdown: BreakdownDto;
-  comment: string | null;
+  atr_id: number;
+  autor_nombre: string;
+  anonima: boolean;
   visible: boolean;
-  hidden_reason?: string | null;
-  created_at: string;
+  creado_en: string;
 }
 
-/** `RatingSummary`: también es el payload de `review.ResenaPublicada`. */
-export interface RatingSummaryDto {
-  attraction_id: string;
-  score: number;
-  review_count: number;
-  breakdown: BreakdownDto;
-  version: number;
-}
-
-/** `PaginationMetadata` (igual que el contrato v3). */
 export interface PaginationMetadata {
   total_results: number;
   page: number;
   limit: number;
   total_pages: number;
-  next_cursor: string | null;
 }
 
-/** `ReviewPage`. */
-export interface ReviewPageDto {
-  summary: RatingSummaryDto;
-  metadata: PaginationMetadata;
-  data: ReviewDto[];
+export interface ResenaPage {
+  data: ResenaDto[];
+  pagination: PaginationMetadata;
 }
 
-/** `ModerationPage`. */
-export interface ModerationPageDto {
-  metadata: PaginationMetadata;
-  data: ReviewDto[];
-}
-
-/** `VisibilityRequest`. */
-export interface VisibilityRequestDto {
-  visible: boolean;
-  reason?: string | null;
-}
-
-/** `GET /health` (ServiceHealth de la plataforma). */
-export interface ReviewHealthDto {
-  status: 'UP' | 'DOWN';
-  service: string;
-  database_connected: boolean | null;
-  latency_ms: number;
-  memory_usage_mb: number;
-  uptime_seconds: number;
-  timestamp: string;
+/** Datos del evento `RESENA_PUBLICADA`: promedios ya calculados, solo sobre reseñas visibles. */
+export interface ResenaPublicada {
+  atr_id: number;
+  ren_id: number;
+  promedio: number;
+  limpieza: number;
+  servicio: number;
+  calidad_precio: number;
+  puntualidad: number;
+  numero_resenas: number;
 }

@@ -15,7 +15,14 @@ export class OutboxRelay {
     private readonly dataSource: DataSource,
     private readonly bus: EventBus,
     private readonly service: string,
-    private readonly options: { schema?: string; intervalMs?: number; batch?: number; logger?: Logger } = {},
+    private readonly options: {
+      schema?: string;
+      intervalMs?: number;
+      batch?: number;
+      logger?: Logger;
+      /** Tipos que no van al bus porque los entrega otro proceso del servicio. */
+      excludeTypes?: string[];
+    } = {},
   ) {}
 
   private get table() {
@@ -28,8 +35,8 @@ export class OutboxRelay {
     this.running = this.dataSource.transaction(async (m) => {
       const rows: { id: string; event_id: string; tipo_evento: string; agregado_id: string; payload: Record<string, unknown>; correlation_id: string; creado_en: Date }[] = await m.query(
         `SELECT id, event_id, tipo_evento, agregado_id, payload, correlation_id, creado_en FROM ${this.table}
-          WHERE publicado_en IS NULL ORDER BY creado_en, id LIMIT $1 FOR UPDATE SKIP LOCKED`,
-        [this.options.batch ?? 100],
+          WHERE publicado_en IS NULL AND NOT (tipo_evento = ANY($2::varchar[])) ORDER BY creado_en, id LIMIT $1 FOR UPDATE SKIP LOCKED`,
+        [this.options.batch ?? 100, this.options.excludeTypes ?? []],
       );
       let published = 0;
       for (const row of rows) {

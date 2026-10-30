@@ -1,0 +1,207 @@
+// Contrato gRPC interno de ms_inventory (microservicio 7). Plan: Plan/ms_inventory/PLAN_IMPLEMENTACION.md
+// El stock hacia Booking Prototipo usa otro contrato: Plan/PlanBooking/inventory.proto.
+syntax = "proto3";
+package descubre.inventory;
+
+service InventoryService {
+  rpc Health (Empty) returns (NodeHealthResponse);
+
+  // GET /atracciones/{id}/disponibilidad del contrato v3. El ESB traduce REST a gRPC.
+  rpc GetAvailability (GetAvailabilityRequest) returns (DisponibilidadResponse);
+  // Filtro fecha_inicio / fecha_fin de la busqueda de Catalog.
+  rpc FilterAvailableAttractions (FilterAvailableRequest) returns (FilterAvailableResponse);
+
+  // Saga: Booking descuenta por slot_id y reintegra al cancelar. Ambos son idempotentes por clave.
+  rpc ReserveSeats (ReserveSeatsRequest) returns (ReserveSeatsResponse);
+  rpc ReleaseSeats (ReleaseSeatsRequest) returns (ReleaseSeatsResponse);
+  // Booking lee la fecha, la hora y el slot_id de sus reservas.
+  rpc GetSlotsByIds (GetSlotsByIdsRequest) returns (SlotList);
+
+  // Administracion (rol ADMIN, u OPERADOR de la atraccion).
+  rpc ListSchedules (ListSchedulesRequest) returns (ScheduleList);
+  rpc SaveSchedule (SaveScheduleRequest) returns (Schedule);
+  rpc SetScheduleActive (SetScheduleActiveRequest) returns (Schedule);
+  rpc ListSlots (ListSlotsRequest) returns (SlotPage);
+  rpc SetSlotCapacity (SetSlotCapacityRequest) returns (Slot);
+  rpc SetSlotClosed (SetSlotClosedRequest) returns (Slot);
+  rpc ListBlockedDates (ListBlockedDatesRequest) returns (BlockedDateList);
+  rpc BlockDate (BlockDateRequest) returns (BlockedDate);
+  rpc UnblockDate (UnblockDateRequest) returns (Empty);
+}
+
+message Empty {}
+
+// Campos con los mismos nombres que NodeHealthResponse del contrato v3.
+message NodeHealthResponse {
+  string status = 1;              // UP | DEGRADED | DOWN
+  string node_id = 2;
+  string node_code = 3;
+  string version = 4;
+  bool database_connected = 5;
+  int32 latency_ms = 6;
+  double memory_usage_mb = 7;
+  int64 uptime_seconds = 8;
+  string timestamp = 9;
+}
+
+message GetAvailabilityRequest {
+  string id = 1;                  // atraccion_id
+  string date = 2;                // YYYY-MM-DD
+}
+
+// Campos con los mismos nombres que TimeSlotItem del contrato v3 (incluidos sus alias).
+message TimeSlotItem {
+  string slot_id = 1;
+  string time = 2;                // 10:30 a.m.
+  string time_24h = 3;            // 10:30:00
+  int32 total_slots = 4;
+  int32 available_slots = 5;
+  string status = 6;              // DISPONIBLE | ULTIMOS_CUPOS | AGOTADO
+  string hora = 7;
+  string hora_24h = 8;
+  int32 cupos_totales = 9;
+  int32 cupos_disponibles = 10;
+  string estado = 11;
+}
+
+// Campos con los mismos nombres que DisponibilidadResponse del contrato v3.
+message DisponibilidadResponse {
+  string atraccion_id = 1;
+  string date = 2;
+  string fecha = 3;
+  int32 total_available_slots = 4;
+  int32 total_cupos_disponibles = 5;
+  repeated TimeSlotItem time_slots = 6;
+  repeated TimeSlotItem turnos = 7;
+}
+
+message FilterAvailableRequest {
+  repeated string atraccion_ids = 1;
+  string fecha_inicio = 2;
+  string fecha_fin = 3;
+}
+
+message FilterAvailableResponse {
+  repeated string atraccion_ids = 1;
+}
+
+message ReserveSeatsRequest {
+  string atraccion_id = 1;
+  string slot_id = 2;
+  int32 cantidad = 3;             // incluye infantes (ocupan cupo)
+  string clave_idempotencia = 4;
+}
+
+message ReserveSeatsResponse {
+  int64 dis_id = 1;
+  string slot_id = 2;
+  int32 cupos_disponibles = 3;
+}
+
+message ReleaseSeatsRequest {
+  string clave_idempotencia = 1;  // la misma del descuento
+}
+
+message ReleaseSeatsResponse {
+  bool liberado = 1;              // false si ya estaba liberado
+  int32 cupos_disponibles = 2;
+}
+
+message Schedule {
+  int64 hor_id = 1;
+  string atraccion_id = 2;
+  string hora = 3;                // HH:mm:ss
+  int32 cupo = 4;
+  bool activo = 5;
+}
+
+message ListSchedulesRequest {
+  string atraccion_id = 1;
+}
+
+message ScheduleList {
+  repeated Schedule items = 1;
+}
+
+message SaveScheduleRequest {
+  int64 hor_id = 1;               // 0 = crear
+  string atraccion_id = 2;
+  string hora = 3;
+  int32 cupo = 4;
+}
+
+message SetScheduleActiveRequest {
+  int64 hor_id = 1;
+  bool activo = 2;
+}
+
+message Slot {
+  int64 dis_id = 1;
+  string atraccion_id = 2;
+  string slot_id = 3;
+  string fecha = 4;
+  string hora = 5;
+  int32 cupo_total = 6;
+  int32 cupo_reservado = 7;
+  bool cerrada = 8;
+}
+
+message GetSlotsByIdsRequest {
+  repeated int64 dis_ids = 1;
+}
+
+message SlotList {
+  repeated Slot items = 1;
+}
+
+message ListSlotsRequest {
+  string atraccion_id = 1;
+  string desde = 2;
+  string hasta = 3;
+  int32 page = 4;
+  int32 limit = 5;
+}
+
+message SlotPage {
+  int32 total_results = 1;
+  repeated Slot items = 2;
+}
+
+message SetSlotCapacityRequest {
+  string atraccion_id = 1;
+  string slot_id = 2;
+  int32 cupo_total = 3;
+}
+
+message SetSlotClosedRequest {
+  string atraccion_id = 1;
+  string slot_id = 2;
+  bool cerrada = 3;
+}
+
+message BlockedDate {
+  string atraccion_id = 1;
+  string fecha = 2;
+  string motivo = 3;
+}
+
+message ListBlockedDatesRequest {
+  string atraccion_id = 1;
+  string desde = 2;
+  string hasta = 3;
+}
+
+message BlockedDateList {
+  repeated BlockedDate items = 1;
+}
+
+message BlockDateRequest {
+  string atraccion_id = 1;
+  string fecha = 2;
+  string motivo = 3;
+}
+
+message UnblockDateRequest {
+  string atraccion_id = 1;
+  string fecha = 2;
+}

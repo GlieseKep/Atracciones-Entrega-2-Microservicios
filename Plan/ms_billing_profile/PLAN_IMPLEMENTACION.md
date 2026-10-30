@@ -65,22 +65,24 @@ apps/services/ms-billing-profile/
 
 ## 5. Fases
 
+**Estado (2026-10-30):** Fases 0 a 2 programadas en `apps/services/ms-billing-profile`; compila y el contrato pasa Spectral sin errores. Sin pruebas. Falta la Fase 3, excepto las rutas para el ESB y el cliente, que ya están dentro del servicio.
+
 ### Fase 0 · Preparación
 - [x] Cerrar las decisiones de la sección 3.
-- [ ] Copiar el contrato a `packages/contracts/openapi/ms-billing-profile.yaml` y lintarlo con Spectral.
-- [ ] Registrar el servicio en el workspace, la compilación, la creación de bases y el script de arranque.
+- [x] Copiar el contrato a `packages/contracts/openapi/ms-billing-profile.yaml` y lintarlo con Spectral.
+- [x] Registrar el servicio en el workspace, la compilación, la creación de bases y el script de arranque.
 
 ### Fase 1 · Persistencia
-- [ ] Migración con el DDL de `ms_billing_profile.sql`.
-- [ ] `ProfileRepository`: listar, crear, reemplazar, desactivar y marcar como principal, en transacciones con bloqueo por usuario.
+- [x] Migración con el DDL de `ms_billing_profile.sql`.
+- [x] `ProfileRepository`: listar, crear, reemplazar, desactivar y marcar como principal, en transacciones con bloqueo por usuario.
   - `usu_id` sale siempre del token, nunca del cuerpo.
   - `23505` en la clave única → `409 BILLING_PROFILE_EXISTS`.
   - Al cambiar el principal, primero se desmarca el anterior, por `ux_dato_facturacion_principal`.
 
 ### Fase 2 · API REST
-- [ ] `/usuarios/me/datos-facturacion`, `/{id}` y `/{id}/principal`, para el usuario autenticado.
-- [ ] `GET /internal/usuarios/{usu_id}/datos-facturacion/principal`, con `X-Service-Token`.
-- [ ] `/health` con `NodeHealthResponse`, y errores RFC 7807.
+- [x] `/usuarios/me/datos-facturacion`, `/{id}` y `/{id}/principal`, para el usuario autenticado.
+- [x] `GET /internal/usuarios/{usu_id}/datos-facturacion/principal`, con `X-Service-Token`.
+- [x] `/health` con `NodeHealthResponse`, y errores RFC 7807.
 
 ### Fase 3 · Integración
 - [ ] **ESB:** registrar las rutas `billing.*`.

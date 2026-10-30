@@ -1,203 +1,150 @@
 import { AppError, returnedRows } from '@atracciones/platform';
 import type { DataSource, EntityManager } from 'typeorm';
-import type { ProfileInput } from '../application/profile-input';
-import type { BillingProfileDto, TipoIdentificacion } from '../contract';
+import type { DatoFacturacionDto, DatoFacturacionInput, TipoIdentificacion } from '../contract';
 
 interface ProfileRow {
-  id: string;
-  tipo_identificacion: TipoIdentificacion;
-  identificacion: string;
-  razon_social: string;
-  correo: string;
-  telefono: string | null;
-  direccion: string | null;
-  es_principal: boolean;
-  activo: boolean;
-  creado_en: Date;
-  actualizado_en: Date;
+  dfa_id: string;
+  usu_id: string;
+  dfa_tipo_identificacion: TipoIdentificacion;
+  dfa_identificacion: string;
+  dfa_razon_social: string;
+  dfa_correo: string;
+  dfa_telefono: string | null;
+  dfa_es_principal: boolean;
+  dfa_activo: boolean;
+  dfa_creado_en: Date;
 }
 
-const COLUMNS = `dfa_id AS id, dfa_tipo_identificacion AS tipo_identificacion, dfa_identificacion AS identificacion,
-  dfa_razon_social AS razon_social, dfa_correo AS correo, dfa_telefono AS telefono, dfa_direccion AS direccion,
-  dfa_es_principal AS es_principal, dfa_activo AS activo, dfa_creado_en AS creado_en, dfa_actualizado_en AS actualizado_en`;
+const COLUMNS = `dfa_id, usu_id, dfa_tipo_identificacion, dfa_identificacion, dfa_razon_social, dfa_correo, dfa_telefono,
+  dfa_es_principal, dfa_activo, dfa_creado_en`;
 
-/** `bigint` llega como texto desde `pg`. */
-const toDto = (row: ProfileRow): BillingProfileDto => ({
-  ...row,
-  id: Number(row.id),
-  creado_en: new Date(row.creado_en).toISOString(),
-  actualizado_en: new Date(row.actualizado_en).toISOString(),
+const toDto = (row: ProfileRow): DatoFacturacionDto => ({
+  id: Number(row.dfa_id),
+  usu_id: Number(row.usu_id),
+  tipo_identificacion: row.dfa_tipo_identificacion,
+  identificacion: row.dfa_identificacion,
+  razon_social: row.dfa_razon_social,
+  correo: row.dfa_correo,
+  telefono: row.dfa_telefono,
+  es_principal: row.dfa_es_principal,
+  activo: row.dfa_activo,
+  creado_en: row.dfa_creado_en.toISOString(),
 });
 
-const duplicate = () => AppError.conflict('BILLING_PROFILE_EXISTS', 'Ya tiene un perfil de facturación con ese tipo y número de identificación.');
+const notFound = (id: number) => AppError.notFound(`No existe el perfil de facturación ${id}.`, 'BILLING_PROFILE_NOT_FOUND');
+const exists = () => AppError.conflict('BILLING_PROFILE_EXISTS', 'Ya tiene un perfil con ese tipo y número de identificación.');
 
-const isDuplicate = (error: unknown) => {
-  const driver = (error as { driverError?: { code?: string; constraint?: string } }).driverError;
-  return driver?.code === '23505' && driver.constraint === 'uq_dato_facturacion_usuario_identificacion';
-};
-
-/**
- * Perfiles de facturación. Todas las operaciones de un usuario se hacen con su cuenta bloqueada
- * (`pg_advisory_xact_lock`): así dos peticiones simultáneas no dejan dos principales ni ninguno.
- * Las consultas de `/usuarios/me/**` filtran siempre por `usu_id`: el perfil de otro usuario "no existe".
- */
+/** Las escrituras de un usuario van de una en una, con un bloqueo por usuario dentro de su transacción. */
 export class ProfileRepository {
   constructor(private readonly db: DataSource) {}
 
-  /** Perfiles activos del usuario: el principal primero, luego los más recientes. */
-  async listMine(userId: string): Promise<BillingProfileDto[]> {
+  private inUserLock<T>(usuId: number, work: (m: EntityManager) => Promise<T>): Promise<T> {
+    return this.db.transaction(async (m) => {
+      await m.query(`SELECT pg_advisory_xact_lock($1::bigint)`, [usuId]);
+      return work(m);
+    });
+  }
+
+  async list(usuId: number): Promise<DatoFacturacionDto[]> {
     const rows: ProfileRow[] = await this.db.query(
-      `SELECT ${COLUMNS} FROM dato_facturacion WHERE usu_id = $1 AND dfa_activo
-        ORDER BY dfa_es_principal DESC, dfa_creado_en DESC, dfa_id DESC`,
-      [userId],
+      `SELECT ${COLUMNS} FROM dato_facturacion WHERE usu_id = $1 AND dfa_activo ORDER BY dfa_es_principal DESC, dfa_creado_en DESC, dfa_id DESC`,
+      [usuId],
     );
     return rows.map(toDto);
   }
 
-  /** Perfil por ID, activo o no (uso interno: Order e Invoicing). */
-  async get(id: number): Promise<BillingProfileDto | null> {
-    const [row]: ProfileRow[] = await this.db.query(`SELECT ${COLUMNS} FROM dato_facturacion WHERE dfa_id = $1`, [id]);
+  async findPrincipal(usuId: number): Promise<DatoFacturacionDto | null> {
+    const [row] = await this.db.query(`SELECT ${COLUMNS} FROM dato_facturacion WHERE usu_id = $1 AND dfa_activo AND dfa_es_principal`, [usuId]);
     return row ? toDto(row) : null;
   }
 
-  async principal(userId: string): Promise<BillingProfileDto | null> {
-    const [row]: ProfileRow[] = await this.db.query(`SELECT ${COLUMNS} FROM dato_facturacion WHERE usu_id = $1 AND dfa_es_principal`, [userId]);
-    return row ? toDto(row) : null;
+  private async hasPrincipal(usuId: number, m: EntityManager): Promise<boolean> {
+    const [row] = await m.query(`SELECT 1 FROM dato_facturacion WHERE usu_id = $1 AND dfa_es_principal`, [usuId]);
+    return Boolean(row);
   }
 
-  /**
-   * Crea un perfil. El primero del usuario queda como principal. Si hay uno inactivo con el mismo tipo y número se
-   * reactiva con los datos nuevos; si hay uno activo, 409.
-   */
-  async create(userId: string, input: ProfileInput): Promise<BillingProfileDto> {
-    return this.withUser(userId, async (m) => {
-      const [existing]: { id: string; activo: boolean }[] = await m.query(
-        `SELECT dfa_id AS id, dfa_activo AS activo FROM dato_facturacion
-          WHERE usu_id = $1 AND dfa_tipo_identificacion = $2 AND dfa_identificacion = $3`,
-        [userId, input.tipo, input.identificacion],
+  /** Primero se desmarca el anterior, por `ux_dato_facturacion_principal`. */
+  private async clearPrincipal(usuId: number, m: EntityManager): Promise<void> {
+    await m.query(`UPDATE dato_facturacion SET dfa_es_principal = FALSE WHERE usu_id = $1 AND dfa_es_principal`, [usuId]);
+  }
+
+  /** El primero queda como principal. Un perfil inactivo con el mismo documento se reactiva con los datos nuevos. */
+  create(usuId: number, input: DatoFacturacionInput): Promise<DatoFacturacionDto> {
+    return this.inUserLock(usuId, async (m) => {
+      const [existing] = await m.query(
+        `SELECT dfa_id, dfa_activo FROM dato_facturacion WHERE usu_id = $1 AND dfa_tipo_identificacion = $2 AND dfa_identificacion = $3`,
+        [usuId, input.tipo_identificacion, input.identificacion],
       );
-      if (existing?.activo) throw duplicate();
-      const [{ activos }] = await m.query(`SELECT count(*)::int AS activos FROM dato_facturacion WHERE usu_id = $1 AND dfa_activo`, [userId]);
-      const principal = input.esPrincipal || activos === 0;
-      if (principal) await this.clearPrincipal(m, userId);
-      if (existing) return this.write(m, Number(existing.id), input, principal);
-      const [row]: ProfileRow[] = await m.query(
-        `INSERT INTO dato_facturacion (usu_id, dfa_tipo_identificacion, dfa_identificacion, dfa_razon_social, dfa_correo, dfa_telefono,
-           dfa_direccion, dfa_es_principal)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING ${COLUMNS}`,
-        [userId, input.tipo, input.identificacion, input.razonSocial, input.correo, input.telefono, input.direccion, principal],
-      );
-      return toDto(row);
+      if (existing?.dfa_activo) throw exists();
+      const principal = input.es_principal || !(await this.hasPrincipal(usuId, m));
+      if (principal) await this.clearPrincipal(usuId, m);
+      const data = [input.razon_social, input.correo, input.telefono, principal];
+      const rows = existing
+        ? returnedRows<ProfileRow>(
+            await m.query(
+              `UPDATE dato_facturacion SET dfa_razon_social = $2, dfa_correo = $3, dfa_telefono = $4, dfa_es_principal = $5, dfa_activo = TRUE
+               WHERE dfa_id = $1 RETURNING ${COLUMNS}`,
+              [existing.dfa_id, ...data],
+            ),
+          )
+        : await m.query(
+            `INSERT INTO dato_facturacion (usu_id, dfa_tipo_identificacion, dfa_identificacion, dfa_razon_social, dfa_correo, dfa_telefono, dfa_es_principal)
+             VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING ${COLUMNS}`,
+            [usuId, input.tipo_identificacion, input.identificacion, ...data],
+          );
+      return toDto(rows[0]);
     });
   }
 
-  /**
-   * Reemplaza un perfil activo del usuario; `null` si no existe. `es_principal: true` lo marca como principal;
-   * `false` no lo desmarca (siempre debe haber uno: se cambia con `setPrincipal` o al desactivarlo).
-   */
-  async replace(userId: string, id: number, input: ProfileInput): Promise<BillingProfileDto | null> {
-    return this.withUser(userId, async (m) => {
-      const current = await this.owned(m, userId, id);
-      if (!current) return null;
-      const principal = current.es_principal || input.esPrincipal;
-      if (principal && !current.es_principal) await this.clearPrincipal(m, userId);
-      return this.write(m, id, input, principal);
+  /** `es_principal: false` no quita el principal: un usuario con perfiles activos siempre tiene uno. */
+  replace(usuId: number, id: number, input: DatoFacturacionInput): Promise<DatoFacturacionDto> {
+    return this.inUserLock(usuId, async (m) => {
+      await this.requireActive(usuId, id, m);
+      if (input.es_principal) await this.clearPrincipal(usuId, m);
+      try {
+        const rows = returnedRows<ProfileRow>(
+          await m.query(
+            `UPDATE dato_facturacion SET dfa_tipo_identificacion = $2, dfa_identificacion = $3, dfa_razon_social = $4, dfa_correo = $5,
+               dfa_telefono = $6, dfa_es_principal = dfa_es_principal OR $7
+             WHERE dfa_id = $1 RETURNING ${COLUMNS}`,
+            [id, input.tipo_identificacion, input.identificacion, input.razon_social, input.correo, input.telefono, input.es_principal],
+          ),
+        );
+        return toDto(rows[0]);
+      } catch (error) {
+        const driver = (error as { driverError?: { code?: string } }).driverError;
+        throw driver?.code === '23505' ? exists() : error;
+      }
     });
   }
 
-  /** Borrado lógico. Si era el principal, el activo más reciente pasa a serlo. `false` si no existe. */
-  async deactivate(userId: string, id: number): Promise<boolean> {
-    return this.withUser(userId, async (m) => {
-      const current = await this.owned(m, userId, id);
-      if (!current) return false;
+  /** Borrado lógico. Si era el principal, el activo más reciente pasa a serlo. */
+  deactivate(usuId: number, id: number): Promise<void> {
+    return this.inUserLock(usuId, async (m) => {
+      const current = await this.requireActive(usuId, id, m);
       await m.query(`UPDATE dato_facturacion SET dfa_activo = FALSE, dfa_es_principal = FALSE WHERE dfa_id = $1`, [id]);
-      if (current.es_principal) {
-        await m.query(
-          `UPDATE dato_facturacion SET dfa_es_principal = TRUE
-            WHERE dfa_id = (SELECT dfa_id FROM dato_facturacion WHERE usu_id = $1 AND dfa_activo
-                             ORDER BY dfa_creado_en DESC, dfa_id DESC LIMIT 1)`,
-          [userId],
-        );
-      }
-      return true;
-    });
-  }
-
-  /** Marca un perfil activo como principal y desmarca el anterior; `null` si no existe. */
-  async setPrincipal(userId: string, id: number): Promise<BillingProfileDto | null> {
-    return this.withUser(userId, async (m) => {
-      const current = await this.owned(m, userId, id);
-      if (!current) return null;
-      if (current.es_principal) return current;
-      await this.clearPrincipal(m, userId);
-      const [row] = returnedRows<ProfileRow>(await m.query(
-        `UPDATE dato_facturacion SET dfa_es_principal = TRUE WHERE dfa_id = $1 RETURNING ${COLUMNS}`,
-        [id],
-      ));
-      return toDto(row);
-    });
-  }
-
-  /**
-   * `PUT /usuarios/me/facturacion` (forma de Identity): guarda el perfil principal. Si el usuario ya tiene un perfil
-   * con ese documento (activo o no), ese pasa a ser el principal con los datos nuevos; si no, se reemplazan los datos
-   * del principal actual, y si no tiene ninguno se crea.
-   */
-  async saveLegacy(userId: string, input: ProfileInput): Promise<BillingProfileDto> {
-    return this.withUser(userId, async (m) => {
-      const [sameDocument]: { id: string }[] = await m.query(
-        `SELECT dfa_id AS id FROM dato_facturacion WHERE usu_id = $1 AND dfa_tipo_identificacion = $2 AND dfa_identificacion = $3`,
-        [userId, input.tipo, input.identificacion],
+      if (!current.dfa_es_principal) return;
+      await m.query(
+        `UPDATE dato_facturacion SET dfa_es_principal = TRUE
+         WHERE dfa_id = (SELECT dfa_id FROM dato_facturacion WHERE usu_id = $1 AND dfa_activo ORDER BY dfa_creado_en DESC, dfa_id DESC LIMIT 1)`,
+        [usuId],
       );
-      const [principal]: { id: string }[] = await m.query(`SELECT dfa_id AS id FROM dato_facturacion WHERE usu_id = $1 AND dfa_es_principal`, [userId]);
-      const target = sameDocument ?? principal;
-      if (!target) {
-        const [row]: ProfileRow[] = await m.query(
-          `INSERT INTO dato_facturacion (usu_id, dfa_tipo_identificacion, dfa_identificacion, dfa_razon_social, dfa_correo, dfa_telefono,
-             dfa_direccion, dfa_es_principal)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE) RETURNING ${COLUMNS}`,
-          [userId, input.tipo, input.identificacion, input.razonSocial, input.correo, input.telefono, input.direccion],
-        );
-        return toDto(row);
-      }
-      if (principal && principal.id !== target.id) await this.clearPrincipal(m, userId);
-      return this.write(m, Number(target.id), input, true);
     });
   }
 
-  /** Transacción con la cuenta del usuario bloqueada; el 23505 de la clave única se traduce a 409. */
-  private async withUser<T>(userId: string, work: (m: EntityManager) => Promise<T>): Promise<T> {
-    try {
-      return await this.db.transaction(async (m) => {
-        await m.query(`SELECT pg_advisory_xact_lock(hashtext('dato_facturacion:' || $1))`, [userId]);
-        return work(m);
-      });
-    } catch (error) {
-      if (isDuplicate(error)) throw duplicate();
-      throw error;
-    }
+  markPrincipal(usuId: number, id: number): Promise<DatoFacturacionDto> {
+    return this.inUserLock(usuId, async (m) => {
+      await this.requireActive(usuId, id, m);
+      await this.clearPrincipal(usuId, m);
+      const rows = returnedRows<ProfileRow>(await m.query(`UPDATE dato_facturacion SET dfa_es_principal = TRUE WHERE dfa_id = $1 RETURNING ${COLUMNS}`, [id]));
+      return toDto(rows[0]);
+    });
   }
 
-  private async owned(m: EntityManager, userId: string, id: number): Promise<BillingProfileDto | null> {
-    const [row]: ProfileRow[] = await m.query(
-      `SELECT ${COLUMNS} FROM dato_facturacion WHERE dfa_id = $1 AND usu_id = $2 AND dfa_activo`,
-      [id, userId],
-    );
-    return row ? toDto(row) : null;
-  }
-
-  private async clearPrincipal(m: EntityManager, userId: string): Promise<void> {
-    await m.query(`UPDATE dato_facturacion SET dfa_es_principal = FALSE WHERE usu_id = $1 AND dfa_es_principal`, [userId]);
-  }
-
-  /** Escribe todos los datos del perfil y lo deja activo. */
-  private async write(m: EntityManager, id: number, input: ProfileInput, principal: boolean): Promise<BillingProfileDto> {
-    const [row] = returnedRows<ProfileRow>(await m.query(
-      `UPDATE dato_facturacion SET dfa_tipo_identificacion = $2, dfa_identificacion = $3, dfa_razon_social = $4, dfa_correo = $5,
-              dfa_telefono = $6, dfa_direccion = $7, dfa_es_principal = $8, dfa_activo = TRUE
-        WHERE dfa_id = $1 RETURNING ${COLUMNS}`,
-      [id, input.tipo, input.identificacion, input.razonSocial, input.correo, input.telefono, input.direccion, principal],
-    ));
-    return toDto(row);
+  /** El perfil de otro usuario responde igual que uno inexistente. */
+  private async requireActive(usuId: number, id: number, m: EntityManager): Promise<ProfileRow> {
+    const [row] = await m.query(`SELECT ${COLUMNS} FROM dato_facturacion WHERE dfa_id = $1 AND usu_id = $2 AND dfa_activo`, [id, usuId]);
+    if (!row) throw notFound(id);
+    return row;
   }
 }

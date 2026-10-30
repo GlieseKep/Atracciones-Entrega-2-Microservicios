@@ -244,7 +244,6 @@ components:
       type: object
       required:
         - tipo_identificacion
-        - identificacion
         - razon_social
         - correo
       properties:
@@ -253,6 +252,7 @@ components:
         identificacion:
           type: string
           maxLength: 20
+          description: 'Obligatoria, salvo en CONSUMIDOR_FINAL, donde se completa con 9999999999999.'
         razon_social:
           type: string
           maxLength: 150

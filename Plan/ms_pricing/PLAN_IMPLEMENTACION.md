@@ -43,7 +43,8 @@ El diseño y el contrato no definen estos puntos.
 5. **Atracción desconocida.** Pricing no consulta a Catalog, como Inventory. Hay que cargar la tarifa antes de publicar la
    atracción, y Catalog descarta el evento de una atracción que no conoce.
 6. **Infante y moneda.** `INFANT` siempre vale $0, como dice el contrato, y no se envía. La moneda es siempre `USD`.
-7. **Permisos.** `ADMIN`, u `OPERADOR` de la atracción, como en Inventory.
+7. **Permisos.** `ADMIN`, u `OPERADOR` de la atracción, como en Inventory. Para un `OPERADOR`, Pricing consulta `catalog.adminGetAttraction` con su principal: es la única llamada a
+   Catalog, y solo decide el permiso.
 
 ## 4. Estructura del servicio (`apps/services/ms-pricing`)
 
@@ -77,28 +78,30 @@ apps/services/ms-pricing/
 
 ## 5. Fases
 
+**Estado (2026-10-30):** Fases 0 a 3 programadas en `apps/services/ms-pricing`; compila y el `.proto` carga. Sin pruebas. Falta la Fase 4, excepto las rutas para el ESB y el cliente, que ya están dentro del servicio.
+
 ### Fase 0 · Preparación
 - [x] Cerrar las decisiones de la sección 3.
-- [ ] Copiar `pricing.proto` a `packages/contracts/proto`.
-- [ ] Registrar el servicio en el workspace, la compilación, la creación de bases y el script de arranque.
+- [x] Copiar `pricing.proto` a `packages/contracts/proto`.
+- [x] Registrar el servicio en el workspace, la compilación, la creación de bases y el script de arranque.
 
 ### Fase 1 · Persistencia
-- [ ] Migración con el DDL de `ms_pricing.sql`, incluida la extensión `btree_gist`.
-- [ ] `PricingRepository`:
+- [x] Migración con el DDL de `ms_pricing.sql`, incluida la extensión `btree_gist`.
+- [x] `PricingRepository`:
   - Tarifa vigente: `tar_vigente_desde <= fecha` y `tar_vigente_hasta` nulo o `>= fecha`.
   - `setPriceTable`: en una transacción, cierra la versión anterior, inserta una fila por tipo y escribe el outbox si rige hoy.
   - `23P01` en `ex_tarifa_sin_solape` → `TARIFF_OVERLAP`.
 
 ### Fase 2 · Servicio gRPC
-- [ ] `Health` con los campos de `NodeHealthResponse`.
-- [ ] `QuoteTickets`: al menos una línea y cantidades `>= 1`; sin tarifa → `PRICE_NOT_AVAILABLE`; montos a 2 decimales.
-- [ ] `GetPriceTable`: `NOT_FOUND` si no hay tabla vigente en esa fecha.
-- [ ] `ListTariffs` y `SetPriceTable`, con `adult > 0`, y `child`, `senior` y `student` `>= 0`.
+- [x] `Health` con los campos de `NodeHealthResponse`.
+- [x] `QuoteTickets`: al menos una línea y cantidades `>= 1`; sin tarifa → `PRICE_NOT_AVAILABLE`; montos a 2 decimales.
+- [x] `GetPriceTable`: `NOT_FOUND` si no hay tabla vigente en esa fecha.
+- [x] `ListTariffs` y `SetPriceTable`, con `adult > 0`, y `child`, `senior` y `student` `>= 0`.
 
 ### Fase 3 · Eventos
-- [ ] Publicador del outbox hacia RabbitMQ.
-- [ ] `TARIFA_ACTUALIZADA` con la tabla vigente hoy.
-- [ ] Proceso de la decisión 4. Repetir un evento no hace daño: trae la tabla completa.
+- [x] Publicador del outbox hacia RabbitMQ.
+- [x] `TARIFA_ACTUALIZADA` con la tabla vigente hoy.
+- [x] Proceso de la decisión 4. Repetir un evento no hace daño: trae la tabla completa.
 
 ### Fase 4 · Integración
 - [ ] **ESB:** registrar las rutas `pricing.*`.

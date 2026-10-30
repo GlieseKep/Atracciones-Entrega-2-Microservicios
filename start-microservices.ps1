@@ -24,6 +24,7 @@ $apps = [ordered]@{
   'identity'     = @{ file = 'apps/services/identity/dist/main.js'; env = @{ ADMIN_EMAIL = 'admin@descubreec.test'; ADMIN_PASSWORD = 'Admin-Local-2026' } }
   'ms-identity'  = @{ file = 'apps/services/ms-identity/dist/main.js'; env = @{ JWT_SECRET = 'jwt-secret-local-ms-identity-solo-desarrollo' } }
   'ms-catalog'   = @{ file = 'apps/services/ms-catalog/dist/main.js'; env = @{} }
+  'ms-inventory' = @{ file = 'apps/services/ms-inventory/dist/main.js'; env = @{ BOOKING_STOCK_GRPC = 'localhost:50051'; BOOKING_SERVICE_ID = 'NODE_ATR_DILAN' } }
   'ms-billing-profile' = @{ file = 'apps/services/ms-billing-profile/dist/main.js'; env = @{} }
   'catalog'      = @{ file = 'apps/services/catalog/dist/main.js'; env = @{} }
   'ms-location'  = @{ file = 'apps/services/ms-location/dist/main.js'; env = @{} }

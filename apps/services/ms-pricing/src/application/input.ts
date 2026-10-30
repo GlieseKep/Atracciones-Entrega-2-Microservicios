@@ -1,68 +1,55 @@
-import { AppError, TIPOS_BOLETO } from '@atracciones/platform';
-import type { TicketType } from '../contract';
+import { AppError, money } from '@atracciones/platform';
+import { TICKET_TYPES, type PriceTableInput, type QuoteTicketsRequest, type SetPriceTableRequest, type TicketType } from '../contract';
 
-const CODE = /^[A-Za-z0-9]{12}$/;
-const DATE = /^\d{4}-\d{2}-\d{2}$/;
-const CURRENCY = /^[A-Z]{3}$/;
-/** Límite de `dom_importe` (numeric 12,2). */
-const MAX_PRICE = 9_999_999_999.99;
-/** Atracciones por consulta en lote. */
-export const MAX_BATCH = 100;
+const invalid = (name: string, reason: string) => AppError.validation(`'${name}' no es válido: ${reason}`, [{ name, reason }]);
 
-/** ID público de la atracción (código de 12 caracteres de Catalog). */
-export function requireCode(value: unknown, name = 'attraction_id'): string {
-  const code = typeof value === 'string' ? value.trim() : '';
-  if (!CODE.test(code)) throw AppError.validation(`'${name}' debe ser el ID público de 12 caracteres de la atracción.`, [{ name, reason: 'Código alfanumérico de 12 caracteres.' }]);
-  return code;
-}
-
-/** Fecha real `YYYY-MM-DD`; vacía → `fallback`. */
-export function dateOr(value: unknown, fallback: string, name: string): string {
-  if (value === undefined || value === null || value === '') return fallback;
-  const parsed = new Date(`${String(value)}T00:00:00Z`);
-  if (typeof value !== 'string' || !DATE.test(value) || Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value) {
-    throw AppError.validation(`'${name}' debe ser una fecha YYYY-MM-DD.`, [{ name, reason: 'Formato YYYY-MM-DD.' }]);
-  }
+export function parseCode(value: unknown): string {
+  if (typeof value !== 'string' || !/^[A-Za-z0-9]{12}$/.test(value)) throw invalid('attraction_id', 'Debe ser el ID público de 12 caracteres.');
   return value;
 }
 
-/** Fecha opcional: vacía → `null` (p. ej. `valid_to` sin fin). */
-export const optionalDate = (value: unknown, name: string): string | null => (value ? dateOr(value, '', name) : null);
-
-export function requireTicketType(value: unknown, name = 'ticket_type'): TicketType {
-  if (!TIPOS_BOLETO.includes(value as TicketType)) throw AppError.validation(`'${name}' no es un tipo de boleto válido.`, [{ name, reason: `Uno de ${TIPOS_BOLETO.join(', ')}.` }]);
-  return value as TicketType;
-}
-
-/** Precio con hasta dos decimales; `ADULT` debe ser mayor que 0 (el resto puede ser 0, p. ej. INFANT). */
-export function requirePrice(value: unknown, type: TicketType, name = 'price'): number {
-  const n = typeof value === 'number' ? value : NaN;
-  const twoDecimals = Math.abs(Math.round(n * 100) - n * 100) < 1e-6;
-  if (!Number.isFinite(n) || n < 0 || n > MAX_PRICE || !twoDecimals || (type === 'ADULT' && n <= 0)) {
-    throw AppError.validation(`El precio ${type} no es válido.`, [{ name, reason: type === 'ADULT' ? 'Mayor que 0, con hasta dos decimales.' : 'Mayor o igual a 0, con hasta dos decimales.' }]);
+export function parseDate(value: unknown, name: string): string {
+  const text = String(value ?? '');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(text) || Number.isNaN(Date.parse(`${text}T00:00:00Z`)) || new Date(`${text}T00:00:00Z`).toISOString().slice(0, 10) !== text) {
+    throw invalid(name, 'Debe ser una fecha YYYY-MM-DD.');
   }
-  return n;
+  return text;
 }
 
-export function currencyOr(value: unknown, fallback = 'USD'): string {
-  if (value === undefined || value === null || value === '') return fallback;
-  if (typeof value !== 'string' || !CURRENCY.test(value)) throw AppError.validation(`'currency' debe ser un código ISO de 3 letras.`, [{ name: 'currency', reason: 'Por ejemplo USD.' }]);
-  return value;
+export function parseBoletos(request: QuoteTicketsRequest): { type: TicketType; cantidad: number }[] {
+  const lines = request.boletos ?? [];
+  if (lines.length === 0) throw invalid('boletos', 'Debe tener al menos una línea.');
+  const seen = new Set<string>();
+  return lines.map((line) => {
+    if (!TICKET_TYPES.includes(line.ticket_type as TicketType)) throw invalid('ticket_type', `Debe ser ${TICKET_TYPES.join(', ')}.`);
+    if (seen.has(line.ticket_type)) throw invalid('ticket_type', `${line.ticket_type} está repetido.`);
+    seen.add(line.ticket_type);
+    if (!Number.isInteger(line.cantidad) || line.cantidad < 1) throw invalid('cantidad', 'Debe ser 1 o más.');
+    return { type: line.ticket_type as TicketType, cantidad: line.cantidad };
+  });
 }
 
-/** Cantidades de `QuoteTicketsRequest`: al menos un adulto (como `adult_count` del contrato) y el resto ≥ 0. */
-export function requireCounts(req: Record<string, unknown>): Record<TicketType, number> {
-  const read = (field: string) => (req[field] === undefined || req[field] === null ? 0 : Number(req[field]));
-  const counts: Record<TicketType, number> = {
-    ADULT: read('adult_count'),
-    CHILD: read('child_count'),
-    SENIOR: read('senior_count'),
-    STUDENT: read('student_count'),
-    INFANT: read('infant_count'),
+function price(value: unknown, name: string, positive = false): number {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || (positive && value === 0)) {
+    throw invalid(name, positive ? 'Debe ser mayor que 0.' : 'No puede ser negativo.');
+  }
+  return money(value);
+}
+
+/** Una fecha vacía es hoy; una pasada se rechaza, porque cambiaría el precio de días ya vendidos. */
+export function parseSetPriceTable(request: SetPriceTableRequest, today: string): PriceTableInput {
+  const validFrom = request.valid_from ? parseDate(request.valid_from, 'valid_from') : today;
+  if (validFrom < today) throw invalid('valid_from', 'No puede estar en el pasado.');
+  const hasStudent = request.student !== undefined && request.student !== null;
+  return {
+    codigo: parseCode(request.attraction_id),
+    validFrom,
+    prices: {
+      ADULT: price(request.adult, 'adult', true),
+      CHILD: price(request.child, 'child'),
+      SENIOR: price(request.senior, 'senior'),
+      INFANT: 0,
+      ...(hasStudent ? { STUDENT: price(request.student, 'student') } : {}),
+    },
   };
-  const invalid = Object.entries(counts)
-    .filter(([type, n]) => !Number.isInteger(n) || n < 0 || (type === 'ADULT' && n < 1))
-    .map(([type]) => ({ name: `${type.toLowerCase()}_count`, reason: type === 'ADULT' ? 'Entero mayor o igual a 1.' : 'Entero mayor o igual a 0.' }));
-  if (invalid.length) throw AppError.validation('Las cantidades de boletos no son válidas.', invalid);
-  return counts;
 }

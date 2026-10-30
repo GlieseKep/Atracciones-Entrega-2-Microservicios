@@ -1,38 +1,31 @@
 import {
   AppError,
   checkHealth,
+  checkNodeHealth,
   createHttpService,
   createLogger,
   EsbClient,
-  requireAdmin,
+  hasRole,
   requirePrincipal,
   type DatabaseSettings,
   type Logger,
 } from '@atracciones/platform';
 import { Router, type Express } from 'express';
 import type { DataSource } from 'typeorm';
-import { esbAuthorDirectory, FALLBACK_AUTHOR, shortName, type AuthorDirectory } from './application/authors';
-import { checkEligibility, esbReservationLookup, type ReservationLookup } from './application/eligibility';
-import {
-  parseAttractionId,
-  parseListQuery,
-  parseModerationQuery,
-  parseReviewCreate,
-  parseReviewId,
-  parseVisibility,
-} from './application/review-input';
-import type { ModerationPageDto, PaginationMetadata, ReviewDto, ReviewPageDto } from './contract';
+import { parseAnonymousReview, parseId, parsePaging, parseReview, parseVisible, parseVisibleFilter } from './application/review-input';
+import { ReviewService } from './application/review-service';
 import { REVIEW_BASE_PATH } from './integration/esb-routes';
-import { ReviewRepository, type ReviewRow } from './persistence/review-repository';
-import { SummaryRepository } from './persistence/summary-repository';
+import { ReviewRepository } from './persistence/review-repository';
 
 export interface MsReviewConfig {
   port: number;
   database: DatabaseSettings;
+  /** Verifica el principal que reenvía el Gateway. */
   internalTokenSecret: string;
-  esbUrl: string;
-  /** Prefijo de las rutas del contrato (`servers[0].url`). */
   basePath: string;
+  esbUrl: string;
+  nodeId: string;
+  nodeCode: string;
 }
 
 export function readMsReviewConfig(env: NodeJS.ProcessEnv = process.env): MsReviewConfig {
@@ -40,137 +33,89 @@ export function readMsReviewConfig(env: NodeJS.ProcessEnv = process.env): MsRevi
     port: Number(env.PORT ?? 4015),
     database: { url: env.DATABASE_URL ?? 'postgres://postgres:tourgirls-local@localhost:5433/ms_review', ssl: env.DATABASE_SSL === 'true' },
     internalTokenSecret: env.INTERNAL_TOKEN_SECRET ?? '',
-    esbUrl: env.ESB_URL ?? 'http://127.0.0.1:3300',
     basePath: env.BASE_PATH ?? REVIEW_BASE_PATH,
+    esbUrl: env.ESB_URL ?? 'http://127.0.0.1:3300',
+    nodeId: env.NODE_ID ?? 'node-dilan-review-01',
+    nodeCode: env.NODE_CODE ?? 'DILAN_REVIEW',
   };
 }
 
 export interface MsReviewDependencies {
-  reservations?: ReservationLookup;
-  authors?: AuthorDirectory;
   logger?: Logger;
+  esb?: EsbClient;
 }
 
-export interface MsReviewService {
-  app: Express;
-  reviews: ReviewRepository;
-  summaries: SummaryRepository;
-}
+const VERSION = '1.0.0';
 
-const reviewNotFound = () => AppError.notFound('La reseña no existe.', 'REVIEW_NOT_FOUND');
-
-const metadata = (total: number, page: number, limit: number): PaginationMetadata => ({
-  total_results: total, page, limit, total_pages: Math.ceil(total / limit), next_cursor: null,
-});
-
-/**
- * Review Service (REST, contrato `Plan/ms_review/ms_review-openapi.yaml`): reseñas de las atracciones y su resumen.
- * Solo reseña quien tuvo una reserva propia de la atracción ya usada (se verifica con Booking). Cada cambio publica
- * `review.ResenaPublicada` con el resumen recalculado; Catalog lo muestra como `rating` del contrato v3.
- */
-export function createMsReviewService(config: MsReviewConfig, dataSource: DataSource, deps: MsReviewDependencies = {}): MsReviewService {
+/** Review Service (REST, contrato `Plan/ms_review/ms_review-openapi.yaml`): reseñas, moderación y promedios para Catalog. */
+export function createMsReviewService(config: MsReviewConfig, dataSource: DataSource, deps: MsReviewDependencies = {}): Express {
   const logger = deps.logger ?? createLogger('ms-review');
-  const esb = new EsbClient(config.esbUrl);
-  const summaries = new SummaryRepository(dataSource);
-  const reviews = new ReviewRepository(dataSource, summaries);
-  const reservations = deps.reservations ?? esbReservationLookup(esb);
-  const authors = deps.authors ?? esbAuthorDirectory(esb, config.internalTokenSecret, logger);
+  const repository = new ReviewRepository(dataSource);
+  const reviews = new ReviewService(repository, deps.esb ?? new EsbClient(config.esbUrl), logger);
 
-  /** Filas → `Review`, con el nombre del autor de Identity (o el de las reseñas anónimas). */
-  async function toReviews(rows: ReviewRow[], withHiddenReason: boolean): Promise<ReviewDto[]> {
-    const names = await authors.names(rows.flatMap((r) => (r.usu_id ? [r.usu_id] : [])));
-    return rows.map((r) => {
-      const fullName = r.usu_id ? names.get(r.usu_id) : r.autor_nombre;
-      return {
-        id: r.id,
-        attraction_id: r.attraction_id,
-        author_name: fullName ? shortName(fullName) : FALLBACK_AUTHOR,
-        verified_purchase: r.verified_purchase,
-        score: r.score,
-        breakdown: { limpieza: r.limpieza, servicio: r.servicio, calidad_precio: r.calidad_precio, puntualidad: r.puntualidad },
-        comment: r.comment,
-        visible: r.visible,
-        ...(withHiddenReason ? { hidden_reason: r.hidden_reason } : {}),
-        created_at: r.created_at,
-      };
-    });
+  /** `usu_id` sale siempre del token, nunca del cuerpo. */
+  async function currentUser(): Promise<number> {
+    const principal = await requirePrincipal(config.internalTokenSecret);
+    const usuId = Number(principal.id);
+    if (principal.tipo !== 'USUARIO' || !Number.isSafeInteger(usuId)) throw AppError.forbidden('Esta operación es solo para usuarios.');
+    return usuId;
   }
 
-  /** Publicar y "mis reseñas": solo un usuario del portal. */
-  const user = async () => {
-    const principal = await requirePrincipal(config.internalTokenSecret);
-    if (principal.tipo !== 'USUARIO') throw AppError.forbidden('Solo los usuarios del portal pueden publicar reseñas.');
-    return principal;
-  };
+  async function requireAdmin(): Promise<void> {
+    if (!hasRole(await requirePrincipal(config.internalTokenSecret), 'ADMIN')) throw AppError.forbidden('Esta operación requiere el rol ADMIN.');
+  }
 
   const api = Router();
 
-  // Reseñas de una atracción (lectura pública) -------------------------------------
-
-  api.get('/atracciones/:attraction_id/resenas', async (req, res) => {
-    const attractionId = parseAttractionId(String(req.params.attraction_id));
-    const filters = parseListQuery(req.query as Record<string, unknown>);
-    const [summary, { total, items }] = await Promise.all([summaries.get(attractionId), reviews.listVisible(attractionId, filters)]);
-    const page: ReviewPageDto = { summary, metadata: metadata(total, filters.page, filters.limit), data: await toReviews(items, false) };
-    res.json(page);
+  api.get('/health', async (_req, res) => {
+    const health = await checkNodeHealth('ms-review', dataSource, { nodeId: config.nodeId, nodeCode: config.nodeCode, version: VERSION });
+    res.status(health.status === 'UP' ? 200 : 503).json(health);
   });
 
-  api.get('/atracciones/:attraction_id/calificacion', async (req, res) => {
-    res.json(await summaries.get(parseAttractionId(String(req.params.attraction_id))));
+  api.get('/atracciones/:id/resenas', async (req, res) => {
+    const { page, limit } = parsePaging(req.query as Record<string, unknown>);
+    const atrId = await reviews.attractionId(req.params.id);
+    res.json(await reviews.list({ atrId, usuId: null, visible: true }, page, limit));
   });
 
-  api.post('/atracciones/:attraction_id/resenas', async (req, res) => {
-    const principal = await user();
-    const attractionId = parseAttractionId(String(req.params.attraction_id));
-    const input = parseReviewCreate(req.body);
-    const reservationId = await checkEligibility(reservations, input.reservationId, attractionId, principal);
-    const { review, summary } = await reviews.create(attractionId, principal.id, reservationId, input);
-    logger.info('reseña publicada', { ren_id: review.id, atraccion: attractionId, puntuacion: review.score, total: summary.review_count });
-    const [dto] = await toReviews([review], false);
-    res.status(201).json(dto);
+  api.post('/atracciones/:id/resenas', async (req, res) => {
+    const usuId = await currentUser();
+    res.status(201).json(await reviews.createForUser(req.params.id, usuId, parseReview(req.body)));
   });
 
-  // Mis reseñas ------------------------------------------------------------------------
-
-  api.get('/usuarios/me/resenas', async (_req, res) => {
-    const principal = await user();
-    res.json(await toReviews(await reviews.listMine(principal.id), true));
+  api.post('/atracciones/:id/resenas/anonimas', async (req, res) => {
+    const { autorNombre, review } = parseAnonymousReview(req.body);
+    res.status(201).json(await reviews.createAnonymous(req.params.id, autorNombre, review));
   });
 
-  // Moderación (rol ADMIN) -------------------------------------------------------------
-
-  api.get('/resenas', async (req, res) => {
-    await requireAdmin(config.internalTokenSecret);
-    const filters = parseModerationQuery(req.query as Record<string, unknown>);
-    const { total, items } = await reviews.listForModeration(filters);
-    const page: ModerationPageDto = { metadata: metadata(total, filters.page, filters.limit), data: await toReviews(items, true) };
-    res.json(page);
+  api.get('/usuarios/me/resenas', async (req, res) => {
+    const usuId = await currentUser();
+    const { page, limit } = parsePaging(req.query as Record<string, unknown>);
+    res.json(await reviews.list({ atrId: null, usuId, visible: null }, page, limit));
   });
 
-  api.put('/resenas/:id/visibilidad', async (req, res) => {
-    await requireAdmin(config.internalTokenSecret);
-    const id = parseReviewId(String(req.params.id));
-    if (id === null) throw reviewNotFound();
-    const updated = await reviews.setVisibility(id, parseVisibility(req.body));
-    if (!updated) throw reviewNotFound();
-    logger.info('visibilidad de reseña cambiada', { ren_id: id, visible: updated.visible });
-    const [dto] = await toReviews([updated], true);
-    res.json(dto);
+  api.put('/usuarios/me/resenas/:id', async (req, res) => {
+    const usuId = await currentUser();
+    res.json(await reviews.present(await repository.updateOwn(parseId(req.params.id), usuId, parseReview(req.body))));
   });
 
-  const health = () => checkHealth('ms-review', dataSource);
-  const app = createHttpService({
+  api.get('/admin/resenas', async (req, res) => {
+    await requireAdmin();
+    const query = req.query as Record<string, unknown>;
+    const { page, limit } = parsePaging(query);
+    const atrId = query.atr_id === undefined ? null : parseId(query.atr_id, 'atr_id');
+    res.json(await reviews.list({ atrId, usuId: null, visible: parseVisibleFilter(query.visible) }, page, limit));
+  });
+
+  api.put('/admin/resenas/:id/visibilidad', async (req, res) => {
+    await requireAdmin();
+    res.json(await reviews.present(await repository.setVisible(parseId(req.params.id), parseVisible(req.body))));
+  });
+
+  return createHttpService({
     service: 'ms-review',
     logger,
-    health,
-    routes: (a) => {
-      // `/health` lo agrega createHttpService; el contrato lo publica también bajo el prefijo.
-      a.get(`${config.basePath}/health`, async (_req, res) => {
-        const report = await health();
-        res.status(report.status === 'UP' ? 200 : 503).json(report);
-      });
-      a.use(config.basePath, api);
-    },
+    health: () => checkHealth('ms-review', dataSource),
+    routes: (app) => app.use(config.basePath, api),
   });
-  return { app, reviews, summaries };
 }

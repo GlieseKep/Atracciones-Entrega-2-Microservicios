@@ -82,26 +82,28 @@ apps/services/ms-review/
 
 ## 5. Fases
 
+**Estado (2026-10-30):** Fases 0 a 3 programadas en `apps/services/ms-review`; compila y el contrato pasa Spectral sin errores. Sin pruebas. Falta la Fase 4, excepto las rutas para el ESB y el cliente, que ya están dentro del servicio.
+
 ### Fase 0 · Preparación
 - [x] Cerrar las decisiones de la sección 3.
-- [ ] Copiar el contrato a `packages/contracts/openapi/ms-review.yaml` y lintarlo con Spectral.
-- [ ] Registrar el servicio en el workspace, la compilación, la creación de bases y el script de arranque.
+- [x] Copiar el contrato a `packages/contracts/openapi/ms-review.yaml` y lintarlo con Spectral.
+- [x] Registrar el servicio en el workspace, la compilación, la creación de bases y el script de arranque.
 
 ### Fase 1 · Persistencia
-- [ ] Migración con el DDL de `ms_review.sql`.
-- [ ] `ReviewRepository`: crear, editar, cambiar visibilidad, listar y calcular promedios.
+- [x] Migración con el DDL de `ms_review.sql`.
+- [x] `ReviewRepository`: crear, editar, cambiar visibilidad, listar y calcular promedios.
   - Cada cambio que afecte los promedios bloquea por `atr_id`, recalcula y escribe el outbox en la misma transacción.
   - `23505` en `uq_resena_atraccion_usuario` → `409 REVIEW_ALREADY_EXISTS`.
 
 ### Fase 2 · API REST
-- [ ] `GET` y `POST /atracciones/{id}/resenas`, y `POST /atracciones/{id}/resenas/anonimas`.
-- [ ] `GET /usuarios/me/resenas` y `PUT /usuarios/me/resenas/{id}`; `usu_id` sale siempre del token.
-- [ ] `GET /admin/resenas` y `PUT /admin/resenas/{id}/visibilidad`, solo `ADMIN`.
-- [ ] `/health` con `NodeHealthResponse`, y errores RFC 7807.
+- [x] `GET` y `POST /atracciones/{id}/resenas`, y `POST /atracciones/{id}/resenas/anonimas`.
+- [x] `GET /usuarios/me/resenas` y `PUT /usuarios/me/resenas/{id}`; `usu_id` sale siempre del token.
+- [x] `GET /admin/resenas` y `PUT /admin/resenas/{id}/visibilidad`, solo `ADMIN`.
+- [x] `/health` con `NodeHealthResponse`, y errores RFC 7807.
 
 ### Fase 3 · Eventos
-- [ ] Publicador del outbox hacia RabbitMQ, en orden de `creado_en`.
-- [ ] `RESENA_PUBLICADA` con `atr_id`, `ren_id`, `promedio`, los cuatro pilares y `numero_resenas`.
+- [x] Publicador del outbox hacia RabbitMQ, en orden de `creado_en`.
+- [x] `RESENA_PUBLICADA` con `atr_id`, `ren_id`, `promedio`, los cuatro pilares y `numero_resenas`.
 
 ### Fase 4 · Integración
 - [ ] **ESB:** registrar las rutas `review.*`.
