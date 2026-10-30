@@ -1,19 +1,34 @@
-import type { Logger } from '@atracciones/platform';
+import { errorFields, type Logger } from '@atracciones/platform';
 import type { CartRepository } from '../persistence/cart-repository';
 
-/**
- * Tarea periódica: desactiva los carritos sin cambios en `ttlDays` días y sin ítems en pago. Los ítems en pago no se
- * tocan: solo Order sabe si el cobro se hizo, y es quien los confirma o libera.
- */
-export function startAbandonedCartSweeper(repository: CartRepository, ttlDays: number, logger: Logger, intervalMs = 3_600_000): () => Promise<void> {
-  const run = async () => {
+const ABANDONED_DAYS = 30;
+const INTERVAL_MS = 24 * 60 * 60_000;
+
+/** Desactiva cada día los carritos sin cambios en 30 días. Uno con ítems `EN_PAGO` espera a Order. */
+export class AbandonedCarts {
+  private timer: NodeJS.Timeout | null = null;
+
+  constructor(
+    private readonly cart: CartRepository,
+    private readonly logger: Logger,
+  ) {}
+
+  private async run(): Promise<void> {
     try {
-      const abandoned = await repository.abandonIdle(ttlDays);
-      if (abandoned > 0) logger.info('carritos abandonados', { cantidad: abandoned, dias: ttlDays });
+      const closed = await this.cart.deactivateAbandoned(ABANDONED_DAYS);
+      if (closed > 0) this.logger.info('carritos abandonados desactivados', { carritos: closed });
     } catch (error) {
-      logger.error('no se pudieron cerrar los carritos abandonados', { error: String(error) });
+      this.logger.error('no se pudieron desactivar los carritos abandonados', errorFields(error));
     }
-  };
-  setInterval(() => void run(), intervalMs).unref();
-  return run;
+  }
+
+  start(): void {
+    void this.run();
+    this.timer = setInterval(() => void this.run(), INTERVAL_MS);
+    this.timer.unref();
+  }
+
+  stop(): void {
+    if (this.timer) clearInterval(this.timer);
+  }
 }

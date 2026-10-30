@@ -303,9 +303,9 @@ export class AttractionRepository {
     for (const table of ['atraccion_categoria', 'atraccion_idioma', 'atraccion_inclusion', 'atraccion_foto', 'atraccion_itinerario']) {
       await m.query(`DELETE FROM ${table} WHERE atr_id = $1`, [atrId]);
     }
-    await m.query(`INSERT INTO atraccion_categoria (atr_id, cat_id) SELECT $1, cat_id FROM categoria WHERE cat_codigo = ANY($2::varchar[])`, [atrId, input.categorias]);
-    await m.query(`INSERT INTO atraccion_idioma (atr_id, idi_id) SELECT $1, idi_id FROM idioma WHERE idi_codigo = ANY($2::char(2)[])`, [atrId, input.idiomas]);
-    await m.query(`INSERT INTO atraccion_inclusion (atr_id, inc_id) SELECT $1, inc_id FROM inclusion WHERE inc_id = ANY($2::int[])`, [atrId, input.inclusiones]);
+    await m.query(`INSERT INTO atraccion_categoria (atr_id, cat_id) SELECT $1::bigint, cat_id FROM categoria WHERE cat_codigo = ANY($2::varchar[])`, [atrId, input.categorias]);
+    await m.query(`INSERT INTO atraccion_idioma (atr_id, idi_id) SELECT $1::bigint, idi_id FROM idioma WHERE idi_codigo = ANY($2::char(2)[])`, [atrId, input.idiomas]);
+    await m.query(`INSERT INTO atraccion_inclusion (atr_id, inc_id) SELECT $1::bigint, inc_id FROM inclusion WHERE inc_id = ANY($2::int[])`, [atrId, input.inclusiones]);
     for (const foto of input.fotos) {
       await m.query(`INSERT INTO atraccion_foto (atr_id, fot_url, fot_alt, fot_orden) VALUES ($1, $2, $3, $4)`, [atrId, foto.url, foto.alt, foto.orden]);
     }

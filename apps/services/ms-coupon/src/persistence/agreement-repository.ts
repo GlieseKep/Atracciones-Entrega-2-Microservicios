@@ -46,7 +46,7 @@ export class AgreementRepository {
       await m.query(`UPDATE acuerdo_promocion SET ${sets.join(', ')} WHERE apr_id = $1`, params);
       if (cityIds) {
         await m.query(`DELETE FROM acuerdo_promocion_destino WHERE apr_id = $1`, [aprId]);
-        await m.query(`INSERT INTO acuerdo_promocion_destino (apr_id, ciu_id) SELECT $1, unnest($2::smallint[])`, [aprId, cityIds]);
+        await m.query(`INSERT INTO acuerdo_promocion_destino (apr_id, ciu_id) SELECT $1::smallint, unnest($2::smallint[])`, [aprId, cityIds]);
       }
     });
   }

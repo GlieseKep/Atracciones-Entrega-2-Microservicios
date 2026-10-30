@@ -16,6 +16,7 @@
     "apps/services/ms-identity",
     "apps/services/ms-catalog",
     "apps/services/ms-inventory",
+    "apps/services/ms-payment",
     "apps/services/catalog",
     "apps/services/inventory",
     "apps/services/cart",

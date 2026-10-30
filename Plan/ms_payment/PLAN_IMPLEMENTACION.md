@@ -91,38 +91,40 @@ apps/services/ms-payment/
 
 ## 5. Fases
 
+**Estado (2026-10-30):** Fases 0 a 4 programadas en `apps/services/ms-payment`; compila y el contrato pasa Spectral sin errores. Sin pruebas. Falta la Fase 5, excepto las rutas para el ESB y el cliente, que ya están dentro del servicio.
+
 ### Fase 0 · Preparación
 - [x] Cerrar las decisiones de la sección 3.
-- [ ] Copiar el contrato a `packages/contracts/openapi/ms-payment.yaml` y lintarlo con Spectral.
-- [ ] Registrar el servicio en el workspace, la compilación, la creación de bases y el script de arranque.
+- [x] Copiar el contrato a `packages/contracts/openapi/ms-payment.yaml` y lintarlo con Spectral.
+- [x] Registrar el servicio en el workspace, la compilación, la creación de bases y el script de arranque.
 
 ### Fase 1 · Persistencia
-- [ ] Migración con el DDL completo de `ms_payment.sql`.
-- [ ] `PaymentRepository`: crear, buscar por ID, número y orden, listar, y aplicar el resultado.
+- [x] Migración con el DDL completo de `ms_payment.sql`.
+- [x] `PaymentRepository`: crear, buscar por ID, número y orden, listar, y aplicar el resultado.
   - `23505` en `pag_numero` → devolver el pago guardado.
   - `23505` en `ux_pago_orden_aprobado` → `409 PAYMENT_ALREADY_APPROVED`.
 
 ### Fase 2 · Registro y consulta
-- [ ] **`POST /pagos`:**
+- [x] **`POST /pagos`:**
   - `B2B`: `APROBADO` y evento en la misma transacción.
   - `WEB`: `PENDIENTE`, guarda `pago_tarjeta` si aplica y pide el cobro a la pasarela después de confirmar la transacción.
   - Tarjeta sin datos en `WEB` → `422`.
-- [ ] **`POST /pagos/{id}/cancelacion`:** según la decisión 6.
-- [ ] `GET /pagos`, `/pagos/{id}`, `/pagos/orden/{ord_id}` y `/metodos-pago`.
-- [ ] `/health` con `NodeHealthResponse`.
+- [x] **`POST /pagos/{id}/cancelacion`:** según la decisión 6.
+- [x] `GET /pagos`, `/pagos/{id}`, `/pagos/orden/{ord_id}` y `/metodos-pago`.
+- [x] `/health` con `NodeHealthResponse`.
 
 ### Fase 3 · Webhooks
-- [ ] **`POST /webhooks/simulada`:** valida la firma, encola y responde `202` sin esperar el procesamiento.
-- [ ] Consumidor: busca por `pag_numero`.
+- [x] **`POST /webhooks/simulada`:** valida la firma, encola y responde `202` sin esperar el procesamiento.
+- [x] Consumidor: busca por `pag_numero`.
   - Aprobado: `pag_aprobado_en`, `pag_referencia`, `pag_autorizacion` y evento `PagoAprobado`.
   - Rechazado: `pag_rechazado_en`, `pag_motivo_rechazo` y evento `PagoRechazado`.
   - Un pago en estado final no cambia: un webhook repetido se ignora.
-- [ ] Pasarela simulada: tras confirmar el registro, envía el resultado a su webhook según la decisión 4, con `pag_referencia` y
+- [x] Pasarela simulada: tras confirmar el registro, envía el resultado a su webhook según la decisión 4, con `pag_referencia` y
       `pag_autorizacion` generados.
 
 ### Fase 4 · Transferencias
-- [ ] `POST /pagos/{id}/transferencia`: solo para `TRANSFER` y `PENDIENTE`.
-- [ ] `PUT /pagos/{id}/verificacion`: rol `ADMIN`; publica el evento.
+- [x] `POST /pagos/{id}/transferencia`: solo para `TRANSFER` y `PENDIENTE`.
+- [x] `PUT /pagos/{id}/verificacion`: rol `ADMIN`; publica el evento.
 
 ### Fase 5 · Integración
 - [ ] **ESB:** registrar las rutas `payment.*`. Los webhooks entran por el API Gateway.

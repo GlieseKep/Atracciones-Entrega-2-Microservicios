@@ -82,29 +82,31 @@ apps/services/ms-cart/
 
 ## 5. Fases
 
+**Estado (2026-10-30):** Fases 0 a 3 programadas en `apps/services/ms-cart`; compila y el contrato pasa Spectral sin errores. Sin pruebas. Falta la Fase 4, excepto las rutas para el ESB y el cliente, que ya están dentro del servicio.
+
 ### Fase 0 · Preparación
 - [x] Cerrar las decisiones de la sección 3.
-- [ ] Copiar el contrato a `packages/contracts/openapi/ms-cart.yaml` y lintarlo con Spectral.
-- [ ] Registrar el servicio en el workspace, la compilación, la creación de bases y el script de arranque.
+- [x] Copiar el contrato a `packages/contracts/openapi/ms-cart.yaml` y lintarlo con Spectral.
+- [x] Registrar el servicio en el workspace, la compilación, la creación de bases y el script de arranque.
 
 ### Fase 1 · Persistencia
-- [ ] Migración con el DDL de `ms_cart.sql`.
-- [ ] `CartRepository`:
+- [x] Migración con el DDL de `ms_cart.sql`.
+- [x] `CartRepository`:
   - El carrito se crea con `INSERT ... ON CONFLICT` sobre `ux_carrito_activo`, para que dos pestañas no creen dos.
   - Cada transición de compra bloquea el ítem con `SELECT ... FOR UPDATE`.
 
 ### Fase 2 · API REST
-- [ ] `GET` y `DELETE /carrito`: muestra `PENDIENTE` y `EN_PAGO`; vaciar solo quita los `PENDIENTE`.
-- [ ] `POST /carrito/items`: `201` si es nuevo, `200` según la decisión 5.
-- [ ] `PATCH` y `DELETE /carrito/items/{item_id}`: un ítem `EN_PAGO` responde `409 CART_ITEM_IN_PAYMENT`.
-- [ ] `date` y `time` salen del `slot_id`, sin llamar a Inventory.
-- [ ] `/health` con `NodeHealthResponse`, y errores RFC 7807.
+- [x] `GET` y `DELETE /carrito`: muestra `PENDIENTE` y `EN_PAGO`; vaciar solo quita los `PENDIENTE`.
+- [x] `POST /carrito/items`: `201` si es nuevo, `200` según la decisión 5.
+- [x] `PATCH` y `DELETE /carrito/items/{item_id}`: un ítem `EN_PAGO` responde `409 CART_ITEM_IN_PAYMENT`.
+- [x] `date` y `time` salen del `slot_id`, sin llamar a Inventory.
+- [x] `/health` con `NodeHealthResponse`, y errores RFC 7807.
 
 ### Fase 3 · Compra de un ítem
-- [ ] `GET /internal/carrito-items/{item_id}`.
-- [ ] `POST .../orden`: exige `PENDIENTE` y turno; guarda orden, clave y `cai_en_pago_desde`. Es idempotente.
-- [ ] `POST .../orden/confirmacion`: `EN_PAGO` → `COMPRADO`. Es idempotente.
-- [ ] `POST .../orden/liberacion`: `EN_PAGO` → `PENDIENTE`, y limpia los datos de la orden. Es idempotente.
+- [x] `GET /internal/carrito-items/{item_id}`.
+- [x] `POST .../orden`: exige `PENDIENTE` y turno; guarda orden, clave y `cai_en_pago_desde`. Es idempotente.
+- [x] `POST .../orden/confirmacion`: `EN_PAGO` → `COMPRADO`. Es idempotente.
+- [x] `POST .../orden/liberacion`: `EN_PAGO` → `PENDIENTE`, y limpia los datos de la orden. Es idempotente.
 
 ### Fase 4 · Integración
 - [ ] **ESB:** registrar las rutas `cart.*`.

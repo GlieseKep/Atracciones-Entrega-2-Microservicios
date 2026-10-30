@@ -206,7 +206,7 @@ export class UserRepository {
   async assignRole(usuId: number, rol: RolNombre, assignedBy: number | null, db: Db = this.db): Promise<boolean> {
     const rows = await db.query(
       `INSERT INTO usuario_rol (usu_id, rol_id, usr_asignado_por)
-       SELECT $1, rol_id, $3 FROM rol WHERE rol_nombre = $2
+       SELECT $1::bigint, rol_id, $3::bigint FROM rol WHERE rol_nombre = $2
        ON CONFLICT ON CONSTRAINT pk_usuario_rol DO NOTHING
        RETURNING usu_id`,
       [usuId, rol, assignedBy],

@@ -1,130 +1,102 @@
-import { AppError, type InvalidParam } from '@atracciones/platform';
-import { slotTime } from './slot';
+import { AppError, parseSlotId, type InvalidParam } from '@atracciones/platform';
+import type { CartItemInput, CartItemPatch, TicketCounts } from '../contract';
 
-/** Cantidades por tipo de boleto, con los mismos campos que `CreateReservaRequestV3`. */
-export interface TicketCounts {
-  adult: number;
-  child: number;
-  senior: number;
-  student: number;
-  infant: number;
-}
+type Body = Record<string, unknown>;
 
-export interface ItemInput {
-  attractionId: string;
-  slot: string | null;
-  counts: TicketCounts;
-}
+const asBody = (body: unknown): Body => (body && typeof body === 'object' ? (body as Body) : {});
+const COUNT_FIELDS = ['adult_count', 'child_count', 'senior_count', 'student_count', 'infant_count'] as const;
 
-/** Cambios de un ítem: solo los campos enviados. `slot: null` quita el turno. */
-export interface ItemPatch {
-  slot?: string | null;
-  counts: Partial<TicketCounts>;
-}
-
-/** Mismo tope de boletos por turno que una reserva del portal. */
-export const MAX_TICKETS = 20;
-
-const COUNT_FIELDS: [keyof TicketCounts, string][] = [
-  ['adult', 'adult_count'],
-  ['child', 'child_count'],
-  ['senior', 'senior_count'],
-  ['student', 'student_count'],
-  ['infant', 'infant_count'],
-];
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-export const ticketTotal = (c: TicketCounts) => c.adult + c.child + c.senior + c.student + c.infant;
-
-const asObject = (body: unknown): Record<string, unknown> => {
-  if (!body || typeof body !== 'object' || Array.isArray(body)) throw AppError.validation('El cuerpo debe ser un objeto JSON.');
-  return body as Record<string, unknown>;
-};
-
-/** Lee el `slot_id`: ausente (`undefined`), `null` o un turno con formato `slot-YYYYMMDD-HHmm`. */
-function readSlot(body: Record<string, unknown>, invalid: InvalidParam[]): string | null | undefined {
-  if (!('slot_id' in body) || body.slot_id === undefined) return undefined;
-  if (body.slot_id === null) return null;
-  if (typeof body.slot_id !== 'string' || !slotTime(body.slot_id)) {
-    invalid.push({ name: 'slot_id', reason: 'Formato slot-YYYYMMDD-HHmm con una fecha y hora válidas.' });
-    return undefined;
+function readSlot(value: unknown, errors: InvalidParam[]): string | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value !== 'string' || !parseSlotId(value)) {
+    errors.push({ name: 'slot_id', reason: 'Debe tener el formato slot-YYYYMMDD-HHMM.' });
+    return null;
   }
-  return body.slot_id;
+  return value;
 }
 
-/** Lee las cantidades enviadas: deben ser enteros (si no, 400). */
-function readCounts(body: Record<string, unknown>, invalid: InvalidParam[]): Partial<TicketCounts> {
+/** Un tipo erróneo es `400`; una cantidad fuera de rango, `422`, como `CreateReservaRequestV3`. */
+function readCounts(b: Body, errors: InvalidParam[], required: boolean): Partial<TicketCounts> {
   const counts: Partial<TicketCounts> = {};
-  for (const [key, field] of COUNT_FIELDS) {
-    if (body[field] === undefined) continue;
-    if (typeof body[field] !== 'number' || !Number.isInteger(body[field])) invalid.push({ name: field, reason: 'Debe ser un número entero.' });
-    else counts[key] = body[field] as number;
+  for (const field of COUNT_FIELDS) {
+    const value = b[field];
+    if (value === undefined) {
+      if (required && field === 'adult_count') errors.push({ name: field, reason: 'Es obligatorio.' });
+      continue;
+    }
+    if (!Number.isInteger(value)) errors.push({ name: field, reason: 'Debe ser un entero.' });
+    else counts[field] = value as number;
   }
   return counts;
 }
 
-/**
- * Reglas semánticas (422): al menos un adulto, ninguna cantidad negativa y como máximo `MAX_TICKETS` boletos por ítem.
- */
-export function checkCounts(counts: TicketCounts): void {
-  const invalid: InvalidParam[] = [];
-  if (counts.adult < 1) invalid.push({ name: 'adult_count', reason: 'Debe ser mayor o igual a 1.' });
-  for (const [key, field] of COUNT_FIELDS) {
-    if (key !== 'adult' && counts[key] < 0) invalid.push({ name: field, reason: 'Debe ser mayor o igual a 0.' });
+function assertRanges(counts: Partial<TicketCounts>): void {
+  const problems: InvalidParam[] = [];
+  if (counts.adult_count !== undefined && counts.adult_count < 1) problems.push({ name: 'adult_count', reason: 'Debe ser 1 o más.' });
+  for (const field of COUNT_FIELDS.slice(1)) {
+    if ((counts[field] ?? 0) < 0) problems.push({ name: field, reason: 'No puede ser negativo.' });
   }
-  if (!invalid.length && ticketTotal(counts) > MAX_TICKETS) invalid.push({ name: 'adult_count', reason: `Máximo ${MAX_TICKETS} boletos por ítem.` });
-  if (invalid.length) throw AppError.unprocessable('SEMANTIC_VALIDATION_FAILED', 'Las cantidades de boletos no son válidas.', invalid);
+  if (problems.length > 0) throw AppError.unprocessable('INVALID_TICKET_COUNT', 'Las cantidades de boletos no son válidas.', problems);
 }
 
-/** `CartItemRequest`: errores de tipo o formato → 400; reglas de negocio de las cantidades → 422. */
-export function parseItem(value: unknown): ItemInput {
-  const body = asObject(value);
-  const invalid: InvalidParam[] = [];
-  const attractionId = typeof body.attraction_id === 'string' ? body.attraction_id.trim() : '';
-  if (!attractionId || attractionId.length > 220) invalid.push({ name: 'attraction_id', reason: 'ID público, slug o UUID de la atracción.' });
-  const slot = readSlot(body, invalid);
-  const sent = readCounts(body, invalid);
-  if (body.adult_count === undefined) invalid.push({ name: 'adult_count', reason: 'Es obligatorio.' });
-  if (invalid.length) throw AppError.validation('El ítem del carrito no es válido.', invalid);
-  const counts: TicketCounts = { adult: sent.adult ?? 0, child: sent.child ?? 0, senior: sent.senior ?? 0, student: sent.student ?? 0, infant: sent.infant ?? 0 };
-  checkCounts(counts);
-  return { attractionId, slot: slot ?? null, counts };
+const stop = (errors: InvalidParam[]) => {
+  if (errors.length > 0) throw AppError.validation('La solicitud tiene campos inválidos.', errors);
+};
+
+export function parseCartItem(body: unknown): CartItemInput {
+  const b = asBody(body);
+  const errors: InvalidParam[] = [];
+  const attractionId = typeof b.attraction_id === 'string' ? b.attraction_id.trim() : '';
+  if (attractionId === '') errors.push({ name: 'attraction_id', reason: 'Es obligatorio.' });
+  const slotId = readSlot(b.slot_id, errors);
+  const counts = readCounts(b, errors, true);
+  stop(errors);
+  assertRanges(counts);
+  return {
+    attraction_id: attractionId,
+    slot_id: slotId,
+    adult_count: counts.adult_count as number,
+    child_count: counts.child_count ?? 0,
+    senior_count: counts.senior_count ?? 0,
+    student_count: counts.student_count ?? 0,
+    infant_count: counts.infant_count ?? 0,
+  };
 }
 
-/** `CartItemUpdateRequest`: al menos un campo conocido. Las cantidades se validan al combinarlas con las del ítem. */
-export function parseItemPatch(value: unknown): ItemPatch {
-  const body = asObject(value);
-  const invalid: InvalidParam[] = [];
-  const slot = readSlot(body, invalid);
-  const counts = readCounts(body, invalid);
-  if (invalid.length) throw AppError.validation('Los cambios del ítem no son válidos.', invalid);
-  if (slot === undefined && Object.keys(counts).length === 0) {
-    throw AppError.validation('Envíe al menos un campo para cambiar.', [{ name: 'body', reason: 'slot_id o alguna cantidad de boletos.' }]);
+export function parseCartItemPatch(body: unknown): CartItemPatch {
+  const b = asBody(body);
+  const errors: InvalidParam[] = [];
+  const patch: CartItemPatch = readCounts(b, errors, false);
+  if (b.slot_id !== undefined) patch.slot_id = readSlot(b.slot_id, errors);
+  if (errors.length === 0 && Object.keys(patch).length === 0) errors.push({ name: 'body', reason: 'Envíe al menos un campo.' });
+  stop(errors);
+  assertRanges(patch);
+  return patch;
+}
+
+export function parseItemId(value: unknown): number {
+  const id = Number(value);
+  if (!Number.isSafeInteger(id) || id < 1) throw AppError.validation("'item_id' debe ser un entero positivo.", [{ name: 'item_id', reason: 'Debe ser un entero positivo.' }]);
+  return id;
+}
+
+export function parseUserId(value: unknown): number {
+  const id = Number(value);
+  if (!Number.isSafeInteger(id) || id < 1) throw AppError.validation("'usu_id' debe ser un entero positivo.", [{ name: 'usu_id', reason: 'Debe ser un entero positivo.' }]);
+  return id;
+}
+
+export function parseOrderNumber(body: unknown): string {
+  const value = asBody(body).external_order_id;
+  if (typeof value !== 'string' || value.trim() === '' || value.length > 20) {
+    throw AppError.validation("'external_order_id' es obligatorio, de hasta 20 caracteres.", [{ name: 'external_order_id', reason: 'Es obligatorio.' }]);
   }
-  return slot === undefined ? { counts } : { slot, counts };
+  return value.trim();
 }
 
-/** `CartItemOrderRequest`: la orden de Order (`external_order_id`). */
-export function parseOrderNumber(value: unknown): string {
-  const body = asObject(value);
-  const number = typeof body.external_order_id === 'string' ? body.external_order_id.trim() : '';
-  if (!number || number.length > 20) {
-    throw AppError.validation('Falta la orden del ítem.', [{ name: 'external_order_id', reason: 'Texto de 1 a 20 caracteres (orden.ord_numero).' }]);
-  }
-  return number;
-}
-
-/** Cabecera `Idempotency-Key` obligatoria (UUID v4). */
 export function parseIdempotencyKey(value: unknown): string {
-  const key = Array.isArray(value) ? value[0] : value;
-  if (typeof key !== 'string' || !UUID.test(key)) {
-    throw AppError.validation('La cabecera Idempotency-Key es obligatoria.', [{ name: 'Idempotency-Key', reason: 'UUID v4.' }]);
+  if (typeof value !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)) {
+    throw AppError.validation('Idempotency-Key debe ser un UUID.', [{ name: 'Idempotency-Key', reason: 'Debe ser un UUID.' }]);
   }
-  return key.toLowerCase();
-}
-
-/** Identificador numérico de la ruta (`cart_id`, `item_id`); `null` si no lo es. */
-export function parseId(value: string): string | null {
-  return /^[1-9]\d{0,17}$/.test(value) ? value : null;
+  return value.toLowerCase();
 }

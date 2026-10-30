@@ -25,6 +25,8 @@ $apps = [ordered]@{
   'ms-identity'  = @{ file = 'apps/services/ms-identity/dist/main.js'; env = @{ JWT_SECRET = 'jwt-secret-local-ms-identity-solo-desarrollo' } }
   'ms-catalog'   = @{ file = 'apps/services/ms-catalog/dist/main.js'; env = @{} }
   'ms-inventory' = @{ file = 'apps/services/ms-inventory/dist/main.js'; env = @{ BOOKING_STOCK_GRPC = 'localhost:50051'; BOOKING_SERVICE_ID = 'NODE_ATR_DILAN' } }
+  'ms-cart'      = @{ file = 'apps/services/ms-cart/dist/main.js'; env = @{} }
+  'ms-payment'   = @{ file = 'apps/services/ms-payment/dist/main.js'; env = @{ WEBHOOK_SECRET = 'webhook-secret-local-solo-para-desarrollo' } }
   'ms-billing-profile' = @{ file = 'apps/services/ms-billing-profile/dist/main.js'; env = @{} }
   'catalog'      = @{ file = 'apps/services/catalog/dist/main.js'; env = @{} }
   'ms-location'  = @{ file = 'apps/services/ms-location/dist/main.js'; env = @{} }
