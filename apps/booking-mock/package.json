@@ -1,0 +1,15 @@
+{
+  "name": "@atracciones/booking-mock",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Servidor gRPC falso de Booking Prototipo (inventory.InventoryStockService, :50051) que registra los envíos de stock.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "start": "node dist/main.js"
+  },
+  "dependencies": {
+    "@atracciones/platform": "1.0.0",
+    "express": "^5.2.1"
+  }
+}

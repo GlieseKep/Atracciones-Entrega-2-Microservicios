@@ -1,0 +1,40 @@
+syntax = "proto3";
+package inventory;
+
+service InventoryStockService {
+  // Envío puntual de actualización de cupos por turno
+  rpc PushStockUpdate (StockUpdateMessage) returns (StockUpdateAck);
+  // Streaming continuo de eventos de cambio de inventario
+  rpc StreamInventoryChanges (stream StockChangeEvent) returns (StreamSummary);
+}
+
+message StockUpdateMessage {
+  string service_id = 1;      // Identificador único de la tienda (ej. "atracciones-dilan")
+  string item_id = 2;         // ID de la atracción o tour (ej. "atr-quito-01")
+  string date = 3;            // Fecha del turno en formato YYYY-MM-DD (ej. "2026-10-25")
+  string time_slot = 4;       // Franja horaria del turno (ej. "10:30 a.m.")
+  int32 available_units = 5;  // Cupos remanentes disponibles en tiempo real (0 si agotado)
+  int64 timestamp = 6;        // Timestamp Epoch en milisegundos
+}
+
+message StockUpdateAck {
+  bool success = 1;
+  string message = 2;
+  int64 processed_at = 3;
+}
+
+message StockChangeEvent {
+  string event_id = 1;
+  string service_id = 2;
+  string item_id = 3;
+  string date = 4;
+  string time_slot = 5;
+  int32 delta = 6;            // Cambio neto (+1, -2 cupos)
+  int64 timestamp = 7;
+}
+
+message StreamSummary {
+  int32 total_events_processed = 1;
+  bool is_synchronized = 2;
+  string last_sync_hash = 3;
+}

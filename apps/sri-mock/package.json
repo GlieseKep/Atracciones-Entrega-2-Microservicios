@@ -1,0 +1,19 @@
+{
+  "name": "@atracciones/sri-mock",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Simulador SOAP de los web services offline del SRI (RecepcionComprobantesOffline y AutorizacionComprobantesOffline) para desarrollo y pruebas.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "start": "node dist/main.js"
+  },
+  "dependencies": {
+    "@atracciones/platform": "1.0.0",
+    "express": "^5.2.1",
+    "fast-xml-parser": "^5.11.2"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6"
+  }
+}

@@ -11,7 +11,7 @@ async function main(): Promise<void> {
   // Sin host explícito: doble pila IPv4/IPv6 (`localhost` resuelve primero a ::1).
   await app.listen(config.port);
   const logger = new Logger('Bootstrap');
-  logger.log(`API escuchando en el puerto ${config.port} (prefijo /api/v1).`);
+  logger.log(`API escuchando en el puerto ${config.port} (prefijo /internal/web/v1).`);
   if (config.swaggerEnabled) logger.log(`Swagger: http://localhost:${config.port}/docs`);
 }
 

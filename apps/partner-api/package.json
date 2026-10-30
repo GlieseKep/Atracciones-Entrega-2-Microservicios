@@ -1,0 +1,22 @@
+{
+  "name": "@atracciones/partner-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Partner API: implementa el contrato atracciones-openapi-v2.yaml para Booking Prototipo (/api/v1 y /api/v2), validado contra el YAML.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "start": "node dist/main.js"
+  },
+  "dependencies": {
+    "@atracciones/contracts": "^1.0.0",
+    "@atracciones/platform": "1.0.0",
+    "express": "^5.2.1",
+    "express-openapi-validator": "^5.6.2",
+    "js-yaml": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/js-yaml": "^4.0.9"
+  }
+}

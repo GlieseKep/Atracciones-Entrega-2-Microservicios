@@ -1,0 +1,14 @@
+{
+  "files": [],
+  "references": [
+    { "path": "apps/api" },
+    { "path": "apps/auth" },
+    { "path": "apps/services" },
+    { "path": "apps/booking-mock" },
+    { "path": "apps/esb" },
+    { "path": "apps/partner-api" },
+    { "path": "apps/gateway" },
+    { "path": "apps/graphql" },
+    { "path": "apps/sri-mock" }
+  ]
+}

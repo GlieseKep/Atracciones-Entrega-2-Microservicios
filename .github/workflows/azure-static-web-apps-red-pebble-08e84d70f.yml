@@ -27,7 +27,7 @@ jobs:
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
         env:
-          # Se fijan al compilar (Vite). Origen del API sin /api/v1: el cliente agrega el prefijo.
+          # Se fijan al compilar (Vite). Origen del API sin /internal/web/v1: el cliente agrega el prefijo.
           VITE_API_URL: https://tourgirls-api-mms-hagtfccfdddceheu.westus2-01.azurewebsites.net
           VITE_AUTH_URL: https://tourgirls-auth-mms-akcxfugse5c6g6bd.westus2-01.azurewebsites.net
           VITE_CATALOG_SOURCE: auto

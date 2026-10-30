@@ -1,0 +1,450 @@
+openapi: 3.0.3
+info:
+  title: ms_refund · Refund Service (Descubre EC)
+  version: 1.0.0
+  description: >-
+    Contrato propio del microservicio **13 · Refund Service** (REST), derivado de la base `ms_refund`
+
+    (`Plan/02_microservicios_v2_bases_de_datos.sql`) y de `Plan/arquitectura_esb_v3.html`.
+
+
+    ## Alcance
+
+    Devuelve lo cobrado por una orden, sin superar el monto de Payment, y publica `ReembolsoEmitido`. El contrato v3
+    solo expone
+
+    `reembolso_id` y `monto_reembolsado` en la respuesta de la cancelación. La pasarela es simulada.
+
+
+    ## Errores
+
+    RFC 7807 (`application/problem+json`), con el esquema `ProblemDetails` del contrato v3.
+servers:
+  - url: /api/v3
+    description: Ruta canónica v3 detrás del API Gateway y el ESB
+  - url: 'http://localhost:4016/api/v3'
+    description: Desarrollo local
+security:
+  - BearerAuth: []
+tags:
+  - name: Reembolsos
+    description: 'Booking con `X-Service-Token`, o `ADMIN`.'
+  - name: Salud
+    description: Telemetría del nodo.
+paths:
+  /reembolsos:
+    post:
+      tags:
+        - Reembolsos
+      summary: Reembolsar una orden
+      description: 'Sin `monto`, devuelve todo el saldo. Repetir con la misma clave y datos devuelve el mismo reembolso con `200`.'
+      security:
+        - BearerAuth: []
+        - ServiceTokenAuth: []
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+        - $ref: '#/components/parameters/IdempotencyKeyHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReembolsoRequest'
+      responses:
+        '201':
+          description: Reembolso emitido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reembolso'
+        '400':
+          $ref: '#/components/responses/ProblemDetails400'
+        '401':
+          $ref: '#/components/responses/ProblemDetails401'
+        '403':
+          $ref: '#/components/responses/ProblemDetails403'
+        '409':
+          $ref: '#/components/responses/ProblemDetails409'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+        '503':
+          $ref: '#/components/responses/ProblemDetails503'
+    get:
+      tags:
+        - Reembolsos
+      summary: Listar reembolsos
+      security:
+        - BearerAuth: []
+        - ServiceTokenAuth: []
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+        - name: pag_id
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+            maximum: 50
+      responses:
+        '200':
+          description: 'Reembolsos, más recientes primero.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReembolsoPage'
+        '401':
+          $ref: '#/components/responses/ProblemDetails401'
+        '403':
+          $ref: '#/components/responses/ProblemDetails403'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+  '/reembolsos/{numero}':
+    get:
+      tags:
+        - Reembolsos
+      summary: Obtener un reembolso
+      security:
+        - BearerAuth: []
+        - ServiceTokenAuth: []
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+        - name: numero
+          in: path
+          required: true
+          description: '`rem_numero`, el `reembolso_id` del contrato.'
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Reembolso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reembolso'
+        '401':
+          $ref: '#/components/responses/ProblemDetails401'
+        '403':
+          $ref: '#/components/responses/ProblemDetails403'
+        '404':
+          $ref: '#/components/responses/ProblemDetails404'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+  /health:
+    get:
+      tags:
+        - Salud
+      summary: Salud del nodo ms_refund
+      security: []
+      responses:
+        '200':
+          description: Estado del nodo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NodeHealthResponse'
+        '503':
+          description: Nodo degradado o sin base de datos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NodeHealthResponse'
+components:
+  parameters:
+    XCorrelationIdHeader:
+      name: X-Correlation-Id
+      in: header
+      required: false
+      description: >
+        Identificador unívoco de trazabilidad distribuida (Semana 8 & Consideraciones RDA2).  
+
+        Se propaga de forma invariable entre peticiones HTTP, logs JSON estructurados, mensajes de RabbitMQ y streams
+        de Apache Kafka.
+      schema:
+        type: string
+      example: cid-8821a-9923
+    IdempotencyKeyHeader:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        format: uuid
+  schemas:
+    ReembolsoRequest:
+      type: object
+      required:
+        - ord_id
+      properties:
+        ord_id:
+          type: integer
+          format: int64
+        monto:
+          type: number
+          exclusiveMinimum: true
+          minimum: 0
+          description: 'Sin valor, todo el saldo.'
+        motivo:
+          type: string
+          maxLength: 300
+    Reembolso:
+      type: object
+      required:
+        - reembolso_id
+        - pag_id
+        - monto_reembolsado
+        - solicitado_en
+        - procesado_en
+      properties:
+        reembolso_id:
+          type: string
+        pag_id:
+          type: integer
+          format: int64
+        ord_id:
+          type: integer
+          format: int64
+        monto_reembolsado:
+          type: number
+        monto_acumulado:
+          type: number
+          description: Total devuelto de ese pago.
+        motivo:
+          type: string
+          nullable: true
+        referencia:
+          type: string
+          nullable: true
+        solicitado_en:
+          type: string
+          format: date-time
+        procesado_en:
+          type: string
+          format: date-time
+    ReembolsoPage:
+      type: object
+      required:
+        - data
+        - pagination
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Reembolso'
+        pagination:
+          $ref: '#/components/schemas/PaginationMetadata'
+    ReembolsoEmitido:
+      type: object
+      required:
+        - reembolso_id
+        - pag_id
+        - ord_id
+        - monto
+        - monto_acumulado
+      properties:
+        reembolso_id:
+          type: string
+        pag_id:
+          type: integer
+          format: int64
+        ord_id:
+          type: integer
+          format: int64
+        monto:
+          type: number
+        monto_acumulado:
+          type: number
+    PaginationMetadata:
+      type: object
+      required:
+        - total_results
+        - page
+        - limit
+        - total_pages
+      properties:
+        total_results:
+          type: integer
+          example: 32
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 10
+        total_pages:
+          type: integer
+          example: 4
+        next_cursor:
+          type: string
+          nullable: true
+          example: eyJvZmZzZXQiOjEwfQ==
+    NodeHealthResponse:
+      type: object
+      required:
+        - status
+        - node_id
+        - node_code
+        - version
+        - database_connected
+        - latency_ms
+        - timestamp
+      properties:
+        status:
+          type: string
+          enum:
+            - UP
+            - DEGRADED
+            - DOWN
+          example: UP
+        node_id:
+          type: string
+          example: node-dilan-atracciones-01
+        node_code:
+          type: string
+          example: DILAN_ATRACCIONES
+        url_base:
+          type: string
+          example: 'https://descubreec.com/api/v1'
+        version:
+          type: string
+          example: 2.0.0
+        database_connected:
+          type: boolean
+          example: true
+        latency_ms:
+          type: integer
+          description: Tiempo de respuesta del chequeo interno en milisegundos.
+          example: 18
+        memory_usage_mb:
+          type: number
+          example: 142.5
+        uptime_seconds:
+          type: integer
+          example: 86400
+        timestamp:
+          type: string
+          format: date-time
+          example: '2026-10-21T16:44:01Z'
+    ProblemDetails:
+      type: object
+      required:
+        - type
+        - title
+        - status
+        - detail
+      properties:
+        type:
+          type: string
+          description: URI que identifica el tipo de error bajo estándar RFC 7807.
+          example: 'https://booking.epn.edu.ec/errors/sin-cupos'
+        title:
+          type: string
+          description: Resumen corto y legible del problema.
+          example: Cupos Agotados para el Turno Horario
+        status:
+          type: integer
+          description: Código de estado HTTP correspondiente.
+          example: 409
+        detail:
+          type: string
+          description: Explicación detallada de la ocurrencia del error.
+          example: >-
+            No existen suficientes cupos disponibles en el turno seleccionado (10:30 a.m.). Cupos restantes: 1,
+            solicitados: 2.
+        instance:
+          type: string
+          description: URI de la solicitud que originó el error.
+          example: /api/v3/atracciones/reservas
+        code:
+          type: string
+          description: Código nemotécnico interno para evaluación en código.
+          example: OUT_OF_STOCK
+        correlation_id:
+          type: string
+          description: Identificador de correlación propagado para rastrear el fallo en los logs y spans de Jaeger.
+          example: cid-8821a
+        timestamp:
+          type: string
+          format: date-time
+          example: '2026-10-21T16:44:01Z'
+        invalid_params:
+          type: array
+          description: Lista de campos con error en caso de fallo de validación HTTP 400/422.
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                example: customer.phone
+              reason:
+                type: string
+                example: El formato debe ser internacional E.164 o número celular válido de Ecuador (09XXXXXXXX).
+  responses:
+    ProblemDetails400:
+      description: Datos inválidos (RFC 7807).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    ProblemDetails401:
+      description: No autenticado (RFC 7807).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    ProblemDetails403:
+      description: Se requiere el rol `ADMIN` (RFC 7807).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    ProblemDetails404:
+      description: '`REFUND_NOT_FOUND` (RFC 7807).'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    ProblemDetails409:
+      description: '`NO_APPROVED_PAYMENT`, `REFUND_EXCEEDS_BALANCE` o `IDEMPOTENCY_KEY_REUSED` (RFC 7807).'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    ProblemDetails500:
+      description: Error interno del servicio (RFC 7807).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    ProblemDetails503:
+      description: '`PAYMENT_UNAVAILABLE`: no se pudo consultar el monto cobrado (RFC 7807).'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        Token JWT emitido conforme al estándar RFC 7519 para autenticación de usuarios y consumo de microservicios
+        (RDA2 Semana 11).  
+
+        Se transmite en la cabecera `Authorization: Bearer <token>`.
+    ServiceTokenAuth:
+      type: apiKey
+      in: header
+      name: X-Service-Token
+      description: Secreto compartido por los componentes internos.

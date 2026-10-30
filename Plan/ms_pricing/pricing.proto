@@ -1,0 +1,119 @@
+// Contrato gRPC interno de ms_pricing (microservicio 6). Plan: Plan/ms_pricing/PLAN_IMPLEMENTACION.md
+// Base: Plan/ms_pricing/ms_pricing.sql y TarifaBaseDesglosada del contrato v3.
+// Las tarifas incluyen IVA. attraction_id es siempre atr_codigo, el id publico de 12 caracteres.
+syntax = "proto3";
+package descubre.pricing;
+
+service PricingService {
+  rpc Health (Empty) returns (NodeHealthResponse);
+
+  // Order: precio por tipo de boleto para la fecha de la actividad.
+  // FAILED_PRECONDITION (PRICE_NOT_AVAILABLE) si falta la tarifa de un tipo pedido.
+  rpc QuoteTickets (QuoteTicketsRequest) returns (Quote);
+  // Tabla vigente de una atraccion en una fecha.
+  rpc GetPriceTable (GetPriceTableRequest) returns (PriceTable);
+
+  // Administracion (rol ADMIN, u OPERADOR de la atraccion).
+  rpc ListTariffs (ListTariffsRequest) returns (TariffList);
+  // Guarda la tabla completa desde una fecha, en una sola transaccion.
+  // FAILED_PRECONDITION (TARIFF_OVERLAP) si ya hay una version posterior.
+  rpc SetPriceTable (SetPriceTableRequest) returns (PriceTable);
+}
+
+message Empty {}
+
+// Campos con los mismos nombres que NodeHealthResponse del contrato v3.
+message NodeHealthResponse {
+  string status = 1;              // UP | DEGRADED | DOWN
+  string node_id = 2;
+  string node_code = 3;
+  string version = 4;
+  bool database_connected = 5;
+  int32 latency_ms = 6;
+  double memory_usage_mb = 7;
+  int64 uptime_seconds = 8;
+  string timestamp = 9;
+}
+
+message TicketLine {
+  string ticket_type = 1;         // ADULT | CHILD | SENIOR | INFANT | STUDENT
+  int32 cantidad = 2;             // >= 1
+}
+
+message QuoteTicketsRequest {
+  string attraction_id = 1;
+  string date = 2;                // YYYY-MM-DD de la actividad
+  repeated TicketLine boletos = 3;
+}
+
+message QuoteLine {
+  string ticket_type = 1;
+  int32 cantidad = 2;
+  double unit_price = 3;
+  double subtotal = 4;
+  int64 tariff_id = 5;            // tar_id aplicado
+}
+
+message Quote {
+  string attraction_id = 1;
+  string date = 2;
+  string currency = 3;
+  repeated QuoteLine lines = 4;
+  double total = 5;               // antes de descuentos
+}
+
+message GetPriceTableRequest {
+  string attraction_id = 1;
+  string date = 2;                // YYYY-MM-DD; vacio = hoy
+}
+
+// TarifaBaseDesglosada del contrato v3.
+message PriceTable {
+  string attraction_id = 1;
+  string date = 2;
+  string currency = 3;
+  double adult = 4;
+  double child = 5;
+  double senior = 6;
+  double infant = 7;
+  optional double student = 8;
+}
+
+message Tariff {
+  int64 tariff_id = 1;
+  string attraction_id = 2;
+  string ticket_type = 3;
+  double price = 4;
+  string currency = 5;
+  string valid_from = 6;
+  string valid_to = 7;            // vacio = sin fin
+  bool current = 8;               // vigente hoy
+}
+
+message ListTariffsRequest {
+  string attraction_id = 1;
+  bool include_history = 2;       // false = vigentes y futuras
+}
+
+message TariffList {
+  repeated Tariff items = 1;
+}
+
+message SetPriceTableRequest {
+  string attraction_id = 1;
+  string valid_from = 2;          // YYYY-MM-DD, hoy o posterior; vacio = hoy
+  double adult = 3;               // > 0
+  double child = 4;               // >= 0
+  double senior = 5;              // >= 0
+  optional double student = 6;    // sin valor = sin tarifa de estudiante
+}
+
+// Evento TARIFA_ACTUALIZADA (RabbitMQ, JSON con estos nombres). No es un RPC.
+message TariffUpdatedEvent {
+  string event_id = 1;
+  string event_type = 2;          // TARIFA_ACTUALIZADA
+  string correlation_id = 3;
+  string timestamp = 4;
+  string attraction_id = 5;
+  PriceTable current_prices = 6;  // tabla vigente hoy
+}

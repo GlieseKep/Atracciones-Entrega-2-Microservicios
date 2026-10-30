@@ -1,0 +1,7 @@
+# Reglas estándar de OpenAPI para validar el contrato v2 (npm run contract:lint).
+# El contrato está congelado: el lint sirve para detectar daños en el archivo, no para cambiarlo.
+extends: ["spectral:oas"]
+rules:
+  # El contrato pone `description` junto a `$ref` en los alias en español (precio, calificacion, inclusiones…).
+  # En OpenAPI 3.0 esa descripción se ignora; no afecta la validación ni las respuestas.
+  no-$ref-siblings: warn

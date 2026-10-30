@@ -1,0 +1,202 @@
+// ============================================================================
+//  ms_pricing · Pricing Service (gRPC) · Descubre EC
+//  Contrato propio del microservicio 6, derivado de
+//  Plan/PlanBooking/atracciones-openapi-v3(1).yaml (v3.0.0) y de la base
+//  ms_pricing (Plan/02_microservicios_v2_bases_de_datos.sql, tabla tarifa).
+// ============================================================================
+//
+//  ALCANCE
+//  - Tarifas versionadas por atraccion y tipo de boleto. Los tipos son los
+//    del contrato v3 (TarifaBaseDesglosada / PassengerItem.ticket_type):
+//    ADULT, CHILD, SENIOR, INFANT (precio 0 pero ocupa cupo), STUDENT.
+//  - Una tarifa vigente = la fila con tar_vigente_desde <= fecha y
+//    (tar_vigente_hasta IS NULL OR tar_vigente_hasta >= fecha).
+//  - El precio NO se recalcula al vuelo en la orden: Order guarda el
+//    unit_price devuelto por QuoteTickets en orden_detalle (snapshot).
+//
+//  QUIEN LO LLAMA (siempre por el ESB, gRPC sobre HTTP/2)
+//  - Order Management: QuoteTickets al crear la orden.
+//  - Catalog: GetPriceTables para "Desde US$ XX por adulto" (search) y
+//    GetPriceTable para la ficha (price / precio de AtraccionDetailResponseV2).
+//  - Inventory: GetPriceTable para price_adult / price_child de TimeSlotItem.
+//  - Administracion (via ESB, adaptador REST -> gRPC): ListTariffs,
+//    SetTariff, CloseTariff.
+//
+//  METADATA gRPC
+//  - x-correlation-id: obligatorio para trazabilidad (se propaga sin cambios).
+//  - authorization:    "Bearer <token de servicio emitido por el ESB>".
+//
+//  ERRORES (status gRPC -> HTTP que expone el ESB, RFC 7807)
+//  - INVALID_ARGUMENT    -> 400  (fecha mal formada, tipo de boleto invalido)
+//  - FAILED_PRECONDITION -> 422  (PRICE_NOT_AVAILABLE: no hay tarifa vigente
+//                                 para un tipo de boleto pedido; TARIFF_OVERLAP)
+//  - NOT_FOUND           -> 404  (TARIFF_NOT_FOUND)
+//  - UNAUTHENTICATED     -> 401,  PERMISSION_DENIED -> 403,  INTERNAL -> 500
+//  El codigo de negocio va en la metadata de error "x-error-code".
+//
+//  EVENTO PUBLICADO EN EL BUS
+//  - TARIFA_ACTUALIZADA (TariffUpdatedEvent, CloudEvents v1.0, JSON con los
+//    mismos nombres de campo). Lo consume Catalog para el precio "desde" de
+//    la busqueda y los read models.
+// ============================================================================
+syntax = "proto3";
+package atracciones.pricing;
+
+service PricingService {
+  rpc Health (Empty) returns (HealthReply);
+
+  // Tabla de precios vigente de una atraccion en una fecha (TarifaBaseDesglosada).
+  rpc GetPriceTable (GetPriceTableRequest) returns (PriceTable);
+  // Lo mismo para varias atracciones a la vez (listados y busqueda; evita N+1).
+  rpc GetPriceTables (GetPriceTablesRequest) returns (PriceTableList);
+  // Cotiza boletos por tipo para una fecha: precio unitario, subtotales y total.
+  // FAILED_PRECONDITION (PRICE_NOT_AVAILABLE) si falta la tarifa de un tipo pedido.
+  rpc QuoteTickets (QuoteTicketsRequest) returns (Quote);
+
+  // Administracion de tarifas.
+  rpc ListTariffs (ListTariffsRequest) returns (TariffList);
+  // Guarda la tabla completa de una atraccion desde una fecha, en una sola
+  // transaccion (una version nueva por tipo). Exige ADULT > 0, CHILD, SENIOR e
+  // INFANT, porque TarifaBaseDesglosada del contrato v3 los pide siempre;
+  // STUDENT es opcional. INVALID_ARGUMENT (TARIFF_INCOMPLETE) si falta alguno.
+  rpc SetPriceTable (SetPriceTableRequest) returns (PriceTable);
+  // Crea una nueva version: cierra la vigente del mismo tipo el dia anterior a
+  // valid_from. FAILED_PRECONDITION (TARIFF_OVERLAP) si choca con una version futura.
+  rpc SetTariff (SetTariffRequest) returns (Tariff);
+  // Termina la vigencia de una tarifa (tar_vigente_hasta).
+  rpc CloseTariff (CloseTariffRequest) returns (Tariff);
+}
+
+message Empty {}
+
+message HealthReply {
+  string status = 1;              // UP | DEGRADED | DOWN
+  string service = 2;             // "pricing"
+  bool database_connected = 3;
+  int32 latency_ms = 4;
+  double memory_usage_mb = 5;
+  int64 uptime_seconds = 6;
+  string timestamp = 7;           // ISO 8601 UTC
+}
+
+// ---------------------------------------------------------------------------
+// Consulta de precios
+// ---------------------------------------------------------------------------
+
+message GetPriceTableRequest {
+  string attraction_id = 1;       // codigo publico de 12 caracteres (Catalog)
+  string date = 2;                // YYYY-MM-DD; vacio = hoy (zona del negocio)
+}
+
+message GetPriceTablesRequest {
+  repeated string attraction_ids = 1;  // maximo 100
+  string date = 2;                    // YYYY-MM-DD; vacio = hoy
+}
+
+// Equivale a TarifaBaseDesglosada del contrato v3. Un tipo sin tarifa vigente
+// llega sin valor (has_<tipo> = false), no como 0, para no confundirlo con INFANT.
+message PriceTable {
+  string attraction_id = 1;
+  string date = 2;
+  string currency = 3;            // "USD"
+  optional double adult = 4;
+  optional double child = 5;
+  optional double senior = 6;
+  optional double infant = 7;
+  optional double student = 8;
+  // Precio "desde" para listados: la tarifa ADULT (o la menor > 0 si no hay ADULT).
+  optional double from_price = 9;
+}
+
+message PriceTableList {
+  repeated PriceTable items = 1;  // solo las atracciones con al menos una tarifa vigente
+}
+
+message QuoteTicketsRequest {
+  string attraction_id = 1;
+  string date = 2;                // YYYY-MM-DD del turno
+  int32 adult_count = 3;          // >= 1 (como CreateReservaRequestV3)
+  int32 child_count = 4;
+  int32 senior_count = 5;
+  int32 student_count = 6;
+  int32 infant_count = 7;
+}
+
+message QuoteLine {
+  string ticket_type = 1;         // ADULT | CHILD | SENIOR | INFANT | STUDENT
+  int32 quantity = 2;
+  double unit_price = 3;
+  double subtotal = 4;            // quantity * unit_price
+  int64 tariff_id = 5;            // tar_id aplicado (trazabilidad del snapshot)
+}
+
+message Quote {
+  string attraction_id = 1;
+  string date = 2;
+  string currency = 3;
+  repeated QuoteLine lines = 4;   // solo tipos con quantity > 0
+  int32 ticket_count = 5;
+  double total = 6;               // suma de subtotales, antes de descuentos e IVA
+}
+
+// ---------------------------------------------------------------------------
+// Administracion de tarifas
+// ---------------------------------------------------------------------------
+
+message Tariff {
+  int64 tariff_id = 1;            // tar_id
+  string attraction_id = 2;
+  string ticket_type = 3;         // ADULT | CHILD | SENIOR | INFANT | STUDENT
+  double price = 4;               // >= 0
+  string currency = 5;
+  string valid_from = 6;          // YYYY-MM-DD
+  string valid_to = 7;            // YYYY-MM-DD; vacio = vigente sin fin
+  bool current = 8;               // vigente hoy
+}
+
+message ListTariffsRequest {
+  string attraction_id = 1;
+  bool include_history = 2;       // false = solo vigentes y futuras
+}
+
+message TariffList {
+  repeated Tariff items = 1;
+}
+
+message SetTariffRequest {
+  string attraction_id = 1;
+  string ticket_type = 2;
+  double price = 3;
+  string currency = 4;            // vacio = "USD"
+  string valid_from = 5;          // vacio = hoy
+  string valid_to = 6;            // vacio = sin fin
+}
+
+message SetPriceTableRequest {
+  string attraction_id = 1;
+  string currency = 2;            // vacio = "USD"
+  string valid_from = 3;          // vacio = hoy
+  double adult = 4;               // > 0
+  double child = 5;               // >= 0
+  double senior = 6;              // >= 0
+  double infant = 7;              // >= 0 (normalmente 0)
+  optional double student = 8;    // sin valor = sin tarifa de estudiante
+}
+
+message CloseTariffRequest {
+  int64 tariff_id = 1;
+  string valid_to = 2;            // YYYY-MM-DD, >= valid_from de la tarifa
+}
+
+// ---------------------------------------------------------------------------
+// Evento publicado en el bus (no es un RPC): TARIFA_ACTUALIZADA
+// ---------------------------------------------------------------------------
+
+message TariffUpdatedEvent {
+  string event_id = 1;            // UUID (CloudEvents id)
+  string event_type = 2;          // "TARIFA_ACTUALIZADA"
+  string correlation_id = 3;
+  string timestamp = 4;           // ISO 8601 UTC
+  string attraction_id = 5;        // clave de particion del topic
+  PriceTable current_prices = 6;  // tabla vigente hoy tras el cambio
+}

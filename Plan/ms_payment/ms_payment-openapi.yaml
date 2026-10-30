@@ -1,0 +1,773 @@
+openapi: 3.0.3
+info:
+  title: ms_payment · Payment Service (Descubre EC)
+  version: 1.0.0
+  description: >-
+    Contrato propio del microservicio **12 · Payment Service** (REST), derivado de la base `ms_payment`
+
+    (`Plan/02_microservicios_v2_bases_de_datos.sql`), de `Plan/arquitectura_esb_v3.html` y del contrato
+
+    `Plan/PlanBooking/atracciones-openapi-v3(1).yaml`.
+
+
+    ## Alcance
+
+    Registro de pagos y resultado del cobro. La pasarela es **simulada**: no hay conexión con ninguna pasarela real.
+    `GET` de pagos para Refund, Order y administración.
+
+
+    ## Flujo
+
+    1. Order registra el pago con `POST /pagos`.
+
+    2. La pasarela simulada informa el resultado por webhook; Payment responde `202` y lo procesa desde una cola.
+
+    3. Payment publica `PagoAprobado` o `PagoRechazado`, que consumen Order, Booking e Invoicing.
+
+
+    El canal B2B no pasa por pasarela: Booking Prototipo ya cobró al cliente.
+
+
+    ## Errores
+
+    RFC 7807 (`application/problem+json`), con el esquema `ProblemDetails` del contrato v3.
+servers:
+  - url: /api/v3
+    description: Ruta canónica v3 detrás del API Gateway y el ESB
+  - url: 'http://localhost:4020/api/v3'
+    description: Desarrollo local
+security:
+  - BearerAuth: []
+tags:
+  - name: Pagos
+    description: Registro y consulta.
+  - name: Pasarelas
+    description: Webhook de la pasarela simulada.
+  - name: Transferencias
+    description: Comprobante y verificación.
+  - name: Catálogos
+    description: Métodos de pago.
+  - name: Salud
+    description: Telemetría del nodo.
+paths:
+  /metodos-pago:
+    get:
+      tags:
+        - Catálogos
+      summary: Métodos de pago activos
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+      responses:
+        '200':
+          description: Métodos.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MetodoPago'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+  /pagos:
+    post:
+      tags:
+        - Pagos
+      summary: Registrar el pago de una orden
+      description: 'Lo llama Order. Idempotente por `numero`: repetirlo devuelve el pago guardado con `200`.'
+      security:
+        - ServiceTokenAuth: []
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PagoRequest'
+      responses:
+        '201':
+          description: Pago registrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pago'
+        '400':
+          $ref: '#/components/responses/ProblemDetails400'
+        '401':
+          $ref: '#/components/responses/ProblemDetails401'
+        '409':
+          $ref: '#/components/responses/ProblemDetails409'
+        '422':
+          $ref: '#/components/responses/ProblemDetails422'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+    get:
+      tags:
+        - Pagos
+      summary: Listar pagos
+      description: Rol ADMIN.
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+        - name: estado
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/EstadoPago'
+        - name: metodo
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/MetodoCodigo'
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Página de pagos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagoPage'
+        '400':
+          $ref: '#/components/responses/ProblemDetails400'
+        '401':
+          $ref: '#/components/responses/ProblemDetails401'
+        '403':
+          $ref: '#/components/responses/ProblemDetails403'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+  '/pagos/{id}':
+    get:
+      tags:
+        - Pagos
+      summary: Obtener un pago
+      security:
+        - BearerAuth: []
+        - ServiceTokenAuth: []
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+        - name: id
+          in: path
+          required: true
+          description: '`pago.pag_id`.'
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Pago.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pago'
+        '401':
+          $ref: '#/components/responses/ProblemDetails401'
+        '403':
+          $ref: '#/components/responses/ProblemDetails403'
+        '404':
+          $ref: '#/components/responses/ProblemDetails404'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+  '/pagos/{id}/cancelacion':
+    post:
+      tags:
+        - Pagos
+      summary: Cancelar un pago pendiente
+      description: >-
+        Compensación de la saga: un pago `PENDIENTE` pasa a `FALLIDO`. Un pago `APROBADO` no se cancela aquí: se
+        devuelve con Refund (`409 PAYMENT_ALREADY_APPROVED`).
+      security:
+        - ServiceTokenAuth: []
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+        - name: id
+          in: path
+          required: true
+          description: '`pago.pag_id`.'
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Pago cancelado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pago'
+        '401':
+          $ref: '#/components/responses/ProblemDetails401'
+        '404':
+          $ref: '#/components/responses/ProblemDetails404'
+        '409':
+          $ref: '#/components/responses/ProblemDetails409'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+  '/pagos/orden/{ord_id}':
+    get:
+      tags:
+        - Pagos
+      summary: Pagos de una orden
+      security:
+        - ServiceTokenAuth: []
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+        - name: ord_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 'Pagos, más recientes primero.'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pago'
+        '401':
+          $ref: '#/components/responses/ProblemDetails401'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+  '/webhooks/{pasarela}':
+    post:
+      tags:
+        - Pasarelas
+      summary: Resultado de la pasarela simulada
+      description: 'Valida la firma, encola y responde `202`. El procesamiento es idempotente: un pago en estado final no cambia.'
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+        - name: pasarela
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - simulada
+        - name: X-Signature
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              description: 'Resultado del cobro simulado: `numero`, resultado, referencia y autorización.'
+      responses:
+        '202':
+          description: Recibido.
+        '400':
+          $ref: '#/components/responses/ProblemDetails400'
+        '401':
+          $ref: '#/components/responses/ProblemDetails401'
+        '503':
+          $ref: '#/components/responses/ProblemDetails503'
+  '/pagos/{id}/transferencia':
+    post:
+      tags:
+        - Transferencias
+      summary: Enviar el comprobante de una transferencia
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+        - name: id
+          in: path
+          required: true
+          description: '`pago.pag_id`.'
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferenciaRequest'
+      responses:
+        '200':
+          description: Comprobante registrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pago'
+        '400':
+          $ref: '#/components/responses/ProblemDetails400'
+        '401':
+          $ref: '#/components/responses/ProblemDetails401'
+        '403':
+          $ref: '#/components/responses/ProblemDetails403'
+        '404':
+          $ref: '#/components/responses/ProblemDetails404'
+        '409':
+          $ref: '#/components/responses/ProblemDetails409'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+  '/pagos/{id}/verificacion':
+    put:
+      tags:
+        - Transferencias
+      summary: Aprobar o rechazar una transferencia
+      description: Rol ADMIN. Publica `PagoAprobado` o `PagoRechazado`.
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+        - name: id
+          in: path
+          required: true
+          description: '`pago.pag_id`.'
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - aprobado
+              properties:
+                aprobado:
+                  type: boolean
+                motivo:
+                  type: string
+                  maxLength: 300
+      responses:
+        '200':
+          description: Pago actualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pago'
+        '400':
+          $ref: '#/components/responses/ProblemDetails400'
+        '401':
+          $ref: '#/components/responses/ProblemDetails401'
+        '403':
+          $ref: '#/components/responses/ProblemDetails403'
+        '404':
+          $ref: '#/components/responses/ProblemDetails404'
+        '409':
+          $ref: '#/components/responses/ProblemDetails409'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+  /health:
+    get:
+      tags:
+        - Salud
+      summary: Salud del nodo ms_payment
+      security: []
+      responses:
+        '200':
+          description: Estado del nodo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NodeHealthResponse'
+        '503':
+          description: Nodo degradado o sin base de datos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NodeHealthResponse'
+components:
+  parameters:
+    XCorrelationIdHeader:
+      name: X-Correlation-Id
+      in: header
+      required: false
+      description: >
+        Identificador unívoco de trazabilidad distribuida (Semana 8 & Consideraciones RDA2).  
+
+        Se propaga de forma invariable entre peticiones HTTP, logs JSON estructurados, mensajes de RabbitMQ y streams
+        de Apache Kafka.
+      schema:
+        type: string
+      example: cid-8821a-9923
+  schemas:
+    MetodoCodigo:
+      type: string
+      enum:
+        - CREDIT_CARD
+        - DEBIT_CARD
+        - PAYPAL
+        - TRANSFER
+      description: '`payment_method.method` del contrato v3.'
+    EstadoPago:
+      type: string
+      enum:
+        - PENDIENTE
+        - APROBADO
+        - RECHAZADO
+        - FALLIDO
+    MetodoPago:
+      type: object
+      required:
+        - id
+        - codigo
+        - nombre
+        - requiere_datos
+      properties:
+        id:
+          type: integer
+        codigo:
+          $ref: '#/components/schemas/MetodoCodigo'
+        nombre:
+          type: string
+        requiere_datos:
+          type: boolean
+    PagoRequest:
+      type: object
+      required:
+        - numero
+        - ord_id
+        - metodo
+        - monto
+        - canal
+      properties:
+        numero:
+          type: string
+          maxLength: 30
+          description: '`pag_numero`: lo genera Order y sirve de clave de idempotencia.'
+          example: PAG-ORD-DILAN-8721-1
+        ord_id:
+          type: integer
+          format: int64
+        metodo:
+          $ref: '#/components/schemas/MetodoCodigo'
+        monto:
+          type: number
+          exclusiveMinimum: true
+          minimum: 0
+        moneda:
+          type: string
+          default: USD
+          description: Moneda de la orden; va a la pasarela simulada y no se guarda.
+        canal:
+          type: string
+          enum:
+            - WEB
+            - B2B
+          description: '`B2B`: Booking Prototipo ya cobró; el pago queda `APROBADO` sin pasarela.'
+        tarjeta:
+          $ref: '#/components/schemas/TarjetaRequest'
+    TarjetaRequest:
+      type: object
+      required:
+        - marca
+        - ultimos4
+        - titular
+        - mes
+        - anio
+        - pais
+      properties:
+        marca:
+          type: string
+          enum:
+            - VISA
+            - MASTERCARD
+            - AMEX
+        ultimos4:
+          type: string
+          pattern: '^[0-9]{4}$'
+        titular:
+          type: string
+          maxLength: 120
+        mes:
+          type: integer
+          minimum: 1
+          maximum: 12
+        anio:
+          type: integer
+          minimum: 2020
+          maximum: 2100
+        pais:
+          type: string
+          minLength: 2
+          maxLength: 2
+      description: >-
+        Obligatorio con `CREDIT_CARD` o `DEBIT_CARD` en el canal `WEB`. Nunca el número completo ni el CVV (PCI-DSS).
+        `ultimos4 = 0000` simula un rechazo.
+    TransferenciaRequest:
+      type: object
+      required:
+        - banco
+        - numero_comprobante
+        - fecha_transferencia
+      properties:
+        banco:
+          type: string
+          maxLength: 60
+        numero_comprobante:
+          type: string
+          maxLength: 40
+        fecha_transferencia:
+          type: string
+          format: date
+        archivo_adjunto:
+          type: string
+          maxLength: 500
+          nullable: true
+    Pago:
+      type: object
+      required:
+        - id
+        - numero
+        - ord_id
+        - metodo
+        - estado
+        - monto
+        - fecha
+      properties:
+        id:
+          type: integer
+          format: int64
+        numero:
+          type: string
+        ord_id:
+          type: integer
+          format: int64
+        metodo:
+          $ref: '#/components/schemas/MetodoCodigo'
+        estado:
+          $ref: '#/components/schemas/EstadoPago'
+        monto:
+          type: number
+        referencia:
+          type: string
+          nullable: true
+        autorizacion:
+          type: string
+          nullable: true
+        motivo_rechazo:
+          type: string
+          nullable: true
+        fecha:
+          type: string
+          format: date-time
+        aprobado_en:
+          type: string
+          format: date-time
+          nullable: true
+        rechazado_en:
+          type: string
+          format: date-time
+          nullable: true
+    PagoPage:
+      type: object
+      required:
+        - metadata
+        - data
+      properties:
+        metadata:
+          $ref: '#/components/schemas/PaginationMetadata'
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Pago'
+    PaginationMetadata:
+      type: object
+      required:
+        - total_results
+        - page
+        - limit
+        - total_pages
+      properties:
+        total_results:
+          type: integer
+          example: 32
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 10
+        total_pages:
+          type: integer
+          example: 4
+        next_cursor:
+          type: string
+          nullable: true
+          example: eyJvZmZzZXQiOjEwfQ==
+    NodeHealthResponse:
+      type: object
+      required:
+        - status
+        - node_id
+        - node_code
+        - version
+        - database_connected
+        - latency_ms
+        - timestamp
+      properties:
+        status:
+          type: string
+          enum:
+            - UP
+            - DEGRADED
+            - DOWN
+          example: UP
+        node_id:
+          type: string
+          example: node-dilan-atracciones-01
+        node_code:
+          type: string
+          example: DILAN_ATRACCIONES
+        url_base:
+          type: string
+          example: 'https://descubreec.com/api/v1'
+        version:
+          type: string
+          example: 2.0.0
+        database_connected:
+          type: boolean
+          example: true
+        latency_ms:
+          type: integer
+          description: Tiempo de respuesta del chequeo interno en milisegundos.
+          example: 18
+        memory_usage_mb:
+          type: number
+          example: 142.5
+        uptime_seconds:
+          type: integer
+          example: 86400
+        timestamp:
+          type: string
+          format: date-time
+          example: '2026-10-21T16:44:01Z'
+    ProblemDetails:
+      type: object
+      required:
+        - type
+        - title
+        - status
+        - detail
+      properties:
+        type:
+          type: string
+          description: URI que identifica el tipo de error bajo estándar RFC 7807.
+          example: 'https://booking.epn.edu.ec/errors/sin-cupos'
+        title:
+          type: string
+          description: Resumen corto y legible del problema.
+          example: Cupos Agotados para el Turno Horario
+        status:
+          type: integer
+          description: Código de estado HTTP correspondiente.
+          example: 409
+        detail:
+          type: string
+          description: Explicación detallada de la ocurrencia del error.
+          example: >-
+            No existen suficientes cupos disponibles en el turno seleccionado (10:30 a.m.). Cupos restantes: 1,
+            solicitados: 2.
+        instance:
+          type: string
+          description: URI de la solicitud que originó el error.
+          example: /api/v3/atracciones/reservas
+        code:
+          type: string
+          description: Código nemotécnico interno para evaluación en código.
+          example: OUT_OF_STOCK
+        correlation_id:
+          type: string
+          description: Identificador de correlación propagado para rastrear el fallo en los logs y spans de Jaeger.
+          example: cid-8821a
+        timestamp:
+          type: string
+          format: date-time
+          example: '2026-10-21T16:44:01Z'
+        invalid_params:
+          type: array
+          description: Lista de campos con error en caso de fallo de validación HTTP 400/422.
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                example: customer.phone
+              reason:
+                type: string
+                example: El formato debe ser internacional E.164 o número celular válido de Ecuador (09XXXXXXXX).
+  responses:
+    ProblemDetails400:
+      description: Parámetros inválidos (RFC 7807).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    ProblemDetails401:
+      description: No autenticado o firma inválida (RFC 7807).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    ProblemDetails403:
+      description: Sin permiso (RFC 7807).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    ProblemDetails404:
+      description: '`PAYMENT_NOT_FOUND` (RFC 7807).'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    ProblemDetails409:
+      description: '`PAYMENT_ALREADY_APPROVED` o estado incompatible con la operación (RFC 7807).'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    ProblemDetails422:
+      description: '`PAYMENT_METHOD_UNAVAILABLE` o faltan los datos de la tarjeta (RFC 7807).'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    ProblemDetails500:
+      description: Error interno del servicio (RFC 7807).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    ProblemDetails503:
+      description: 'La cola no está disponible: la pasarela debe reintentar (RFC 7807).'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        Token JWT emitido conforme al estándar RFC 7519 para autenticación de usuarios y consumo de microservicios
+        (RDA2 Semana 11).  
+
+        Se transmite en la cabecera `Authorization: Bearer <token>`.
+    ServiceTokenAuth:
+      type: apiKey
+      in: header
+      name: X-Service-Token
+      description: 'Secreto compartido por los componentes internos (Order, Refund).'

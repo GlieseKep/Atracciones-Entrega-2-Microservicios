@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Microservicios: tablas</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #172033;
+    --muted: #5b6475;
+    --line: #8a93a3;
+    --box-bg: #ffffff;
+    --rest: #1f6fd1;      --rest-bg: #eaf2fc;
+    --grpc: #0f8a68;      --grpc-bg: #e4f5ef;
+    --soap: #b8640b;      --soap-bg: #fdf1e3;
+    --note-bg: #f6f7f9;   --note-border: #dde1e7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #12161d; --fg: #e6e9ef; --muted: #9aa3b2; --line: #6b7483; --box-bg: #1b212b;
+      --rest: #6aa8f2; --rest-bg: #18263a;
+      --grpc: #4cc79f; --grpc-bg: #142c25;
+      --soap: #f0a354; --soap-bg: #2e2215;
+      --note-bg: #181d25; --note-border: #2b323d;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #12161d; --fg: #e6e9ef; --muted: #9aa3b2; --line: #6b7483; --box-bg: #1b212b;
+    --rest: #6aa8f2; --rest-bg: #18263a;
+    --grpc: #4cc79f; --grpc-bg: #142c25;
+    --soap: #f0a354; --soap-bg: #2e2215;
+    --note-bg: #181d25; --note-border: #2b323d;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 1500px; margin: 0 auto; padding: 24px 16px 40px; }
+  h1 { font-size: 28px; margin: 0 0 6px; }
+  .sub { color: var(--muted); margin: 0 0 18px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px 26px; align-items: center; margin-bottom: 22px; font-size: 14px; }
+  .legend span { display: inline-flex; align-items: center; gap: 8px; }
+  .sw { width: 26px; height: 18px; border-radius: 4px; border: 2px solid; display: inline-block; }
+  .sw.rest { border-color: var(--rest); background: var(--rest-bg); }
+  .sw.grpc { border-color: var(--grpc); background: var(--grpc-bg); }
+  .sw.soap { border-color: var(--soap); background: var(--soap-bg); }
+  .sw.bridge { border: 2px dashed var(--muted); background: transparent; }
+  .rel { font: 600 12px ui-monospace, Consolas, monospace; color: var(--muted); }
+
+  .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }
+  .card { border: 2px solid; border-radius: 10px; padding: 14px 16px 12px; min-width: 0; display: flex; flex-direction: column; }
+  .card.rest { border-color: var(--rest); background: var(--rest-bg); --c: var(--rest); }
+  .card.grpc { border-color: var(--grpc); background: var(--grpc-bg); --c: var(--grpc); }
+  .card.soap { border-color: var(--soap); background: var(--soap-bg); --c: var(--soap); }
+  .card h2 { font-size: 17px; margin: 0 0 8px; }
+  .badge { display: inline-block; background: var(--c); color: var(--bg); font-weight: 700; font-size: 12px;
+           letter-spacing: .04em; padding: 3px 14px; border-radius: 999px; margin-right: 6px; }
+  .tag { display: inline-block; font-size: 12px; color: var(--c); border: 1px solid var(--c); padding: 2px 9px; border-radius: 999px; }
+  .card svg { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
+  .ext { font-size: 12.5px; color: var(--muted); font-style: italic; margin: auto 0 0; padding-top: 4px; }
+  .ext b { font-style: normal; color: var(--fg); font-weight: 600; }
+  .fn { font-size: 13.5px; margin: 8px 0 0; }
+  .card { grid-column: span var(--span, 4); }
+  @media (max-width: 1100px) {
+    .card { grid-column: span 6; }
+    .card.wide { grid-column: span 12; }
+  }
+  @media (max-width: 700px) {
+    .grid > * { grid-column: span 12 !important; }
+  }
+
+  svg text { font-family: ui-monospace, Consolas, "Courier New", monospace; }
+  .tbl rect { fill: var(--box-bg); stroke: var(--c); stroke-width: 1.6; }
+  .tbl.bridge rect { stroke-dasharray: 5 4; }
+  .tbl text { fill: var(--fg); font-size: 12.5px; }
+  .edge { stroke: var(--line); stroke-width: 1.4; fill: none; }
+  .card-lbl { fill: var(--c); font-size: 11.5px; font-weight: 700; font-family: system-ui, sans-serif !important; }
+
+  .notes { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 18px; }
+  @media (max-width: 900px) { .notes { grid-template-columns: 1fr; } }
+  .note { background: var(--note-bg); border: 1px solid var(--note-border); border-radius: 10px; padding: 14px 18px; font-size: 14px; }
+  .note h3 { margin: 0 0 8px; font-size: 15px; }
+  .note ul { margin: 0; padding-left: 18px; }
+  .note li { margin: 3px 0; }
+  code { font-family: ui-monospace, Consolas, monospace; font-size: .92em; }
+  footer { color: var(--muted); font-size: 13px; margin-top: 16px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Microservicios: tablas y relaciones</h1>
+  <p class="sub">División de <code>Script Base de dats.txt</code> (v1.2, revisado a 3FN) en 16 microservicios, uno por funcionalidad específica. Cada servicio tiene su propia base de datos; las relaciones entre servicios son IDs lógicos sin FK.</p>
+
+  <div class="legend">
+    <span><i class="sw rest"></i>REST</span>
+    <span><i class="sw grpc"></i>gRPC</span>
+    <span><i class="sw soap"></i>SOAP (SOA)</span>
+    <span><span class="rel">1 ——— N</span>relación (cardinalidad)</span>
+    <span><i class="sw bridge"></i>tabla intermedia (N:M)</span>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="notes">
+    <div class="note">
+      <h3>Cambios respecto a microservicios_tablas.png</h3>
+      <ul>
+        <li><b>Un servicio por funcionalidad:</b> de los 9 servicios de la imagen salen 16. Se separan en servicios propios Geografía (Location), Reseñas (Review), Tarifas (Pricing), Cupones (Coupon), Reembolsos (Refund), Datos de facturación (Billing Profile), Soporte (Support) y Auditoría (Audit).</li>
+        <li><b>Sin tabla <code>foto</code>:</b> <code>atraccion_foto</code> es 1:N directa con <code>atraccion</code>, como en el script.</li>
+        <li><b><code>estado</code> dividido:</b> Order, Booking, Payment e Invoicing tienen cada uno su propia tabla <code>estado</code>, solo con los estados de su grupo. Ya no hace falta <code>est_grupo</code>.</li>
+        <li><b>Tablas del script que no estaban en la imagen:</b> <code>operador_usuario</code>, <code>atraccion_categoria</code>, <code>atraccion_idioma</code> y <code>atraccion_inclusion</code>, que están en Catalog.</li>
+        <li><b><code>idempotencia</code></b> se relaciona con el usuario (Identity), no con <code>orden</code>, porque así está en el script.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h3>Qué cambia al separar las bases de datos</h3>
+      <ul>
+        <li><b>Las FK entre servicios pasan a ser IDs lógicos</b> que se validan por API o por eventos. Ejemplo: <code>carrito_item (dis_id, atr_id)</code> ya no tiene FK compuesta hacia <code>disponibilidad</code>.</li>
+        <li><b>Se mantiene interna:</b> la FK compuesta <code>disponibilidad (hor_id, atr_id) → horario</code> (Inventory).</li>
+        <li><b>Triggers que ahora cruzan servicios:</b>
+          <ul>
+            <li><code>trg_resena_calificacion</code> se reemplaza por un evento <code>RESENA_PUBLICADA</code> de Review; Catalog lo consume y actualiza el promedio de la atracción.</li>
+            <li><code>trg_reembolso_no_excede</code> pasa a ser una validación de Refund: consulta a Payment el monto cobrado antes de procesar el reembolso.</li>
+          </ul>
+        </li>
+        <li><b>Moneda del pago y del reembolso:</b> se obtiene de la orden, que vive en Order, así que Payment y Refund deben consultarla.</li>
+        <li><b>Precios en un servicio propio (Pricing):</b> Order lo consulta al crear la orden, y Catalog recibe los precios por eventos para la búsqueda.</li>
+        <li><b>Vistas:</b> <code>v_atraccion_completa</code> queda en Catalog y <code>v_usuario_roles</code> en Identity. <code>v_orden_financiero</code> (Order) ya no puede unirse con <code>usuario</code>; debe usar <code>usu_id</code>.</li>
+      </ul>
+    </div>
+  </div>
+  <footer>46 tablas, con <code>estado</code> repartida en 4 copias.</footer>
+</main>
+
+<script>
+const SERVICES = [
+  // Fila 1 · Usuarios y ubicación
+  {
+    n: 1, name: 'Identity & Access Service', proto: 'rest', span: 5, w: 570, h: 280,
+    fn: 'Registro, inicio de sesión, verificación de correo y roles.',
+    nodes: { rol: [80, 50], usuario_rol: [300, 50, 'b'], usuario: [300, 145], sesion: [80, 145], token_verificacion: [300, 240] },
+    edges: [['rol', 'usuario_rol', '1', 'N'], ['usuario', 'usuario_rol', '1', 'N'], ['usuario', 'sesion', '1', 'N'],
+            ['usuario', 'token_verificacion', '1', 'N']],
+    ext: 'Sin referencias externas. usuario_rol.usr_asignado_por → usuario (interna).'
+  },
+  {
+    n: 2, name: 'Billing Profile Service', proto: 'rest', span: 3, w: 320, h: 280,
+    fn: 'Datos de facturación del cliente, distintos en cada compra.',
+    nodes: { dato_facturacion: [160, 140] },
+    edges: [],
+    ext: 'Ref. externa: dato_facturacion → usuario (Identity).'
+  },
+  {
+    n: 3, name: 'Location Service', proto: 'rest', span: 4, w: 450, h: 280,
+    fn: 'Regiones, provincias y ciudades (destinos).',
+    nodes: { region: [225, 50], provincia: [225, 140], ciudad: [225, 230] },
+    edges: [['region', 'provincia', '1', 'N'], ['provincia', 'ciudad', '1', 'N']],
+    ext: 'Sin referencias externas. Catálogo de solo lectura que consultan otros servicios.'
+  },
+  // Fila 2 · Catálogo
+  {
+    n: 4, name: 'Catalog & Attractions Service', proto: 'rest', span: 9, w: 1060, h: 380,
+    fn: 'Ficha de la atracción, árbol de categorías, idiomas, inclusiones, fotos y operadores.',
+    nodes: { categoria: [110, 60], atraccion_categoria: [320, 60, 'b'], atraccion_foto: [700, 60],
+             operador_usuario: [90, 190, 'b'], operador: [290, 190], atraccion: [540, 190],
+             idioma: [90, 330], atraccion_idioma: [290, 330, 'b'], atraccion_inclusion: [760, 330, 'b'], inclusion: [970, 330] },
+    edges: [['categoria', 'categoria', '1', 'N'], ['categoria', 'atraccion_categoria', '1', 'N'], ['atraccion', 'atraccion_categoria', '1', 'N'],
+            ['atraccion', 'atraccion_foto', '1', 'N'], ['operador', 'atraccion', '1', 'N'], ['operador', 'operador_usuario', '1', 'N'],
+            ['atraccion', 'atraccion_idioma', '1', 'N'], ['idioma', 'atraccion_idioma', '1', 'N'],
+            ['atraccion', 'atraccion_inclusion', '1', 'N'], ['inclusion', 'atraccion_inclusion', '1', 'N']],
+    ext: 'Ref. externa: atraccion → ciudad (Location); operador → provincia (Location); operador_usuario → usuario (Identity). Árbol de categorías por cat_padre_id. La calificación se actualiza con el evento RESENA_PUBLICADA (Review).'
+  },
+  {
+    n: 5, name: 'Review Service', proto: 'rest', span: 3, w: 320, h: 380,
+    fn: 'Reseñas y puntuaciones de los clientes.',
+    nodes: { resena: [160, 190] },
+    edges: [],
+    ext: 'Ref. externa: resena → atraccion (Catalog), usuario (Identity). Publica el evento RESENA_PUBLICADA.'
+  },
+  // Fila 3 · Precios, cupos y carrito
+  {
+    n: 6, name: 'Pricing Service', proto: 'grpc', span: 3, w: 320, h: 250,
+    fn: 'Tarifas versionadas por tipo de boleto.',
+    nodes: { tarifa: [160, 115] },
+    edges: [],
+    ext: 'Ref. externa: tarifa → atraccion (Catalog). Order la consulta al crear la orden.'
+  },
+  {
+    n: 7, name: 'Inventory & Availability Service', proto: 'grpc', span: 5, w: 570, h: 250,
+    fn: 'Turnos, cupos por fecha y días bloqueados.',
+    nodes: { horario: [110, 60], disponibilidad: [430, 60], fecha_bloqueada: [270, 180] },
+    edges: [['horario', 'disponibilidad', '1', 'N']],
+    ext: 'Ref. externa: horario, disponibilidad, fecha_bloqueada → atraccion (Catalog). FK compuesta interna (hor_id, atr_id) → horario.'
+  },
+  {
+    n: 8, name: 'Cart Service', proto: 'rest', span: 4, w: 450, h: 250,
+    fn: 'Carrito de compras antes de generar la orden.',
+    nodes: { carrito: [100, 115], carrito_item: [330, 115] },
+    edges: [['carrito', 'carrito_item', '1', 'N']],
+    ext: 'Ref. externa: carrito → usuario (Identity); carrito_item → atraccion (Catalog), disponibilidad (Inventory).'
+  },
+  // Fila 4 · Cupones, órdenes y reservas
+  {
+    n: 9, name: 'Coupon Service', proto: 'rest', span: 3, w: 320, h: 270,
+    fn: 'Cupones de descuento y su vigencia.',
+    nodes: { cupon: [160, 125] },
+    edges: [],
+    ext: 'Sin referencias externas. Los usos se cuentan en orden_cupon (Order).'
+  },
+  {
+    n: 10, name: 'Order Management Service', proto: 'grpc', span: 5, w: 570, h: 270,
+    fn: 'Órdenes de compra, sus líneas, cupones aplicados e idempotencia.',
+    nodes: { orden: [100, 60], orden_cupon: [330, 60, 'b'], orden_detalle: [110, 200], estado: [300, 200], idempotencia: [470, 200] },
+    edges: [['orden', 'orden_cupon', '1', 'N'], ['orden', 'orden_detalle', '1', 'N'], ['estado', 'orden', '1', 'N']],
+    ext: 'Ref. externa: orden, idempotencia → usuario (Identity); orden → carrito (Cart), metodo_pago (Payment); orden_cupon → cupon (Coupon); orden_detalle → atraccion (Catalog).'
+  },
+  {
+    n: 11, name: 'Booking Service', proto: 'grpc', span: 4, w: 450, h: 270,
+    fn: 'Reservas confirmadas y sus pasajeros.',
+    nodes: { reserva: [130, 60], estado: [350, 60], reserva_pasajero: [130, 200] },
+    edges: [['reserva', 'reserva_pasajero', '1', 'N'], ['estado', 'reserva', '1', 'N']],
+    ext: 'Ref. externa: reserva → orden_detalle (Order), disponibilidad (Inventory).'
+  },
+  // Fila 5 · Pagos, reembolsos y facturación
+  {
+    n: 12, name: 'Payment Service', proto: 'rest', span: 5, w: 570, h: 300,
+    fn: 'Cobros por tarjeta o transferencia.',
+    nodes: { metodo_pago: [100, 60], pago: [330, 60], pago_tarjeta: [190, 170], pago_transferencia: [450, 170], estado: [330, 260] },
+    edges: [['metodo_pago', 'pago', '1', 'N'], ['pago', 'pago_tarjeta', '1', '1'], ['pago', 'pago_transferencia', '1', '1'], ['estado', 'pago', '1', 'N']],
+    ext: 'Ref. externa: pago → orden (Order).'
+  },
+  {
+    n: 13, name: 'Refund Service', proto: 'rest', span: 3, w: 320, h: 300,
+    fn: 'Devoluciones totales o parciales de un pago.',
+    nodes: { reembolso: [160, 140] },
+    edges: [],
+    ext: 'Ref. externa: reembolso → pago (Payment). Valida con Payment que no se devuelva más de lo cobrado.'
+  },
+  {
+    n: 14, name: 'Electronic Invoicing Service', proto: 'soap', span: 4, w: 450, h: 300,
+    fn: 'Facturas electrónicas autorizadas por el SRI.',
+    nodes: { factura: [140, 70], estado: [350, 70], factura_detalle: [140, 220] },
+    edges: [['factura', 'factura_detalle', '1', 'N'], ['estado', 'factura', '1', 'N']],
+    ext: 'Ref. externa: factura → orden (Order), dato_facturacion (Billing Profile); factura_detalle → orden_detalle (Order).'
+  },
+  // Fila 6 · Soporte y auditoría
+  {
+    n: 15, name: 'Support Service', proto: 'rest', span: 6, w: 690, h: 110,
+    fn: 'Mensajes de contacto de los visitantes.',
+    nodes: { mensaje_contacto: [345, 55] },
+    edges: [],
+    ext: 'Sin referencias externas.'
+  },
+  {
+    n: 16, name: 'Audit Service', proto: 'rest', tag: 'Consumidor de eventos', span: 6, w: 690, h: 110,
+    fn: 'Bitácora de todos los eventos del sistema.',
+    nodes: { bitacora: [345, 55] },
+    edges: [],
+    ext: 'Ref. externa: bitacora → usuario (Identity).'
+  }
+];
+
+const NS = 'http://www.w3.org/2000/svg';
+const CHAR = 7.6, BOX_H = 32;
+const el = (tag, attrs, parent) => {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+};
+const boxW = name => Math.round(name.length * CHAR + 28);
+
+// Punto donde la recta desde el centro del cuadro, en dirección (dx,dy), corta su borde.
+function clip(cx, cy, w, h, dx, dy) {
+  const len = Math.hypot(dx, dy) || 1, ux = dx / len, uy = dy / len;
+  const t = Math.min(ux ? (w / 2) / Math.abs(ux) : Infinity, uy ? (h / 2) / Math.abs(uy) : Infinity);
+  return [cx + ux * t, cy + uy * t, ux, uy];
+}
+
+function label(svg, x, y, text) {
+  const t = el('text', { x, y, class: 'card-lbl', 'text-anchor': 'middle', 'dominant-baseline': 'central' }, svg);
+  t.textContent = text;
+}
+
+function drawService(s, svg) {
+  const nodes = {};
+  for (const [name, [x, y, kind]] of Object.entries(s.nodes)) nodes[name] = { x, y, w: boxW(name), h: BOX_H, bridge: kind === 'b' };
+
+  for (const [a, b, ca, cb, ctrl] of s.edges) {
+    const A = nodes[a], B = nodes[b];
+    if (a === b) {   // autorrelación: bucle sobre el cuadro
+      const top = A.y - A.h / 2;
+      el('path', { class: 'edge', d: `M ${A.x - 12} ${top} C ${A.x - 30} ${top - 40}, ${A.x + 30} ${top - 40}, ${A.x + 12} ${top}` }, svg);
+      label(svg, A.x - 28, top - 12, ca);
+      label(svg, A.x + 28, top - 12, cb);
+      continue;
+    }
+    const ta = ctrl || [B.x, B.y], tb = ctrl || [A.x, A.y];
+    const [ax, ay, aux, auy] = clip(A.x, A.y, A.w + 4, A.h + 4, ta[0] - A.x, ta[1] - A.y);
+    const [bx, by, bux, buy] = clip(B.x, B.y, B.w + 4, B.h + 4, tb[0] - B.x, tb[1] - B.y);
+    el('path', { class: 'edge', d: ctrl ? `M ${ax} ${ay} Q ${ctrl[0]} ${ctrl[1]} ${bx} ${by}` : `M ${ax} ${ay} L ${bx} ${by}` }, svg);
+    // Etiquetas de cardinalidad cerca de cada extremo, del mismo lado de la línea.
+    const gx = bx - ax, gy = by - ay, gl = Math.hypot(gx, gy) || 1, nx = -gy / gl, ny = gx / gl;
+    label(svg, ax + aux * 14 + nx * 9, ay + auy * 14 + ny * 9, ca);
+    label(svg, bx + bux * 14 + nx * 9, by + buy * 14 + ny * 9, cb);
+  }
+
+  for (const [name, n] of Object.entries(nodes)) {
+    const g = el('g', { class: 'tbl' + (n.bridge ? ' bridge' : '') }, svg);
+    el('rect', { x: n.x - n.w / 2, y: n.y - n.h / 2, width: n.w, height: n.h, rx: 5 }, g);
+    const t = el('text', { x: n.x, y: n.y, 'text-anchor': 'middle', 'dominant-baseline': 'central' }, g);
+    t.textContent = name;
+  }
+}
+
+const grid = document.getElementById('grid');
+for (const s of SERVICES) {
+  const card = document.createElement('section');
+  card.className = `card ${s.proto}${s.span >= 9 ? ' wide' : ''}`;
+  card.style.setProperty('--span', s.span);
+  card.innerHTML = `<h2>${s.n}&nbsp; ${s.name}</h2>
+    <div><span class="badge">${s.proto === 'grpc' ? 'gRPC' : s.proto.toUpperCase()}</span>${s.tag ? `<span class="tag">${s.tag}</span>` : ''}</div>
+    <p class="fn">${s.fn}</p>`;
+  const svg = el('svg', { viewBox: `0 0 ${s.w} ${s.h}`, role: 'img', 'aria-label': `Tablas de ${s.name}` });
+  card.appendChild(svg);
+  drawService(s, svg);
+  const p = document.createElement('p');
+  p.className = 'ext';
+  p.textContent = s.ext;
+  card.appendChild(p);
+  grid.appendChild(card);
+}
+</script>
+</body>
+</html>

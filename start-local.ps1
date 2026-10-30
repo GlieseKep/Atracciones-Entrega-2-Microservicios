@@ -90,6 +90,10 @@ Write-Host 'Iniciando servicios...' -ForegroundColor Cyan
 Start-LocalService 'PostgreSQL :5433' $root 'node tools/local-db.mjs'
 Wait-Port $ports.Db 'PostgreSQL'
 
+Write-Host 'Migrando las bases de datos de los microservicios...' -ForegroundColor Cyan
+Push-Location $root; node tools/migrate-services.mjs; $code = $LASTEXITCODE; Pop-Location
+if ($code -ne 0) { throw 'Las migraciones de los microservicios fallaron.' }
+
 Start-LocalService 'Auth :5280' $root 'node apps/auth/dist/main.js'
 Start-LocalService 'API :5276' $root 'node apps/api/dist/main.js'
 Start-LocalService 'Web :5173' $web 'npm run dev'

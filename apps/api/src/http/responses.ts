@@ -27,7 +27,11 @@ import type {
   UserResponse,
 } from '@atracciones/contracts';
 
-export const API_PREFIX = 'api/v1';
+/**
+ * Prefijo provisional del API del portal. `/api/v1` y `/api/v2` pertenecen al contrato con Booking (Partner API);
+ * este API se retira cuando el portal migre a GraphQL (plan §7.7, Fase 7).
+ */
+export const API_PREFIX = 'internal/web/v1';
 export const apiPath = (relative: string) => `/${API_PREFIX}/${relative}`;
 export const attractionLink = (id: string) => apiPath(`atracciones/${id}`);
 

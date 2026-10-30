@@ -1,0 +1,220 @@
+// Contrato gRPC interno de Order Management Service (plan §3.5): orquesta las sagas de compra y de cancelación.
+syntax = "proto3";
+package atracciones.order;
+
+import "internal/booking.proto";
+
+service OrderService {
+  rpc Health (Empty) returns (HealthReply);
+  // Saga de compra (POST /atracciones/reservas). Idempotente por Idempotency-Key.
+  rpc CreateOrder (CreateOrderRequest) returns (OrderResponse);
+  // Saga de cancelación (POST /atracciones/reservas/{id}/cancel). Idempotente por Idempotency-Key.
+  rpc CancelReservation (CancelOrderRequest) returns (OrderResponse);
+  // Orden con sus líneas, pasos de la saga y pagos. Solo el dueño o un administrador.
+  rpc GetOrder (GetOrderRequest) returns (OrderDetail);
+  // Órdenes del principal (portal) o, con `todas` y scope attractions:write, las de todos.
+  rpc ListOrders (ListOrdersRequest) returns (OrderPage);
+  // Ventas confirmadas por atracción, día, método de pago y estado (administración).
+  rpc SalesReport (SalesReportRequest) returns (SalesReportResult);
+}
+
+message GetOrderRequest {
+  string id = 1;                  // uuid o external_order_id (ORD-…)
+}
+
+message OrderSummary {
+  string id = 1;
+  string external_order_id = 2;
+  string estado = 3;              // PENDIENTE | CONFIRMADA | CANCELADA | FALLIDA
+  string estado_saga = 4;
+  string metodo_pago = 5;
+  double total = 6;
+  string moneda = 7;
+  string atraccion_codigo = 8;
+  string fecha = 9;
+  string hora = 10;
+  int32 boletos = 11;
+  string principal_tipo = 12;
+  string principal_id = 13;
+  string creado_en = 14;
+  string actualizado_en = 15;
+  string correlation_id = 16;
+}
+
+message LineTicket {
+  string ticket_type = 1;
+  int32 cantidad = 2;
+  double precio_unitario = 3;
+}
+
+message OrderLine {
+  string atraccion_codigo = 1;
+  string fecha = 2;
+  string hora = 3;
+  repeated LineTicket boletos = 4;
+}
+
+message SagaStep {
+  string paso = 1;
+  string accion = 2;
+  string resultado = 3;
+  string detalle = 4;
+  string creado_en = 5;
+}
+
+message RefundInfo {
+  string codigo = 1;
+  double monto = 2;
+  string motivo = 3;
+  string solicitante = 4;
+  string estado = 5;
+  string emitido_en = 6;
+}
+
+message PaymentInfo {
+  string pago_id = 1;
+  string metodo_pago = 2;
+  string estado = 3;
+  double monto = 4;
+  double reembolsado = 5;
+  string referencia_pasarela = 6;
+  string motivo_rechazo = 7;
+  string creado_en = 8;
+  string procesado_en = 9;
+  repeated RefundInfo reembolsos = 10;
+}
+
+message InvoiceInfo {
+  string id = 1;
+  string tipo_comprobante = 2;   // FACTURA | NOTA_CREDITO
+  string numero = 3;             // 001-001-000000001
+  string clave_acceso = 4;
+  string estado_sri = 5;
+  string numero_autorizacion = 6;
+  string fecha_autorizacion = 7;
+  int32 intentos = 8;
+  double total = 9;
+}
+
+message OrderDetail {
+  OrderSummary orden = 1;
+  repeated OrderLine lineas = 2;
+  repeated SagaStep pasos = 3;
+  repeated PaymentInfo pagos = 4;
+  repeated InvoiceInfo facturas = 5;
+}
+
+message ListOrdersRequest {
+  bool todas = 1;
+  string estado = 2;
+  string desde = 3;               // fecha de creación (zona del negocio)
+  string hasta = 4;
+  string search = 5;              // external_order_id
+  string metodo_pago = 6;
+  int32 limit = 7;
+  int32 offset = 8;
+}
+
+message OrderPage {
+  int32 total = 1;
+  repeated OrderSummary items = 2;
+}
+
+message SalesReportRequest {
+  string desde = 1;
+  string hasta = 2;
+}
+
+message SalesByAttraction {
+  string atraccion_codigo = 1;
+  int32 ordenes = 2;
+  int32 boletos = 3;
+  double ingresos = 4;
+}
+
+message SalesByDay {
+  string fecha = 1;
+  int32 ordenes = 2;
+  int32 boletos = 3;
+  double ingresos = 4;
+}
+
+message SalesByMethod {
+  string metodo_pago = 1;
+  int32 ordenes = 2;
+  double ingresos = 3;
+}
+
+message StatusTotal {
+  string estado = 1;
+  int32 ordenes = 2;
+  double monto = 3;
+}
+
+message SalesReportResult {
+  string moneda = 1;
+  double ingresos = 2;
+  int32 ordenes = 3;
+  repeated SalesByAttraction por_atraccion = 4;
+  repeated SalesByDay por_dia = 5;
+  repeated SalesByMethod por_metodo = 6;
+  repeated StatusTotal por_estado = 7;
+}
+
+message Empty {}
+
+message HealthReply {
+  string status = 1;
+  string service = 2;
+  bool database_connected = 3;
+  int32 latency_ms = 4;
+  double memory_usage_mb = 5;
+  int64 uptime_seconds = 6;
+  string timestamp = 7;
+}
+
+message CreateOrderRequest {
+  string idempotency_key = 1;
+  string atraccion_id = 2;        // código público, slug o uuid
+  string fecha = 3;
+  string hora = 4;                // HH:mm:ss
+  repeated atracciones.booking.Ticket boletos = 5;
+  atracciones.booking.Customer customer = 6;
+  repeated atracciones.booking.Passenger passengers = 7;
+  string payment_method = 8;
+  string saga_id = 9;
+  string observaciones = 10;
+}
+
+message CancelOrderRequest {
+  string idempotency_key = 1;
+  string reservation_id = 2;      // UUID o PNR
+  string reason = 3;
+  string solicitante = 4;
+}
+
+message InvalidParam {
+  string name = 1;
+  string reason = 2;
+}
+
+/** Error de negocio guardado con la respuesta (se repite idéntico ante el mismo Idempotency-Key). */
+message StoredProblem {
+  string code = 1;
+  string title = 2;
+  string detail = 3;
+  string correlation_id = 4;
+  string timestamp = 5;
+  repeated InvalidParam invalid_params = 6;
+}
+
+/**
+ * Respuesta de la saga tal como se guarda para la idempotencia: el estado HTTP y la reserva (éxito) o el error de
+ * negocio. Los fallos técnicos no se guardan: llegan como error gRPC y el cliente puede reintentar.
+ */
+message OrderResponse {
+  int32 status = 1;
+  atracciones.booking.Reservation reserva = 2;
+  StoredProblem problem = 3;
+  string guia_asignado = 4;
+}

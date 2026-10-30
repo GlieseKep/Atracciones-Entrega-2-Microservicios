@@ -1,0 +1,16 @@
+{
+  "name": "@atracciones/ms-location-service",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Location Service (REST, contrato Plan/ms_location/ms_location-openapi.yaml): catalogo de solo lectura de regiones, provincias y ciudades. Base ms_location.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "dependencies": {
+    "@atracciones/platform": "1.0.0",
+    "express": "^5.2.1",
+    "typeorm": "0.3.31"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6"
+  }
+}

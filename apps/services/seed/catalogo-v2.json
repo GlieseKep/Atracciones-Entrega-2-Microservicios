@@ -1,0 +1,310 @@
+{
+  "descripcion": "Catálogo inicial v2 (las 10 atracciones del monolito con los datos que exige el contrato). Lo cargan Catalog e Inventory, cada uno en su base; se relacionan por codigo_publico. Fotografías de Wikimedia Commons. Datos del operador tomados de los ejemplos del contrato.",
+  "operador": {
+    "codigo": "proveedor-atracciones-dilan",
+    "nombre_comercial": "Descubre EC Tours & Experiences",
+    "ruc": "1792348123001",
+    "telefono_emergencia": "+593991234567",
+    "email_soporte": "soporte@descubreec.com"
+  },
+  "acuerdo_promocion": {
+    "permite_promociones": true,
+    "porcentaje_descuento_maximo": 15.0,
+    "destinos_habilitados": ["Quito", "Baños", "Cuenca", "Galápagos"],
+    "fecha_acuerdo": "2026-10-01",
+    "vigencia_hasta": "2027-12-31",
+    "condiciones_combo": "Aplica en paquetes de al menos 2 servicios en la misma ciudad de destino con un mínimo de 48 horas de anticipación.",
+    "contacto": { "nombre": "Dilan Mendoza", "email": "dilan.mendoza@descubreec.com", "telefono": "+593998765432" }
+  },
+  "regiones": [
+    {
+      "nombre": "Sierra",
+      "provincias": [
+        { "nombre": "Pichincha", "ciudades": ["Quito", "San Antonio de Pichincha", "Mindo"] },
+        { "nombre": "Cotopaxi", "ciudades": ["Latacunga"] },
+        { "nombre": "Tungurahua", "ciudades": ["Baños"] },
+        { "nombre": "Chimborazo", "ciudades": ["Riobamba"] }
+      ]
+    }
+  ],
+  "idiomas": [
+    { "nombre": "Español", "codigo_iso": "es" },
+    { "nombre": "Inglés", "codigo_iso": "en" }
+  ],
+  "categorias": [
+    {
+      "codigo": "cat-tours-100", "nombre": "Tours y Experiencias Guiadas", "slug": "tours-experiencias",
+      "descripcion": "Actividades de inmersión cultural y natural con guías expertos.", "icono": "compass", "orden": 1,
+      "incluye_comida": false, "incluye_transporte": true, "incluye_guia": true,
+      "subcategorias": [
+        {
+          "codigo": "cat-tours-201", "nombre": "Tours Gastronómicos y Catas", "slug": "tours-gastronomicos",
+          "descripcion": "Degustaciones de comida típica ecuatoriana y chocolate fino de aroma.", "icono": "utensils", "orden": 1,
+          "incluye_comida": true, "incluye_transporte": false, "incluye_guia": true, "subcategorias": []
+        },
+        {
+          "codigo": "cat-tours-202", "nombre": "Excursiones a Volcanes y Aventura", "slug": "volcanes-aventura",
+          "descripcion": "Senderismo y expediciones al Cotopaxi, Chimborazo y Quilotoa.", "icono": "mountain", "orden": 2,
+          "incluye_comida": true, "incluye_transporte": true, "incluye_guia": true, "subcategorias": []
+        },
+        {
+          "codigo": "cat-tours-203", "nombre": "Tours Urbanos y Patrimoniales", "slug": "tours-urbanos",
+          "descripcion": "Recorridos guiados por centros históricos, miradores y barrios tradicionales.", "icono": "building", "orden": 3,
+          "incluye_comida": false, "incluye_transporte": false, "incluye_guia": true, "subcategorias": []
+        }
+      ]
+    },
+    {
+      "codigo": "cat-cultura-200", "nombre": "Museos y Sitios Arqueológicos", "slug": "museos-cultura",
+      "descripcion": "Entradas directas a patrimonios y centros históricos.", "icono": "landmark", "orden": 2,
+      "incluye_comida": false, "incluye_transporte": false, "incluye_guia": false, "subcategorias": []
+    },
+    {
+      "codigo": "cat-naturaleza-300", "nombre": "Naturaleza y Áreas Protegidas", "slug": "naturaleza",
+      "descripcion": "Bosques, cascadas y reservas con guías naturalistas.", "icono": "trees", "orden": 3,
+      "incluye_comida": false, "incluye_transporte": true, "incluye_guia": true,
+      "subcategorias": [
+        {
+          "codigo": "cat-naturaleza-301", "nombre": "Bosques Nublados y Cascadas", "slug": "bosques-cascadas",
+          "descripcion": "Senderos, cascadas y observación de aves.", "icono": "droplets", "orden": 1,
+          "incluye_comida": true, "incluye_transporte": true, "incluye_guia": true, "subcategorias": []
+        }
+      ]
+    },
+    {
+      "codigo": "cat-entradas-400", "nombre": "Entradas y Atracciones", "slug": "entradas-atracciones",
+      "descripcion": "Boletos de acceso a atracciones turísticas sin guía.", "icono": "ticket", "orden": 4,
+      "incluye_comida": false, "incluye_transporte": false, "incluye_guia": false, "subcategorias": []
+    }
+  ],
+  "guias": [
+    { "codigo": "GUIA-CARLOS-01", "titulo": "Lic.", "nombre": "Carlos Morales", "credencial_mintur": "5541" },
+    { "codigo": "GUIA-ANDREA-02", "titulo": "Lic.", "nombre": "Andrea Guamán", "credencial_mintur": "6120" },
+    { "codigo": "GUIA-LUIS-03", "titulo": "Ing.", "nombre": "Luis Pilataxi", "credencial_mintur": "4987" }
+  ],
+  "atracciones": [
+    {
+      "codigo_publico": "QTOTELEFRQ01", "uuid": "a1b2c3d4-0001-4000-8000-000000000001", "slug": "teleferiqo-volcan-pichincha",
+      "nombre": "TelefériQo: subida al volcán Pichincha con vistas de Quito",
+      "descripcion_corta": "Telecabina hasta Cruz Loma, a más de 3.900 metros, con vistas de Quito y sus volcanes.",
+      "descripcion": "Sube en telecabina desde el borde occidental de Quito hasta Cruz Loma, a más de 3.900 metros sobre el nivel del mar. En apenas unos minutos pasarás de la ciudad a los páramos andinos, con vistas de la capital y, en días despejados, de los volcanes Cotopaxi, Cayambe y Antisana. Arriba podrás caminar por senderos, tomar un canelazo caliente y fotografiar el atardecer sobre el valle.",
+      "categoria": "cat-entradas-400", "ciudad": "Quito", "duracion_horas": 2,
+      "incluye_comida": false, "incluye_transporte": false, "incluye_guia": false,
+      "punto_encuentro": { "direccion": "Av. Occidental y La Gasca, estación base del TelefériQo", "latitud": -0.1925, "longitud": -78.5195, "instrucciones": "Presentarse 15 minutos antes en la boletería de la estación base." },
+      "accesibilidad": { "silla_ruedas": true, "carriola": true, "animales_asistencia": true },
+      "cancelacion": { "gratuita": true, "horas_limite": 24, "descripcion": "Cancela gratis hasta 24 horas antes de la actividad y recibe el 100% de reembolso." },
+      "permite_paquete": true, "idiomas": ["es", "en"],
+      "inclusiones": ["Boleto de telecabina ida y vuelta"], "exclusiones": ["Bebidas y alimentos en la cima"],
+      "fotos": [
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9b/Gondolas_of_the_TeleferiQo_in_Quito%2C_Ecuador.jpg/1280px-Gondolas_of_the_TeleferiQo_in_Quito%2C_Ecuador.jpg",
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Top_station_of_the_TeleferiQo_in_Quito%2C_Ecuador.jpg/1280px-Top_station_of_the_TeleferiQo_in_Quito%2C_Ecuador.jpg"
+      ],
+      "itinerario": [
+        { "hora": "09:00", "titulo": "Estación base del TelefériQo", "descripcion": "Validación del voucher y abordaje de la telecabina.", "duracion_minutos": 20, "ubicacion": "Av. Occidental" },
+        { "hora": "09:20", "titulo": "Cruz Loma", "descripcion": "Miradores, senderos del páramo y fotografías.", "duracion_minutos": 80, "ubicacion": "Cruz Loma, 3.945 m" },
+        { "hora": "10:40", "titulo": "Descenso", "descripcion": "Regreso a la estación base.", "duracion_minutos": 20, "ubicacion": "Estación base" }
+      ],
+      "resenas": { "puntuacion": 9.2, "limpieza": 9.4, "servicio": 9.0, "calidad_precio": 9.3, "puntualidad": 9.1, "cantidad": 6 },
+      "tarifa": { "adulto": 9.5, "nino": 4.75, "tercera_edad": 5.7, "estudiante": 7.13, "infante": 0 },
+      "horarios": [ { "hora": "09:00", "capacidad": 40, "guia": null }, { "hora": "12:00", "capacidad": 40, "guia": null }, { "hora": "15:30", "capacidad": 40, "guia": null } ]
+    },
+    {
+      "codigo_publico": "PRhu4UBTWPBC", "uuid": "a1b2c3d4-0002-4000-8000-000000000002", "slug": "quito-city-tour-mitad-del-mundo",
+      "nombre": "Ciudad Mitad del Mundo: visita guiada a la línea ecuatorial",
+      "descripcion_corta": "Visita guiada al monumento a la línea ecuatorial con traslado desde Quito y entrada incluida.",
+      "descripcion": "Recorre con un guía local el monumento a la línea ecuatorial en San Antonio de Pichincha. Conoce la historia de la misión geodésica franco-española, visita los museos etnográficos y planetario, y toma la clásica foto con un pie en cada hemisferio. Incluye traslado desde Quito y entrada al complejo.",
+      "categoria": "cat-cultura-200", "ciudad": "Quito", "duracion_horas": 3,
+      "incluye_comida": false, "incluye_transporte": true, "incluye_guia": true,
+      "punto_encuentro": { "direccion": "Boulevard Naciones Unidas y Av. de los Shyris, frente al Banco del Pichincha", "latitud": -0.178652, "longitud": -78.48312, "instrucciones": "Presentarse con 15 minutos de anticipación junto al tótem informativo rojo de Descubre EC." },
+      "accesibilidad": { "silla_ruedas": true, "carriola": true, "animales_asistencia": true },
+      "cancelacion": { "gratuita": true, "horas_limite": 24, "descripcion": "Cancela gratis hasta 24 horas antes de la actividad y recibe el 100% de reembolso." },
+      "permite_paquete": true, "idiomas": ["es", "en"],
+      "inclusiones": ["Transporte turístico ida y vuelta desde Quito", "Guía oficial certificado bilingüe (Español / Inglés)", "Entrada al Complejo Monumento a la Mitad del Mundo"],
+      "exclusiones": ["Entrada opcional al Museo Intiñán ($5.00 en puerta)", "Propinas voluntarias para el guía y conductor"],
+      "fotos": [
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ae/Mitad_del_Mundo%2C_Quito%2C_Ecuador%2C_2015-07-22%2C_DD_02.JPG/1280px-Mitad_del_Mundo%2C_Quito%2C_Ecuador%2C_2015-07-22%2C_DD_02.JPG",
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Mitad_del_Mundo%2C_Quito%2C_Ecuador%2C_2015-07-22%2C_DD_04.JPG/1280px-Mitad_del_Mundo%2C_Quito%2C_Ecuador%2C_2015-07-22%2C_DD_04.JPG"
+      ],
+      "itinerario": [
+        { "hora": "09:00", "titulo": "Punto de encuentro y salida en Boulevard Naciones Unidas", "descripcion": "Recepción de pasajeros, verificación de vouchers QR y bienvenida por el guía.", "duracion_minutos": 30, "ubicacion": "Parque La Carolina" },
+        { "hora": "09:30", "titulo": "Traslado a San Antonio de Pichincha", "descripcion": "Recorrido panorámico por el norte de Quito.", "duracion_minutos": 40, "ubicacion": "Av. Manuel Córdova Galarza" },
+        { "hora": "10:10", "titulo": "Monumento a la Mitad del Mundo", "descripcion": "Visita guiada al monumento, museos y planetario.", "duracion_minutos": 90, "ubicacion": "Ciudad Mitad del Mundo" },
+        { "hora": "11:40", "titulo": "Regreso a Quito", "descripcion": "Retorno al punto de encuentro.", "duracion_minutos": 20, "ubicacion": "Boulevard Naciones Unidas" }
+      ],
+      "resenas": { "puntuacion": 9.8, "limpieza": 9.9, "servicio": 9.8, "calidad_precio": 9.6, "puntualidad": 9.7, "cantidad": 8 },
+      "tarifa": { "adulto": 30, "nino": 15, "tercera_edad": 18, "estudiante": 22.5, "infante": 0 },
+      "horarios": [ { "hora": "09:00", "capacidad": 25, "guia": "GUIA-CARLOS-01" }, { "hora": "10:30", "capacidad": 25, "guia": "GUIA-CARLOS-01" }, { "hora": "14:00", "capacidad": 25, "guia": "GUIA-ANDREA-02" } ]
+    },
+    {
+      "codigo_publico": "CTPXFULLDAY3", "uuid": "a1b2c3d4-0003-4000-8000-000000000003", "slug": "parque-nacional-cotopaxi-dia-completo",
+      "nombre": "Parque Nacional Cotopaxi: excursión de día completo desde Quito",
+      "descripcion_corta": "Laguna de Limpiopungo, caballos salvajes y el refugio José Rivas con guía de montaña.",
+      "descripcion": "Viaja por la Avenida de los Volcanes hasta el Parque Nacional Cotopaxi. Camina alrededor de la laguna de Limpiopungo, observa caballos salvajes y cóndores andinos y, si el clima lo permite, asciende hasta el refugio José Rivas a 4.864 metros. Un guía de montaña certificado te acompaña durante toda la jornada.",
+      "categoria": "cat-tours-202", "ciudad": "Latacunga", "duracion_horas": 10,
+      "incluye_comida": true, "incluye_transporte": true, "incluye_guia": true,
+      "punto_encuentro": { "direccion": "Panamericana Sur km 45, control de ingreso al Parque Nacional Cotopaxi", "latitud": -0.6844, "longitud": -78.4378, "instrucciones": "Llevar ropa abrigada y documento de identidad para el registro del parque." },
+      "accesibilidad": { "silla_ruedas": false, "carriola": false, "animales_asistencia": false },
+      "cancelacion": { "gratuita": true, "horas_limite": 48, "descripcion": "Cancela gratis hasta 48 horas antes de la actividad." },
+      "permite_paquete": true, "idiomas": ["es"],
+      "inclusiones": ["Transporte desde Quito", "Guía de montaña certificado", "Almuerzo de campo"], "exclusiones": ["Equipo de alta montaña", "Propinas"],
+      "fotos": ["https://upload.wikimedia.org/wikipedia/commons/thumb/d/d9/Cotopaxi_01.jpg/1280px-Cotopaxi_01.jpg", "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b2/Cotopaxi_02.jpg/1280px-Cotopaxi_02.jpg"],
+      "itinerario": [
+        { "hora": "06:30", "titulo": "Salida desde Quito", "descripcion": "Traslado por la Avenida de los Volcanes.", "duracion_minutos": 120, "ubicacion": "Quito" },
+        { "hora": "08:30", "titulo": "Laguna de Limpiopungo", "descripcion": "Caminata alrededor de la laguna.", "duracion_minutos": 90, "ubicacion": "Parque Nacional Cotopaxi" },
+        { "hora": "10:30", "titulo": "Refugio José Rivas", "descripcion": "Ascenso guiado hasta los 4.864 m si el clima lo permite.", "duracion_minutos": 180, "ubicacion": "Refugio José Rivas" },
+        { "hora": "13:30", "titulo": "Almuerzo y retorno", "descripcion": "Almuerzo de campo y regreso a Quito.", "duracion_minutos": 210, "ubicacion": "Hacienda local" }
+      ],
+      "resenas": { "puntuacion": 9.6, "limpieza": 9.3, "servicio": 9.8, "calidad_precio": 9.5, "puntualidad": 9.4, "cantidad": 5 },
+      "tarifa": { "adulto": 75, "nino": 37.5, "tercera_edad": 45, "estudiante": 56.25, "infante": 0 },
+      "horarios": [ { "hora": "06:30", "capacidad": 15, "guia": "GUIA-LUIS-03" } ]
+    },
+    {
+      "codigo_publico": "QLTOACRATER4", "uuid": "de000000-0004-4000-8000-000000000004", "slug": "laguna-quilotoa-crater",
+      "nombre": "Laguna Quilotoa: caminata por el cráter y comunidades andinas",
+      "descripcion_corta": "Laguna turquesa en el cráter del Quilotoa, talleres de Tigua y almuerzo típico.",
+      "descripcion": "Descubre la laguna de aguas turquesa que llena el cráter del volcán Quilotoa. Caminarás por el borde del cráter, descenderás hasta la orilla y visitarás talleres de pintura indígena de Tigua. Almuerzo típico incluido en una comunidad local.",
+      "categoria": "cat-tours-202", "ciudad": "Latacunga", "duracion_horas": 10,
+      "incluye_comida": true, "incluye_transporte": true, "incluye_guia": true,
+      "punto_encuentro": { "direccion": "Mirador Shalalá, Quilotoa", "latitud": -0.8584, "longitud": -78.9047, "instrucciones": "El guía espera en la entrada del mirador con un cartel de Descubre EC." },
+      "accesibilidad": { "silla_ruedas": false, "carriola": false, "animales_asistencia": true },
+      "cancelacion": { "gratuita": true, "horas_limite": 24, "descripcion": "Cancela gratis hasta 24 horas antes de la actividad." },
+      "permite_paquete": true, "idiomas": ["es", "en"],
+      "inclusiones": ["Transporte", "Guía local", "Almuerzo típico"], "exclusiones": ["Alquiler de mulas para el ascenso"],
+      "fotos": ["https://upload.wikimedia.org/wikipedia/commons/thumb/6/63/Quilotoa._Volc%C3%A1n_-_Laguna_Ecuador_%282%29.jpg/1280px-Quilotoa._Volc%C3%A1n_-_Laguna_Ecuador_%282%29.jpg"],
+      "itinerario": [
+        { "hora": "07:00", "titulo": "Mirador Shalalá", "descripcion": "Vista panorámica del cráter.", "duracion_minutos": 60, "ubicacion": "Quilotoa" },
+        { "hora": "08:00", "titulo": "Descenso a la laguna", "descripcion": "Caminata hasta la orilla.", "duracion_minutos": 150, "ubicacion": "Laguna Quilotoa" },
+        { "hora": "12:30", "titulo": "Talleres de Tigua y almuerzo", "descripcion": "Pintura indígena y almuerzo en la comunidad.", "duracion_minutos": 120, "ubicacion": "Tigua" }
+      ],
+      "resenas": { "puntuacion": 9.8, "limpieza": 9.5, "servicio": 9.9, "calidad_precio": 9.7, "puntualidad": 9.6, "cantidad": 7 },
+      "tarifa": { "adulto": 89, "nino": 44.5, "tercera_edad": 53.4, "estudiante": 66.75, "infante": 0 },
+      "horarios": [ { "hora": "07:00", "capacidad": 12, "guia": "GUIA-LUIS-03" } ]
+    },
+    {
+      "codigo_publico": "QTONOCHELEY5", "uuid": "de000000-0005-4000-8000-000000000005", "slug": "centro-historico-quito-noche-leyendas",
+      "nombre": "Centro Histórico de Quito de noche: tour a pie con leyendas",
+      "descripcion_corta": "Plaza Grande iluminada, iglesias barrocas y leyendas quiteñas, con degustación de chocolate.",
+      "descripcion": "El primer Patrimonio Cultural de la Humanidad de la UNESCO se transforma de noche. Recorre la Plaza Grande iluminada, iglesias barrocas y callejones coloniales mientras tu guía narra leyendas quiteñas. Termina con una degustación de chocolate ecuatoriano.",
+      "categoria": "cat-tours-203", "ciudad": "Quito", "duracion_horas": 2.5,
+      "incluye_comida": true, "incluye_transporte": false, "incluye_guia": true,
+      "punto_encuentro": { "direccion": "Plaza de la Independencia, junto a la Catedral Metropolitana", "latitud": -0.2201, "longitud": -78.5123, "instrucciones": "El guía lleva un farol y una credencial de Descubre EC." },
+      "accesibilidad": { "silla_ruedas": true, "carriola": true, "animales_asistencia": true },
+      "cancelacion": { "gratuita": true, "horas_limite": 12, "descripcion": "Cancela gratis hasta 12 horas antes de la actividad." },
+      "permite_paquete": true, "idiomas": ["es", "en"],
+      "inclusiones": ["Guía oficial", "Degustación guiada de chocolate fino de aroma ecuatoriano"], "exclusiones": ["Cena", "Bebidas alcohólicas"],
+      "fotos": ["https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Plaza_de_la_Independencia_%28Quito%29_Historic_Center_at_night_%28El_Centro_Hist%C3%B3rico_de_Quito%29_pic.aa.jpg/1280px-Plaza_de_la_Independencia_%28Quito%29_Historic_Center_at_night_%28El_Centro_Hist%C3%B3rico_de_Quito%29_pic.aa.jpg"],
+      "itinerario": [
+        { "hora": "19:00", "titulo": "Plaza Grande", "descripcion": "Historia del Palacio de Carondelet y la Catedral.", "duracion_minutos": 40, "ubicacion": "Plaza de la Independencia" },
+        { "hora": "19:40", "titulo": "Calles coloniales y leyendas", "descripcion": "Leyendas de Cantuña y del Padre Almeida.", "duracion_minutos": 70, "ubicacion": "Centro Histórico" },
+        { "hora": "20:50", "titulo": "Degustación de chocolate", "descripcion": "Cata de chocolate ecuatoriano.", "duracion_minutos": 40, "ubicacion": "Calle La Ronda" }
+      ],
+      "resenas": { "puntuacion": 9.4, "limpieza": 9.2, "servicio": 9.7, "calidad_precio": 9.4, "puntualidad": 9.3, "cantidad": 6 },
+      "tarifa": { "adulto": 22, "nino": 11, "tercera_edad": 13.2, "estudiante": 16.5, "infante": 0 },
+      "horarios": [ { "hora": "19:00", "capacidad": 20, "guia": "GUIA-ANDREA-02" } ]
+    },
+    {
+      "codigo_publico": "QTOBASILIC06", "uuid": "de000000-0006-4000-8000-000000000006", "slug": "basilica-voto-nacional-torres",
+      "nombre": "Basílica del Voto Nacional: subida a las torres y gárgolas",
+      "descripcion_corta": "Torres de la mayor iglesia neogótica de América y sus gárgolas de fauna ecuatoriana.",
+      "descripcion": "Sube a las torres de la mayor iglesia neogótica de América y descubre sus gárgolas inspiradas en la fauna ecuatoriana: tortugas, iguanas y armadillos. Desde el mirador del reloj tendrás una de las mejores vistas del centro de Quito y el Panecillo.",
+      "categoria": "cat-cultura-200", "ciudad": "Quito", "duracion_horas": 1.5,
+      "incluye_comida": false, "incluye_transporte": false, "incluye_guia": false,
+      "punto_encuentro": { "direccion": "Calle Venezuela y Carchi, puerta principal de la Basílica", "latitud": -0.2149, "longitud": -78.5072 },
+      "accesibilidad": { "silla_ruedas": false, "carriola": false, "animales_asistencia": true },
+      "cancelacion": { "gratuita": false, "horas_limite": 0, "descripcion": "Boleto no reembolsable." },
+      "permite_paquete": false, "idiomas": ["es"],
+      "inclusiones": ["Entrada a las torres"], "exclusiones": ["Guía"],
+      "fotos": ["https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Bas%C3%ADlica_del_Voto_Nacional%2C_Quito_-_4.jpg/1280px-Bas%C3%ADlica_del_Voto_Nacional%2C_Quito_-_4.jpg"],
+      "itinerario": [],
+      "resenas": { "puntuacion": 9.0, "limpieza": 8.8, "servicio": 8.9, "calidad_precio": 9.4, "puntualidad": 9.0, "cantidad": 5 },
+      "tarifa": { "adulto": 12, "nino": 6, "tercera_edad": 7.2, "estudiante": 9, "infante": 0 },
+      "horarios": [ { "hora": "09:00", "capacidad": 30, "guia": null }, { "hora": "11:00", "capacidad": 30, "guia": null }, { "hora": "15:00", "capacidad": 30, "guia": null } ]
+    },
+    {
+      "codigo_publico": "MNDOBOSQUE07", "uuid": "de000000-0007-4000-8000-000000000007", "slug": "bosque-nublado-mindo",
+      "nombre": "Bosque nublado de Mindo: cascadas, colibríes y tarabita",
+      "descripcion_corta": "Tarabita, ruta de las cascadas, colibríes y una fábrica de chocolate artesanal.",
+      "descripcion": "Escápate al bosque nublado de Mindo, uno de los lugares con mayor diversidad de aves del planeta. Cruza el valle en tarabita, camina hasta la ruta de las cascadas, observa colibríes en un jardín de néctar y visita una pequeña fábrica de chocolate artesanal.",
+      "categoria": "cat-naturaleza-301", "ciudad": "Mindo", "duracion_horas": 9,
+      "incluye_comida": true, "incluye_transporte": true, "incluye_guia": true,
+      "punto_encuentro": { "direccion": "Vía Mindo – Tarabita, estación de la tarabita", "latitud": -0.0517, "longitud": -78.7746 },
+      "accesibilidad": { "silla_ruedas": false, "carriola": false, "animales_asistencia": false },
+      "cancelacion": { "gratuita": true, "horas_limite": 24, "descripcion": "Cancela gratis hasta 24 horas antes de la actividad." },
+      "permite_paquete": true, "idiomas": ["es", "en"],
+      "inclusiones": ["Transporte", "Guía naturalista", "Almuerzo", "Entrada a la tarabita"], "exclusiones": ["Canopy opcional"],
+      "fotos": ["https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Mindo-Cloud-Forest-03.jpg/1280px-Mindo-Cloud-Forest-03.jpg"],
+      "itinerario": [
+        { "hora": "07:30", "titulo": "Salida a Mindo", "descripcion": "Traslado desde Quito.", "duracion_minutos": 120, "ubicacion": "Quito" },
+        { "hora": "09:30", "titulo": "Tarabita y cascadas", "descripcion": "Cruce del valle y caminata a las cascadas.", "duracion_minutos": 180, "ubicacion": "Mindo" },
+        { "hora": "13:00", "titulo": "Colibríes y chocolate", "descripcion": "Jardín de colibríes y fábrica de chocolate.", "duracion_minutos": 120, "ubicacion": "Mindo" }
+      ],
+      "resenas": { "puntuacion": 9.6, "limpieza": 9.4, "servicio": 9.7, "calidad_precio": 9.6, "puntualidad": 9.2, "cantidad": 6 },
+      "tarifa": { "adulto": 65, "nino": 32.5, "tercera_edad": 39, "estudiante": 48.75, "infante": 0 },
+      "horarios": [ { "hora": "07:30", "capacidad": 18, "guia": "GUIA-ANDREA-02" } ]
+    },
+    {
+      "codigo_publico": "BNOSCASCAD08", "uuid": "de000000-0008-4000-8000-000000000008", "slug": "banos-ruta-cascadas-pailon-diablo",
+      "nombre": "Baños: ruta de las cascadas y Pailón del Diablo",
+      "descripcion_corta": "Puentes colgantes, la Ruta de las Cascadas y los miradores del Pailón del Diablo.",
+      "descripcion": "Recorre la Ruta de las Cascadas entre Baños y Río Verde. Cruza puentes colgantes, siente la fuerza del Pailón del Diablo desde sus miradores y opcionalmente vuela en canopy sobre el cañón del río Pastaza.",
+      "categoria": "cat-naturaleza-301", "ciudad": "Baños", "duracion_horas": 6,
+      "incluye_comida": false, "incluye_transporte": true, "incluye_guia": true,
+      "punto_encuentro": { "direccion": "Parque central de Baños, frente a la Basílica de Nuestra Señora del Agua Santa", "latitud": -1.3964, "longitud": -78.4247 },
+      "accesibilidad": { "silla_ruedas": false, "carriola": false, "animales_asistencia": true },
+      "cancelacion": { "gratuita": true, "horas_limite": 24, "descripcion": "Cancela gratis hasta 24 horas antes de la actividad." },
+      "permite_paquete": true, "idiomas": ["es"],
+      "inclusiones": ["Transporte en chiva", "Guía local", "Entrada al Pailón del Diablo"], "exclusiones": ["Canopy y tarabitas opcionales", "Almuerzo"],
+      "fotos": ["https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/The_base_of_Pail%C3%B3n_del_Diablo.jpg/1280px-The_base_of_Pail%C3%B3n_del_Diablo.jpg"],
+      "itinerario": [
+        { "hora": "09:00", "titulo": "Salida en chiva", "descripcion": "Recorrido por la Ruta de las Cascadas.", "duracion_minutos": 120, "ubicacion": "Baños" },
+        { "hora": "11:00", "titulo": "Pailón del Diablo", "descripcion": "Caminata a los miradores.", "duracion_minutos": 150, "ubicacion": "Río Verde" }
+      ],
+      "resenas": { "puntuacion": 9.2, "limpieza": 9.0, "servicio": 9.3, "calidad_precio": 9.4, "puntualidad": 8.9, "cantidad": 5 },
+      "tarifa": { "adulto": 45, "nino": 22.5, "tercera_edad": 27, "estudiante": 33.75, "infante": 0 },
+      "horarios": [ { "hora": "09:00", "capacidad": 22, "guia": "GUIA-LUIS-03" }, { "hora": "14:00", "capacidad": 22, "guia": "GUIA-LUIS-03" } ]
+    },
+    {
+      "codigo_publico": "CHMBRZSOL009", "uuid": "de000000-0009-4000-8000-000000000009", "slug": "volcan-chimborazo-punto-mas-cercano-al-sol",
+      "nombre": "Volcán Chimborazo: el punto más cercano al sol",
+      "descripcion_corta": "Vicuñas en libertad y caminata del refugio Carrel al Whymper, a 5.000 metros.",
+      "descripcion": "Visita la Reserva de Producción de Fauna Chimborazo, hogar de vicuñas en libertad. Llega hasta el refugio Carrel y camina hacia el refugio Whymper a 5.000 metros, en el volcán cuya cumbre es el punto de la Tierra más alejado de su centro.",
+      "categoria": "cat-tours-202", "ciudad": "Riobamba", "duracion_horas": 11,
+      "incluye_comida": true, "incluye_transporte": true, "incluye_guia": true,
+      "punto_encuentro": { "direccion": "Reserva de Producción de Fauna Chimborazo, garita de ingreso", "latitud": -1.4693, "longitud": -78.8169 },
+      "accesibilidad": { "silla_ruedas": false, "carriola": false, "animales_asistencia": false },
+      "cancelacion": { "gratuita": false, "horas_limite": 0, "descripcion": "No reembolsable por permisos de la reserva." },
+      "permite_paquete": true, "idiomas": ["es", "en"],
+      "inclusiones": ["Transporte", "Guía de montaña", "Almuerzo"], "exclusiones": ["Equipo de alta montaña"],
+      "fotos": ["https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Chimborazo_04.jpg/1280px-Chimborazo_04.jpg"],
+      "itinerario": [
+        { "hora": "06:00", "titulo": "Salida a la reserva", "descripcion": "Traslado y registro.", "duracion_minutos": 150, "ubicacion": "Riobamba" },
+        { "hora": "08:30", "titulo": "Refugio Carrel a Whymper", "descripcion": "Caminata guiada a 5.000 m.", "duracion_minutos": 240, "ubicacion": "Chimborazo" }
+      ],
+      "resenas": { "puntuacion": 9.4, "limpieza": 9.1, "servicio": 9.6, "calidad_precio": 9.3, "puntualidad": 9.2, "cantidad": 5 },
+      "tarifa": { "adulto": 95, "nino": 47.5, "tercera_edad": 57, "estudiante": 71.25, "infante": 0 },
+      "horarios": [ { "hora": "06:00", "capacidad": 10, "guia": "GUIA-LUIS-03" } ]
+    },
+    {
+      "codigo_publico": "QTOPANORAM10", "uuid": "de000000-0010-4000-8000-000000000010", "slug": "quito-panoramico-panecillo-la-ronda",
+      "nombre": "Quito panorámico: El Panecillo, miradores y barrio La Ronda",
+      "descripcion_corta": "Virgen del Panecillo, miradores de Guápulo e Itchimbía y paseo por La Ronda.",
+      "descripcion": "Tour en vehículo privado por los mejores miradores de Quito: la Virgen del Panecillo, el mirador de Guápulo y el parque Itchimbía. Termina con un paseo por la calle colonial de La Ronda y una bebida tradicional.",
+      "categoria": "cat-tours-203", "ciudad": "Quito", "duracion_horas": 4,
+      "incluye_comida": false, "incluye_transporte": true, "incluye_guia": true,
+      "punto_encuentro": { "direccion": "El Panecillo, parqueadero del mirador", "latitud": -0.2296, "longitud": -78.5183 },
+      "accesibilidad": { "silla_ruedas": true, "carriola": true, "animales_asistencia": true },
+      "cancelacion": { "gratuita": true, "horas_limite": 24, "descripcion": "Cancela gratis hasta 24 horas antes de la actividad." },
+      "permite_paquete": true, "idiomas": ["es", "en"],
+      "inclusiones": ["Transporte privado", "Guía", "Bebida tradicional"], "exclusiones": ["Almuerzo"],
+      "fotos": ["https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Quito_as_from_panecillo_Basilica.jpg/1280px-Quito_as_from_panecillo_Basilica.jpg"],
+      "itinerario": [
+        { "hora": "14:00", "titulo": "Virgen del Panecillo", "descripcion": "Mirador del sur y centro de Quito.", "duracion_minutos": 60, "ubicacion": "El Panecillo" },
+        { "hora": "15:00", "titulo": "Guápulo e Itchimbía", "descripcion": "Miradores del valle y del centro.", "duracion_minutos": 90, "ubicacion": "Guápulo" },
+        { "hora": "16:30", "titulo": "La Ronda", "descripcion": "Paseo por la calle colonial y bebida tradicional.", "duracion_minutos": 90, "ubicacion": "La Ronda" }
+      ],
+      "resenas": { "puntuacion": 9.0, "limpieza": 9.2, "servicio": 9.1, "calidad_precio": 8.8, "puntualidad": 9.0, "cantidad": 5 },
+      "tarifa": { "adulto": 35, "nino": 17.5, "tercera_edad": 21, "estudiante": 26.25, "infante": 0 },
+      "horarios": [ { "hora": "14:00", "capacidad": 8, "guia": "GUIA-ANDREA-02" } ]
+    }
+  ]
+}

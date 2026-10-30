@@ -1,0 +1,124 @@
+// Contrato gRPC interno de ms_order (microservicio 10). Plan: Plan/ms_order/PLAN_IMPLEMENTACION.md
+syntax = "proto3";
+package descubre.order;
+
+service OrderService {
+  rpc Health (Empty) returns (NodeHealthResponse);
+
+  // Booking crea la orden y sus lineas. Idempotente por Idempotency-Key.
+  rpc CreateOrder (CreateOrderRequest) returns (OrderSummary);
+  // Booking lo llama cuando los cupos ya estan descontados.
+  rpc StartPayment (StartPaymentRequest) returns (StartPaymentResponse);
+  // Compensacion: sin cupos, fallo posterior o cancelacion. Idempotente.
+  rpc CancelOrder (CancelOrderRequest) returns (OrderSummary);
+
+  // Por ord_id u ord_numero, con sus lineas. Booking lo usa para conocer al dueno e Invoicing para facturar.
+  rpc GetOrder (GetOrderRequest) returns (OrderDetail);
+  rpc ListOrders (ListOrdersRequest) returns (OrderPage);
+}
+
+message Empty {}
+
+// Campos con los mismos nombres que NodeHealthResponse del contrato v3.
+message NodeHealthResponse {
+  string status = 1;
+  string node_id = 2;
+  string node_code = 3;
+  string version = 4;
+  bool database_connected = 5;
+  int32 latency_ms = 6;
+  double memory_usage_mb = 7;
+  int64 uptime_seconds = 8;
+  string timestamp = 9;
+}
+
+message TicketLine {
+  string ticket_type = 1;         // ADULT | CHILD | SENIOR | INFANT | STUDENT
+  int32 cantidad = 2;
+}
+
+message CreateOrderRequest {
+  string idempotency_key = 1;
+  int64 atr_id = 2;
+  string atr_codigo = 3;
+  string atraccion_nombre = 4;
+  repeated TicketLine boletos = 5;
+  string metodo = 6;              // CREDIT_CARD | DEBIT_CARD | PAYPAL | TRANSFER
+  int64 cart_item_id = 7;         // portal; 0 = compra directa
+  string coupon_code = 8;         // portal; opcional
+  string observaciones = 9;
+  string fecha = 10;              // YYYY-MM-DD de la actividad, para la tarifa
+}
+
+message OrderSummary {
+  int64 ord_id = 1;
+  string ord_numero = 2;          // external_order_id
+  int64 det_id_adulto = 3;
+  string estado = 4;              // CREADA | PAGADA | CANCELADA | REEMBOLSADA
+  double subtotal = 5;
+  double descuento = 6;
+  double iva = 7;
+  double total = 8;
+  string moneda = 9;
+}
+
+message CardData {
+  string marca = 1;
+  string ultimos4 = 2;
+  string titular = 3;
+  int32 mes = 4;
+  int32 anio = 5;
+  string pais = 6;
+}
+
+message StartPaymentRequest {
+  string ord_numero = 1;
+  CardData tarjeta = 2;           // solo portal; no se guarda en Order
+}
+
+message StartPaymentResponse {
+  int64 pag_id = 1;               // 0 si el total es 0: no se crea pago
+  string estado_pago = 2;         // PENDIENTE | APROBADO
+  string estado_orden = 3;
+}
+
+message CancelOrderRequest {
+  string ord_numero = 1;
+  string motivo = 2;
+}
+
+message GetOrderRequest {
+  int64 ord_id = 1;
+  string ord_numero = 2;
+}
+
+message OrderLine {
+  int64 det_id = 1;
+  int64 atr_id = 2;
+  string descripcion = 3;
+  string ticket_type = 4;
+  int32 cantidad = 5;
+  double precio_unitario = 6;
+  double subtotal = 7;
+}
+
+message OrderDetail {
+  OrderSummary orden = 1;
+  int64 usu_id = 2;               // 0 si es del canal B2B
+  int64 cla_id = 3;               // 0 si es del portal
+  string metodo = 4;
+  repeated OrderLine lineas = 5;
+  string fecha = 6;
+}
+
+message ListOrdersRequest {
+  bool todas = 1;                 // solo ADMIN
+  string estado = 2;
+  int32 page = 3;
+  int32 limit = 4;
+}
+
+message OrderPage {
+  int32 total_results = 1;
+  repeated OrderSummary items = 2;
+}

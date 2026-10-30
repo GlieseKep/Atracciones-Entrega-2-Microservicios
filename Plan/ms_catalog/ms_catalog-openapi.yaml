@@ -1,0 +1,2415 @@
+openapi: 3.0.3
+info:
+  title: ms_catalog · Catalog & Attractions Service (Descubre EC)
+  version: 1.0.0
+  description: >-
+    Contrato propio del microservicio **4 · Catalog & Attractions Service** (REST), derivado de la base `ms_catalog`
+
+    (`Plan/02_microservicios_v2_bases_de_datos.sql`), de `Plan/arquitectura_esb_v3.html` y del contrato
+
+    `Plan/PlanBooking/atracciones-openapi-v3(1).yaml`.
+
+
+    ## Alcance
+
+    Operadores, guías, categorías, idiomas, inclusiones y atracciones.
+
+
+    ## Rutas públicas
+
+    Las cinco rutas de la etiqueta *Catálogo (contrato v3)* y sus esquemas están **copiados sin cambios** del contrato
+    v3.
+
+
+    ## Eventos
+
+    Consume `RESENA_PUBLICADA` (Review) y `TARIFA_ACTUALIZADA` (Pricing).
+
+
+    ## Errores
+
+    RFC 7807 (`application/problem+json`), con el esquema `ProblemDetails` del contrato v3.
+servers:
+  - url: /api/v3
+    description: Ruta canónica v3 detrás del API Gateway y el ESB
+  - url: 'http://localhost:4019/api/v3'
+    description: Desarrollo local
+security:
+  - BearerAuth: []
+tags:
+  - name: Catálogo (contrato v3)
+    description: 'Consulta pública, idéntica al contrato v3.'
+  - name: Guías
+    description: Guías de los operadores.
+  - name: Administración
+    description: 'Rol ADMIN, u OPERADOR sobre su propio operador.'
+  - name: Interno
+    description: Rutas para Booking y otros servicios.
+  - name: Salud
+    description: Telemetría del nodo.
+paths:
+  /atracciones/categorias/arbol:
+    get:
+      tags:
+        - Catálogo (contrato v3)
+      summary: Consultar árbol jerárquico recursivo de categorías (Taxonomía padre-hija)
+      security: []
+      description: >
+        Retorna la estructura en árbol de las categorías turísticas con soporte multinivel (implementado mediante
+        `@Tree('closure-table')` o autorreferencia `cat_padre_id`).
+
+        Cada nodo incluye de forma obligatoria los atributos de inclusión exigidos por la cátedra:
+
+        * `incluye_comida`: Almuerzos, cenas, degustaciones de chocolate o catas de café.
+
+        * `incluye_transporte`: Recogida en hotel, transporte turístico privado o bus panorámico.
+
+        * `incluye_guia`: Acompañamiento de guía turístico oficial certificado.
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+      responses:
+        '200':
+          description: Árbol recursivo de categorías recuperado exitosamente.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CategoryTreeNode'
+              example:
+                - id: cat-tours-100
+                  nombre: Tours y Experiencias Guiadas
+                  slug: tours-experiencias
+                  descripcion: Actividades de inmersión cultural y natural con guías expertos.
+                  icono: compass
+                  incluye_comida: false
+                  incluye_transporte: true
+                  incluye_guia: true
+                  orden: 1
+                  subcategorias:
+                    - id: cat-tours-201
+                      nombre: Tours Gastronómicos y Catas
+                      slug: tours-gastronomicos
+                      descripcion: Degustaciones de comida típica ecuatoriana y chocolate fino de aroma.
+                      icono: utensils
+                      incluye_comida: true
+                      incluye_transporte: false
+                      incluye_guia: true
+                      orden: 1
+                      subcategorias: []
+                    - id: cat-tours-202
+                      nombre: Excursiones a Volcanes y Aventura
+                      slug: volcanes-aventura
+                      descripcion: 'Senderismo y expediciones al Cotopaxi, Chimborazo y Quilotoa.'
+                      icono: mountain
+                      incluye_comida: true
+                      incluye_transporte: true
+                      incluye_guia: true
+                      orden: 2
+                      subcategorias: []
+                - id: cat-cultura-200
+                  nombre: Museos y Sitios Arqueológicos
+                  slug: museos-cultura
+                  descripcion: Entradas directas a patrimonios y centros históricos.
+                  icono: landmark
+                  incluye_comida: false
+                  incluye_transporte: false
+                  incluye_guia: false
+                  orden: 2
+                  subcategorias: []
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+  /atracciones/categorias:
+    get:
+      tags:
+        - Catálogo (contrato v3)
+      summary: Consultar catálogo plano de categorías con filtro por padre
+      description: >
+        Retorna la lista plana de categorías. Permite filtrar por `padre_id` para construir componentes visuales tipo
+        tabs o menús desplegables sin procesar recursión en cliente.
+      security: []
+      parameters:
+        - name: padre_id
+          in: query
+          required: false
+          description: >-
+            ID de la categoría padre para listar únicamente sus hijas directas. Si se omite, retorna todas las
+            categorías raíz.
+          schema:
+            type: string
+          example: cat-tours-100
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+      responses:
+        '200':
+          description: Listado plano de categorías.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CategoryFlat'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+  /atracciones/search:
+    post:
+      tags:
+        - Catálogo (contrato v3)
+      summary: Búsqueda avanzada y filtrado de experiencias turísticas
+      description: >
+        Permite a los usuarios buscar y filtrar atracciones por destino geográfico, fechas de viaje, franja
+        presupuestaria, árbol de categorías y atributos específicos de confort (comida, transporte, accesibilidad).
+
+        Si no se especifica una fecha puntual, el endpoint retorna las atracciones activas indicando el precio base
+        referencial (*"Desde US$ XX por adulto"*).
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchAtraccionesRequestV2'
+      responses:
+        '200':
+          description: Resultados de búsqueda obtenidos con paginación y metadata.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchAtraccionesResponseV2'
+        '400':
+          $ref: '#/components/responses/ProblemDetails400'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+  /atracciones:
+    get:
+      tags:
+        - Catálogo (contrato v3)
+      summary: Listado paginado de atracciones turísticas
+      description: Consulta el catálogo general de atracciones turísticas mediante parámetros en la URL.
+      security: []
+      parameters:
+        - name: city
+          in: query
+          required: false
+          description: 'Nombre de la ciudad turística (ej. Quito, Baños, Cuenca, Galápagos).'
+          schema:
+            type: string
+          example: Quito
+        - name: categoria_id
+          in: query
+          required: false
+          description: Identificador de la categoría deseada.
+          schema:
+            type: string
+        - name: incluye_comida
+          in: query
+          required: false
+          description: Filtrar solo atracciones que incluyan alimentación.
+          schema:
+            type: boolean
+        - name: incluye_transporte
+          in: query
+          required: false
+          description: Filtrar solo atracciones que incluyan traslado.
+          schema:
+            type: boolean
+        - name: incluye_guia
+          in: query
+          required: false
+          description: Filtrar solo experiencias con guía acreditado.
+          schema:
+            type: boolean
+        - name: page
+          in: query
+          required: false
+          description: Número de página (1-indexed).
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: limit
+          in: query
+          required: false
+          description: Cantidad de resultados por página.
+          schema:
+            type: integer
+            default: 10
+            maximum: 50
+        - name: sort
+          in: query
+          required: false
+          description: Criterio de ordenamiento.
+          schema:
+            type: string
+            enum:
+              - PRICE_ASC
+              - PRICE_DESC
+              - RATING_DESC
+              - POPULARITY
+            default: POPULARITY
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+      responses:
+        '200':
+          description: Listado de experiencias turísticas recuperado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchAtraccionesResponseV2'
+        '400':
+          $ref: '#/components/responses/ProblemDetails400'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+  '/atracciones/{id}':
+    get:
+      tags:
+        - Catálogo (contrato v3)
+      summary: Consultar detalle técnico completo de una atracción por ID o Slug
+      description: |
+        Retorna la ficha enriquecida de la experiencia turística con:
+        * Desglose analítico de puntuaciones (*ratings breakdown* en Limpieza, Servicio y Calidad-Precio).
+        * Itinerario cronológico secuencial de hitos con tiempos de permanencia.
+        * Punto de encuentro geoespacial con coordenadas GPS y dirección física.
+        * Atributos de accesibilidad física y admisión de animales de servicio.
+        * Políticas de cancelación gratuita y plazo límite antes de la actividad.
+        * Parámetros para la integración en paquetes turísticos y combos dinámicos (`permite_paquete`).
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Identificador alfanumérico único (UUID o Slug de la atracción).
+          schema:
+            type: string
+          example: PRhu4UBTWPBC
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+      responses:
+        '200':
+          description: Ficha completa de la atracción recuperada exitosamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AtraccionDetailResponseV2'
+        '404':
+          $ref: '#/components/responses/ProblemDetails404'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+  /guias:
+    get:
+      tags:
+        - Guías
+      summary: Listar guías
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+        - name: operador
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: activo
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Guías.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Guia'
+        '400':
+          $ref: '#/components/responses/ProblemDetails400'
+        '401':
+          $ref: '#/components/responses/ProblemDetails401'
+        '403':
+          $ref: '#/components/responses/ProblemDetails403'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+    post:
+      tags:
+        - Guías
+      summary: Crear un guía
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GuiaRequest'
+      responses:
+        '201':
+          description: Guía creado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Guia'
+        '400':
+          $ref: '#/components/responses/ProblemDetails400'
+        '401':
+          $ref: '#/components/responses/ProblemDetails401'
+        '403':
+          $ref: '#/components/responses/ProblemDetails403'
+        '409':
+          $ref: '#/components/responses/ProblemDetails409'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+  '/guias/{codigo}':
+    get:
+      tags:
+        - Guías
+      summary: Obtener un guía
+      description: Lo usa Booking para `guia_asignado` y para validar `guia_codigo` en el check-in.
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+        - name: codigo
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Guía.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Guia'
+        '401':
+          $ref: '#/components/responses/ProblemDetails401'
+        '404':
+          $ref: '#/components/responses/ProblemDetails404'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+      security:
+        - BearerAuth: []
+        - ServiceTokenAuth: []
+    patch:
+      tags:
+        - Guías
+      summary: Editar o desactivar un guía
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+        - name: codigo
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GuiaUpdateRequest'
+      responses:
+        '200':
+          description: Guía actualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Guia'
+        '400':
+          $ref: '#/components/responses/ProblemDetails400'
+        '401':
+          $ref: '#/components/responses/ProblemDetails401'
+        '403':
+          $ref: '#/components/responses/ProblemDetails403'
+        '404':
+          $ref: '#/components/responses/ProblemDetails404'
+        '409':
+          $ref: '#/components/responses/ProblemDetails409'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+  '/internal/atracciones/{id}/logistica':
+    get:
+      tags:
+        - Interno
+      summary: Datos de una atracción para una reserva
+      description: 'Lo usa Booking. Sin `gui_id`, asigna el primer guía activo del operador. Con `gui_id`, devuelve ese guía.'
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: gui_id
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Datos de la reserva.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogisticaReserva'
+        '401':
+          $ref: '#/components/responses/ProblemDetails401'
+        '404':
+          $ref: '#/components/responses/ProblemDetails404'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+      security:
+        - ServiceTokenAuth: []
+  '/internal/atracciones/{id}/referencia':
+    get:
+      tags:
+        - Interno
+      summary: Convertir el ID público o slug en atr_id
+      description: Lo usan los servicios que guardan `atr_id` como ID lógico. `404` si no existe o no está publicada.
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Atracción.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReferenciaAtraccion'
+        '401':
+          $ref: '#/components/responses/ProblemDetails401'
+        '404':
+          $ref: '#/components/responses/ProblemDetails404'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+      security:
+        - ServiceTokenAuth: []
+  /operadores:
+    get:
+      tags:
+        - Administración
+      summary: Listar operadores
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+      responses:
+        '200':
+          description: Operadores.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Operador'
+        '400':
+          $ref: '#/components/responses/ProblemDetails400'
+        '401':
+          $ref: '#/components/responses/ProblemDetails401'
+        '403':
+          $ref: '#/components/responses/ProblemDetails403'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+    post:
+      tags:
+        - Administración
+      summary: Crear un operador
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OperadorRequest'
+      responses:
+        '201':
+          description: Operador creado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Operador'
+        '400':
+          $ref: '#/components/responses/ProblemDetails400'
+        '401':
+          $ref: '#/components/responses/ProblemDetails401'
+        '403':
+          $ref: '#/components/responses/ProblemDetails403'
+        '409':
+          $ref: '#/components/responses/ProblemDetails409'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+  '/operadores/{codigo}':
+    patch:
+      tags:
+        - Administración
+      summary: Editar o desactivar un operador
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+        - name: codigo
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OperadorUpdateRequest'
+      responses:
+        '200':
+          description: Operador actualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Operador'
+        '400':
+          $ref: '#/components/responses/ProblemDetails400'
+        '401':
+          $ref: '#/components/responses/ProblemDetails401'
+        '403':
+          $ref: '#/components/responses/ProblemDetails403'
+        '404':
+          $ref: '#/components/responses/ProblemDetails404'
+        '409':
+          $ref: '#/components/responses/ProblemDetails409'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+  '/operadores/{codigo}/usuarios':
+    post:
+      tags:
+        - Administración
+      summary: Vincular un usuario a un operador
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+        - name: codigo
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - usu_id
+                - cargo
+              properties:
+                usu_id:
+                  type: integer
+                  format: int64
+                cargo:
+                  type: string
+                  enum:
+                    - ADMIN
+                    - VENDEDOR
+                    - GUIA
+      responses:
+        '204':
+          description: Vinculado.
+        '400':
+          $ref: '#/components/responses/ProblemDetails400'
+        '401':
+          $ref: '#/components/responses/ProblemDetails401'
+        '403':
+          $ref: '#/components/responses/ProblemDetails403'
+        '404':
+          $ref: '#/components/responses/ProblemDetails404'
+        '409':
+          $ref: '#/components/responses/ProblemDetails409'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+  '/operadores/{codigo}/usuarios/{usu_id}':
+    delete:
+      tags:
+        - Administración
+      summary: Desvincular un usuario
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+        - name: codigo
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: usu_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Desvinculado.
+        '401':
+          $ref: '#/components/responses/ProblemDetails401'
+        '403':
+          $ref: '#/components/responses/ProblemDetails403'
+        '404':
+          $ref: '#/components/responses/ProblemDetails404'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+  /categorias:
+    post:
+      tags:
+        - Administración
+      summary: Crear una categoría
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoriaRequest'
+      responses:
+        '201':
+          description: Categoría creada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryFlat'
+        '400':
+          $ref: '#/components/responses/ProblemDetails400'
+        '401':
+          $ref: '#/components/responses/ProblemDetails401'
+        '403':
+          $ref: '#/components/responses/ProblemDetails403'
+        '409':
+          $ref: '#/components/responses/ProblemDetails409'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+  '/categorias/{codigo}':
+    patch:
+      tags:
+        - Administración
+      summary: Editar o desactivar una categoría
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+        - name: codigo
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoriaUpdateRequest'
+      responses:
+        '200':
+          description: Categoría actualizada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryFlat'
+        '400':
+          $ref: '#/components/responses/ProblemDetails400'
+        '401':
+          $ref: '#/components/responses/ProblemDetails401'
+        '403':
+          $ref: '#/components/responses/ProblemDetails403'
+        '404':
+          $ref: '#/components/responses/ProblemDetails404'
+        '409':
+          $ref: '#/components/responses/ProblemDetails409'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+  /idiomas:
+    get:
+      tags:
+        - Administración
+      summary: Listar idiomas
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+      responses:
+        '200':
+          description: Idiomas.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required:
+                    - codigo
+                    - nombre
+                  properties:
+                    codigo:
+                      type: string
+                    nombre:
+                      type: string
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+      security: []
+  /inclusiones:
+    get:
+      tags:
+        - Administración
+      summary: Listar inclusiones
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+        - name: tipo
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - INCLUYE
+              - NO_INCLUYE
+              - RECOMENDACION
+      responses:
+        '200':
+          description: Inclusiones.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Inclusion'
+        '400':
+          $ref: '#/components/responses/ProblemDetails400'
+        '401':
+          $ref: '#/components/responses/ProblemDetails401'
+        '403':
+          $ref: '#/components/responses/ProblemDetails403'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+    post:
+      tags:
+        - Administración
+      summary: Crear una inclusión
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - tipo
+                - nombre
+              properties:
+                tipo:
+                  type: string
+                  enum:
+                    - INCLUYE
+                    - NO_INCLUYE
+                    - RECOMENDACION
+                nombre:
+                  type: string
+                  maxLength: 150
+                orden:
+                  type: integer
+      responses:
+        '201':
+          description: Inclusión creada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Inclusion'
+        '400':
+          $ref: '#/components/responses/ProblemDetails400'
+        '401':
+          $ref: '#/components/responses/ProblemDetails401'
+        '403':
+          $ref: '#/components/responses/ProblemDetails403'
+        '409':
+          $ref: '#/components/responses/ProblemDetails409'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+  /admin/atracciones:
+    get:
+      tags:
+        - Administración
+      summary: Listar atracciones de cualquier estado
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+        - name: estado
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - BORRADOR
+              - PUBLICADA
+              - INACTIVA
+        - name: operador
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+      responses:
+        '200':
+          description: Página de atracciones.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AtraccionAdminPage'
+        '400':
+          $ref: '#/components/responses/ProblemDetails400'
+        '401':
+          $ref: '#/components/responses/ProblemDetails401'
+        '403':
+          $ref: '#/components/responses/ProblemDetails403'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+    post:
+      tags:
+        - Administración
+      summary: Crear una atracción
+      description: Nace en `BORRADOR`. El servicio genera `atr_codigo`.
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AtraccionRequest'
+      responses:
+        '201':
+          description: Atracción creada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AtraccionAdmin'
+        '400':
+          $ref: '#/components/responses/ProblemDetails400'
+        '401':
+          $ref: '#/components/responses/ProblemDetails401'
+        '403':
+          $ref: '#/components/responses/ProblemDetails403'
+        '409':
+          $ref: '#/components/responses/ProblemDetails409'
+        '422':
+          $ref: '#/components/responses/ProblemDetails422'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+  '/admin/atracciones/{id}':
+    get:
+      tags:
+        - Administración
+      summary: Obtener una atracción para editar
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Atracción.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AtraccionAdmin'
+        '401':
+          $ref: '#/components/responses/ProblemDetails401'
+        '403':
+          $ref: '#/components/responses/ProblemDetails403'
+        '404':
+          $ref: '#/components/responses/ProblemDetails404'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+    put:
+      tags:
+        - Administración
+      summary: Reemplazar los datos de una atracción
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AtraccionRequest'
+      responses:
+        '200':
+          description: Atracción actualizada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AtraccionAdmin'
+        '400':
+          $ref: '#/components/responses/ProblemDetails400'
+        '401':
+          $ref: '#/components/responses/ProblemDetails401'
+        '403':
+          $ref: '#/components/responses/ProblemDetails403'
+        '404':
+          $ref: '#/components/responses/ProblemDetails404'
+        '409':
+          $ref: '#/components/responses/ProblemDetails409'
+        '422':
+          $ref: '#/components/responses/ProblemDetails422'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+    delete:
+      tags:
+        - Administración
+      summary: Borrado lógico
+      description: Marca `atr_eliminado_en`.
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Eliminada.
+        '401':
+          $ref: '#/components/responses/ProblemDetails401'
+        '403':
+          $ref: '#/components/responses/ProblemDetails403'
+        '404':
+          $ref: '#/components/responses/ProblemDetails404'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+  '/admin/atracciones/{id}/estado':
+    put:
+      tags:
+        - Administración
+      summary: Cambiar el estado
+      description: 'Publicar exige al menos una categoría, una foto y una tarifa.'
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - estado
+              properties:
+                estado:
+                  type: string
+                  enum:
+                    - BORRADOR
+                    - PUBLICADA
+                    - INACTIVA
+      responses:
+        '200':
+          description: Atracción actualizada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AtraccionAdmin'
+        '400':
+          $ref: '#/components/responses/ProblemDetails400'
+        '401':
+          $ref: '#/components/responses/ProblemDetails401'
+        '403':
+          $ref: '#/components/responses/ProblemDetails403'
+        '404':
+          $ref: '#/components/responses/ProblemDetails404'
+        '422':
+          $ref: '#/components/responses/ProblemDetails422'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+  /health:
+    get:
+      tags:
+        - Salud
+      summary: Salud del nodo ms_catalog
+      security: []
+      responses:
+        '200':
+          description: Estado del nodo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NodeHealthResponse'
+        '503':
+          description: Nodo degradado o sin base de datos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NodeHealthResponse'
+components:
+  parameters:
+    XCorrelationIdHeader:
+      name: X-Correlation-Id
+      in: header
+      required: false
+      description: >
+        Identificador unívoco de trazabilidad distribuida (Semana 8 & Consideraciones RDA2).  
+
+        Se propaga de forma invariable entre peticiones HTTP, logs JSON estructurados, mensajes de RabbitMQ y streams
+        de Apache Kafka.
+      schema:
+        type: string
+      example: cid-8821a-9923
+  schemas:
+    CategoryTreeNode:
+      type: object
+      required:
+        - id
+        - nombre
+        - slug
+        - incluye_comida
+        - incluye_transporte
+        - incluye_guia
+      properties:
+        id:
+          type: string
+          description: Identificador único de la categoría.
+          example: cat-tours-100
+        nombre:
+          type: string
+          description: Nombre legible de la categoría.
+          example: Tours y Experiencias Guiadas
+        slug:
+          type: string
+          description: Identificador web URL-friendly.
+          example: tours-experiencias
+        descripcion:
+          type: string
+          description: Resumen descriptivo de las actividades de este grupo.
+          example: Recorridos por la ciudad y la naturaleza con guías titulados.
+        icono:
+          type: string
+          description: Nombre del icono para la interfaz gráfica (FontAwesome o Lucide).
+          example: compass
+        incluye_comida:
+          type: boolean
+          description: Bandera booleana obligatoria. Indica si las actividades de esta categoría incluyen alimentación.
+          example: false
+        incluye_transporte:
+          type: boolean
+          description: Bandera booleana obligatoria. Indica si incluye traslado vehicular.
+          example: true
+        incluye_guia:
+          type: boolean
+          description: Bandera booleana obligatoria. Indica si incluye acompañamiento de guía profesional.
+          example: true
+        orden:
+          type: integer
+          description: Posición ordinal de renderizado en el menú.
+          example: 1
+        subcategorias:
+          type: array
+          description: Lista anidada recursiva de subcategorías hijas.
+          items:
+            $ref: '#/components/schemas/CategoryTreeNode'
+    ProblemDetails:
+      type: object
+      required:
+        - type
+        - title
+        - status
+        - detail
+      properties:
+        type:
+          type: string
+          description: URI que identifica el tipo de error bajo estándar RFC 7807.
+          example: 'https://booking.epn.edu.ec/errors/sin-cupos'
+        title:
+          type: string
+          description: Resumen corto y legible del problema.
+          example: Cupos Agotados para el Turno Horario
+        status:
+          type: integer
+          description: Código de estado HTTP correspondiente.
+          example: 409
+        detail:
+          type: string
+          description: Explicación detallada de la ocurrencia del error.
+          example: >-
+            No existen suficientes cupos disponibles en el turno seleccionado (10:30 a.m.). Cupos restantes: 1,
+            solicitados: 2.
+        instance:
+          type: string
+          description: URI de la solicitud que originó el error.
+          example: /api/v3/atracciones/reservas
+        code:
+          type: string
+          description: Código nemotécnico interno para evaluación en código.
+          example: OUT_OF_STOCK
+        correlation_id:
+          type: string
+          description: Identificador de correlación propagado para rastrear el fallo en los logs y spans de Jaeger.
+          example: cid-8821a
+        timestamp:
+          type: string
+          format: date-time
+          example: '2026-10-21T16:44:01Z'
+        invalid_params:
+          type: array
+          description: Lista de campos con error en caso de fallo de validación HTTP 400/422.
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                example: customer.phone
+              reason:
+                type: string
+                example: El formato debe ser internacional E.164 o número celular válido de Ecuador (09XXXXXXXX).
+    CategoryFlat:
+      type: object
+      required:
+        - id
+        - nombre
+        - slug
+      properties:
+        id:
+          type: string
+          example: cat-tours-201
+        padre_id:
+          type: string
+          nullable: true
+          description: Identificador de la categoría padre (null si es categoría raíz).
+          example: cat-tours-100
+        nombre:
+          type: string
+          example: Tours Gastronómicos
+        slug:
+          type: string
+          example: tours-gastronomicos
+        incluye_comida:
+          type: boolean
+          example: true
+        incluye_transporte:
+          type: boolean
+          example: false
+        incluye_guia:
+          type: boolean
+          example: true
+    SearchAtraccionesRequestV2:
+      type: object
+      properties:
+        query:
+          type: string
+          description: 'Término de búsqueda libre o nombre de destino (ej. "Quito", "Mitad del Mundo").'
+          example: Quito
+        ciudad:
+          type: string
+          description: Ciudad geográfica de destino.
+          example: Quito
+        fecha_inicio:
+          type: string
+          format: date
+          description: Fecha de inicio de la experiencia turística (`YYYY-MM-DD`).
+          example: '2026-10-25'
+        fecha_fin:
+          type: string
+          format: date
+          description: Fecha final para rangos de búsqueda flexible (`YYYY-MM-DD`).
+          example: '2026-10-28'
+        categoria_id:
+          type: string
+          description: Filtrar por identificador de categoría o subcategoría.
+          example: cat-tours-201
+        incluye_comida:
+          type: boolean
+          description: Filtrar únicamente experiencias que incluyan alimentación.
+        incluye_transporte:
+          type: boolean
+          description: Filtrar únicamente experiencias que incluyan transporte.
+        incluye_guia:
+          type: boolean
+          description: Filtrar únicamente experiencias que cuenten con guía certificado.
+        precio_min:
+          type: number
+          minimum: 0
+          description: Precio mínimo en USD por adulto.
+          example: 15
+        precio_max:
+          type: number
+          description: Precio máximo en USD por adulto.
+          example: 150
+        duracion_max_horas:
+          type: integer
+          description: Límite de duración en horas (ej. 4 para tours de medio día).
+          example: 8
+        idioma_guia:
+          type: string
+          description: 'Idioma requerido del guía (ej. "Español", "Inglés", "Francés").'
+          example: Español
+        accesible_silla_ruedas:
+          type: boolean
+          description: Filtro de accesibilidad universal para personas en silla de ruedas.
+        animales_asistencia:
+          type: boolean
+          description: Filtro de admisión obligatoria de animales de asistencia o lazarillos.
+        cancelacion_gratuita:
+          type: boolean
+          description: Filtro de tours con cancelación sin costo hasta 24 horas antes.
+        adult_count:
+          type: integer
+          default: 1
+          minimum: 1
+          description: Cantidad de personas adultas para cotizar disponibilidad.
+        cantidad_adultos:
+          type: integer
+          default: 1
+          minimum: 1
+          description: Alias canónico en español para cantidad de adultos solicitados.
+        page:
+          type: integer
+          default: 1
+          minimum: 1
+        limit:
+          type: integer
+          default: 10
+          maximum: 50
+    SearchAtraccionesResponseV2:
+      type: object
+      required:
+        - metadata
+        - data
+      properties:
+        request_id:
+          type: string
+          example: req-atr-8812
+        metadata:
+          $ref: '#/components/schemas/PaginationMetadata'
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AtraccionCardResponseV2'
+    PaginationMetadata:
+      type: object
+      required:
+        - total_results
+        - page
+        - limit
+        - total_pages
+      properties:
+        total_results:
+          type: integer
+          example: 32
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 10
+        total_pages:
+          type: integer
+          example: 4
+        next_cursor:
+          type: string
+          nullable: true
+          example: eyJvZmZzZXQiOjEwfQ==
+    AtraccionCardResponseV2:
+      type: object
+      required:
+        - id
+        - name
+        - city
+        - price
+        - rating
+        - duration
+        - inclusions
+      properties:
+        id:
+          type: string
+          description: Identificador único público (ej. ID alfanumérico de Dilan o UUID).
+          example: PRhu4UBTWPBC
+        slug:
+          type: string
+          example: quito-city-bus-tour-mitad-del-mundo
+        name:
+          type: string
+          example: Quito City Bus Tour & Mitad del Mundo Oficial
+        short_description:
+          type: string
+          example: Recorrido panorámico de dos pisos por el Centro Histórico y la Ciudad Mitad del Mundo.
+        city:
+          type: string
+          example: Quito
+        duration:
+          type: string
+          example: 7 horas
+        duration_hours:
+          type: number
+          example: 7
+        price:
+          $ref: '#/components/schemas/TarifaBaseDesglosada'
+        rating:
+          $ref: '#/components/schemas/RatingResumen'
+        free_cancellation:
+          type: boolean
+          description: Indica si el tour admite cancelación gratuita sin penalidad.
+          example: true
+        free_cancellation_hours:
+          type: integer
+          description: Plazo de horas de antelación para cancelar gratis.
+          example: 24
+        inclusions:
+          $ref: '#/components/schemas/InclusionesFlags'
+        meeting_point:
+          type: string
+          example: Boulevard Naciones Unidas y Av. Shyris (Parada Quinde)
+        photos:
+          type: array
+          items:
+            type: string
+          example:
+            - 'https://images.unsplash.com/photo-1589394815804-964ed0be2eb5?w=600'
+            - 'https://images.unsplash.com/photo-1596436889106-be35e843f974?w=600'
+        permite_paquete:
+          type: boolean
+          description: Bandera que habilita el armado de paquetes y combos turísticos con descuento en Booking.
+          example: true
+        nombre:
+          type: string
+          description: Alias canónico en español para nombre de la atracción.
+          example: Quito City Bus Tour & Mitad del Mundo Oficial
+        descripcion_corta:
+          type: string
+          description: Alias canónico en español para descripción corta.
+          example: Recorrido panorámico de dos pisos por el Centro Histórico y la Ciudad Mitad del Mundo.
+        ciudad:
+          type: string
+          description: Alias canónico en español para ciudad.
+          example: Quito
+        duracion:
+          type: string
+          description: Alias canónico en español para duración estimada.
+          example: 7 horas
+        precio:
+          $ref: '#/components/schemas/TarifaBaseDesglosada'
+          description: Alias canónico en español para tarifa base desglosada.
+        calificacion:
+          $ref: '#/components/schemas/RatingResumen'
+          description: Alias canónico en español para calificación resumida.
+        cancelacion_gratuita:
+          type: boolean
+          description: Alias canónico en español para bandera de cancelación gratuita.
+          example: true
+        inclusiones:
+          $ref: '#/components/schemas/InclusionesFlags'
+          description: Alias canónico en español para banderas de inclusión obligatorias.
+        punto_encuentro:
+          type: string
+          description: Alias canónico en español para punto de encuentro.
+          example: Boulevard Naciones Unidas y Av. Shyris (Parada Quinde)
+    TarifaBaseDesglosada:
+      type: object
+      required:
+        - currency
+        - adult
+        - child
+        - senior
+        - infant
+      properties:
+        currency:
+          type: string
+          example: USD
+        adult:
+          type: number
+          description: Tarifa completa de adulto (13 a 64 años).
+          example: 30
+        child:
+          type: number
+          description: 'Tarifa para niños (5 a 12 años, típicamente con 50% descuento).'
+          example: 15
+        senior:
+          type: number
+          description: Tarifa preferencial para adultos mayores (65+ años).
+          example: 18
+        infant:
+          type: number
+          description: 'Tarifa de infantes/bebés (0 a 4 años, tarifa $0.00 pero ocupa cupo de aforo).'
+          example: 0
+        student:
+          type: number
+          description: Tarifa preferencial para estudiantes acreditados con carnet (descuento típico 25%).
+          example: 22.5
+        adulto:
+          type: number
+          description: Alias canónico en español para tarifa de adulto.
+          example: 30
+        nino:
+          type: number
+          description: Alias canónico en español para tarifa de niño.
+          example: 15
+        tercera_edad:
+          type: number
+          description: Alias canónico en español para tarifa de adulto mayor.
+          example: 18
+        infante:
+          type: number
+          description: Alias canónico en español para tarifa de infante/bebé ($0.00).
+          example: 0
+        estudiante:
+          type: number
+          description: Alias canónico en español para tarifa de estudiante.
+          example: 22.5
+        moneda:
+          type: string
+          description: Alias canónico en español para código de divisa (USD).
+          example: USD
+    RatingResumen:
+      type: object
+      required:
+        - score
+        - review_count
+      properties:
+        score:
+          type: number
+          example: 9.8
+        review_count:
+          type: integer
+          example: 1250
+        badge_text:
+          type: string
+          example: Excepcional
+    InclusionesFlags:
+      type: object
+      required:
+        - includes_food
+        - includes_transport
+        - includes_guide
+      properties:
+        includes_food:
+          type: boolean
+          description: Whether food/snacks/tastings are included.
+          example: true
+        includes_transport:
+          type: boolean
+          description: Whether ground/panoramic transport is included.
+          example: true
+        includes_guide:
+          type: boolean
+          description: Whether certified official guide service is included.
+          example: true
+        incluye_comida:
+          type: boolean
+          description: Alias en español para retrocompatibilidad.
+          example: true
+        incluye_transporte:
+          type: boolean
+          description: Alias en español para retrocompatibilidad.
+          example: true
+        incluye_guia:
+          type: boolean
+          description: Alias en español para retrocompatibilidad.
+          example: true
+    AtraccionDetailResponseV2:
+      type: object
+      required:
+        - id
+        - name
+        - description
+        - city
+        - price
+        - rating
+        - inclusions
+        - itinerary
+        - meeting_point_geo
+      properties:
+        id:
+          type: string
+          example: PRhu4UBTWPBC
+        uuid:
+          type: string
+          format: uuid
+          example: a1b2c3d4-e5f6-7890-1234-567890abcdef
+        slug:
+          type: string
+          example: quito-city-bus-tour-mitad-del-mundo
+        name:
+          type: string
+          example: Quito City Bus Tour & Mitad del Mundo Oficial
+        description:
+          type: string
+          example: >-
+            Disfruta de la mejor experiencia turística de la capital ecuatoriana en bus de dos pisos con guía bilingüe
+            certificado.
+        city:
+          type: string
+          example: Quito
+        duration:
+          type: string
+          example: 7 horas
+        price:
+          $ref: '#/components/schemas/TarifaBaseDesglosada'
+        rating:
+          $ref: '#/components/schemas/RatingCompletoDesglosado'
+        inclusions:
+          $ref: '#/components/schemas/InclusionesFlags'
+        inclusions_list:
+          type: array
+          items:
+            type: string
+          example:
+            - Transporte turístico en bus panorámico de dos pisos
+            - Guía oficial certificado bilingüe (Español / Inglés)
+            - Entrada al Complejo Monumento a la Mitad del Mundo
+            - Degustación guiada de chocolate fino de aroma ecuatoriano
+        exclusions_list:
+          type: array
+          items:
+            type: string
+          example:
+            - Entrada opcional al Museo Intiñán ($5.00 en puerta)
+            - Almuerzo y bebidas alcohólicas adicionales
+            - Propinas voluntarias para el guía y conductor
+        itinerary:
+          type: array
+          description: Secuencia cronológica paso a paso del recorrido.
+          items:
+            $ref: '#/components/schemas/ItineraryStop'
+        meeting_point_geo:
+          $ref: '#/components/schemas/MeetingPointGeo'
+        accessibility:
+          $ref: '#/components/schemas/AccessibilityAttributes'
+        guide_languages:
+          type: array
+          items:
+            type: string
+          example:
+            - Español
+            - Inglés
+        cancellation_policy:
+          $ref: '#/components/schemas/CancellationPolicy'
+        permite_paquete:
+          type: boolean
+          example: true
+        porcentaje_descuento_paquete:
+          type: number
+          description: Descuento comercial máximo otorgado por el socio para combos turísticos.
+          example: 15
+        photos:
+          type: array
+          items:
+            type: string
+        proveedor:
+          $ref: '#/components/schemas/ProveedorInfo'
+        nombre:
+          type: string
+          description: Alias canónico en español para nombre de la atracción.
+          example: Quito City Bus Tour & Mitad del Mundo Oficial
+        descripcion:
+          type: string
+          description: Alias canónico en español para descripción completa.
+          example: >-
+            Disfruta de la mejor experiencia turística de la capital ecuatoriana en bus de dos pisos con guía bilingüe
+            certificado.
+        ciudad:
+          type: string
+          description: Alias canónico en español para ciudad.
+          example: Quito
+        duracion:
+          type: string
+          description: Alias canónico en español para duración estimada.
+          example: 7 horas
+        precio:
+          $ref: '#/components/schemas/TarifaBaseDesglosada'
+          description: Alias canónico en español para tarifa base desglosada.
+        calificacion:
+          $ref: '#/components/schemas/RatingCompletoDesglosado'
+          description: Alias canónico en español para calificación desglosada.
+        inclusiones:
+          $ref: '#/components/schemas/InclusionesFlags'
+          description: Alias canónico en español para banderas de inclusión obligatorias.
+        punto_encuentro_geo:
+          $ref: '#/components/schemas/MeetingPointGeo'
+          description: Alias canónico en español para coordenadas y datos del punto de encuentro.
+        itinerario:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItineraryStop'
+          description: Alias canónico en español para itinerario paso a paso.
+        accesibilidad:
+          $ref: '#/components/schemas/AccessibilityAttributes'
+          description: Alias canónico en español para atributos de accesibilidad.
+        politica_cancelacion:
+          $ref: '#/components/schemas/CancellationPolicy'
+          description: Alias canónico en español para política de cancelación.
+    RatingCompletoDesglosado:
+      type: object
+      required:
+        - score
+        - review_count
+        - breakdown
+      properties:
+        score:
+          type: number
+          example: 9.8
+        review_count:
+          type: integer
+          example: 1250
+        badge_text:
+          type: string
+          example: Excepcional
+        breakdown:
+          $ref: '#/components/schemas/RatingsBreakdown'
+    RatingsBreakdown:
+      type: object
+      description: Desglose analítico de opiniones por pilares de calidad.
+      required:
+        - limpieza
+        - servicio
+        - calidad_precio
+        - puntualidad
+      properties:
+        limpieza:
+          type: number
+          description: Calificación de higiene y desinfección en unidades (1 a 10).
+          example: 9.9
+        servicio:
+          type: number
+          description: Calificación de la atención del guía y personal de apoyo (1 a 10).
+          example: 9.8
+        calidad_precio:
+          type: number
+          description: Relación entre lo pagado y la experiencia vivida (1 a 10).
+          example: 9.6
+        puntualidad:
+          type: number
+          description: Cumplimiento de los horarios programados del itinerario (1 a 10).
+          example: 9.7
+        cleanliness:
+          type: number
+          description: English alias for cleanliness rating score.
+          example: 9.9
+        service_score:
+          type: number
+          description: English alias for customer service rating score.
+          example: 9.8
+        value_for_money:
+          type: number
+          description: English alias for quality-to-price ratio score.
+          example: 9.6
+        punctuality:
+          type: number
+          description: English alias for itinerary punctuality score.
+          example: 9.7
+    ItineraryStop:
+      type: object
+      required:
+        - stop_number
+        - time
+        - title
+        - duration_minutes
+      properties:
+        stop_number:
+          type: integer
+          example: 1
+        time:
+          type: string
+          description: Hora de inicio programada del hito o parada.
+          example: '09:00 a.m.'
+        title:
+          type: string
+          example: Punto de encuentro y salida en Boulevard Naciones Unidas
+        description:
+          type: string
+          example: 'Recepción de pasajeros, verificación de vouchers QR y bienvenida por el guía.'
+        duration_minutes:
+          type: integer
+          description: Duración estimada en minutos de la parada o actividad.
+          example: 30
+        location_name:
+          type: string
+          example: Parque La Carolina / Quinde Tour Center
+        numero_parada:
+          type: integer
+          description: Alias canónico en español para orden secuencial de la parada.
+          example: 1
+        hora:
+          type: string
+          description: Alias canónico en español para hora programada.
+          example: '09:00 a.m.'
+        titulo:
+          type: string
+          description: Alias canónico en español para título de la parada.
+          example: Punto de encuentro y salida en Boulevard Naciones Unidas
+        descripcion:
+          type: string
+          description: Alias canónico en español para descripción de actividades en la parada.
+          example: 'Recepción de pasajeros, verificación de vouchers QR y bienvenida por el guía.'
+        duracion_minutos:
+          type: integer
+          description: Alias canónico en español para duración estimada en minutos.
+          example: 30
+        nombre_ubicacion:
+          type: string
+          description: Alias canónico en español para referencia del lugar.
+          example: Parque La Carolina / Quinde Tour Center
+    MeetingPointGeo:
+      type: object
+      required:
+        - address
+        - city
+        - latitude
+        - longitude
+      properties:
+        address:
+          type: string
+          example: 'Boulevard Naciones Unidas y Av. de los Shyris, frente al Banco del Pichincha'
+        city:
+          type: string
+          example: Quito
+        latitude:
+          type: number
+          example: -0.178652
+        longitude:
+          type: number
+          example: -78.48312
+        arrival_instructions:
+          type: string
+          example: Presentarse con 15 minutos de anticipación junto al totem informativo rojo de Descubre EC.
+        google_maps_url:
+          type: string
+          example: 'https://maps.google.com/?q=-0.178652,-78.483120'
+        direccion:
+          type: string
+          description: Alias canónico en español para dirección física.
+          example: 'Boulevard Naciones Unidas y Av. de los Shyris, frente al Banco del Pichincha'
+        ciudad:
+          type: string
+          description: Alias canónico en español para ciudad.
+          example: Quito
+        latitud:
+          type: number
+          description: Alias canónico en español para coordenada GPS de latitud.
+          example: -0.178652
+        longitud:
+          type: number
+          description: Alias canónico en español para coordenada GPS de longitud.
+          example: -78.48312
+        instrucciones_llegada:
+          type: string
+          description: Alias canónico en español para pautas de encuentro.
+          example: Presentarse con 15 minutos de anticipación junto al totem informativo rojo de Descubre EC.
+    AccessibilityAttributes:
+      type: object
+      properties:
+        wheelchair_accessible:
+          type: boolean
+          description: Apto para personas en silla de ruedas en bus y paradas.
+          example: true
+        stroller_accessible:
+          type: boolean
+          description: Apto para carriolas de bebés.
+          example: true
+        service_animals_allowed:
+          type: boolean
+          description: Admisión de perros guía y animales de asistencia según normativa.
+          example: true
+        accesible_silla_ruedas:
+          type: boolean
+          description: Alias canónico en español para accesibilidad en silla de ruedas.
+          example: true
+        accesible_carriola:
+          type: boolean
+          description: Alias canónico en español para aptitud de carriolas infantiles.
+          example: true
+        admite_animales_asistencia:
+          type: boolean
+          description: Alias canónico en español para ingreso de animales de servicio.
+          example: true
+    CancellationPolicy:
+      type: object
+      required:
+        - free_cancellation
+        - deadline_hours
+      properties:
+        free_cancellation:
+          type: boolean
+          example: true
+        deadline_hours:
+          type: integer
+          description: Horas mínimas previas al inicio para cancelar sin penalidad.
+          example: 24
+        description:
+          type: string
+          example: Cancela gratis hasta 24 horas antes de la actividad y recibe el 100% de reembolso.
+        cancelacion_gratuita:
+          type: boolean
+          description: Alias canónico en español para cancelación gratuita sin recargo.
+          example: true
+        horas_limite:
+          type: integer
+          description: Alias canónico en español para plazo de horas previas de antelación.
+          example: 24
+        descripcion:
+          type: string
+          description: Alias canónico en español para descripción de la política.
+          example: Cancela gratis hasta 24 horas antes de la actividad y recibe el 100% de reembolso.
+    ProveedorInfo:
+      type: object
+      properties:
+        id:
+          type: string
+          example: proveedor-atracciones-dilan
+        nombre_comercial:
+          type: string
+          example: Descubre EC Tours & Experiences
+        ruc:
+          type: string
+          example: '1792348123001'
+        telefono_emergencia:
+          type: string
+          example: '+593991234567'
+        email_soporte:
+          type: string
+          example: soporte@descubreec.com
+    NodeHealthResponse:
+      type: object
+      required:
+        - status
+        - node_id
+        - node_code
+        - version
+        - database_connected
+        - latency_ms
+        - timestamp
+      properties:
+        status:
+          type: string
+          enum:
+            - UP
+            - DEGRADED
+            - DOWN
+          example: UP
+        node_id:
+          type: string
+          example: node-dilan-atracciones-01
+        node_code:
+          type: string
+          example: DILAN_ATRACCIONES
+        url_base:
+          type: string
+          example: 'https://descubreec.com/api/v1'
+        version:
+          type: string
+          example: 2.0.0
+        database_connected:
+          type: boolean
+          example: true
+        latency_ms:
+          type: integer
+          description: Tiempo de respuesta del chequeo interno en milisegundos.
+          example: 18
+        memory_usage_mb:
+          type: number
+          example: 142.5
+        uptime_seconds:
+          type: integer
+          example: 86400
+        timestamp:
+          type: string
+          format: date-time
+          example: '2026-10-21T16:44:01Z'
+    LogisticaReserva:
+      type: object
+      required:
+        - atraccion_id
+        - nombre
+        - punto_encuentro
+        - free_cancellation
+        - deadline_hours
+      properties:
+        atraccion_id:
+          type: string
+        nombre:
+          type: string
+        punto_encuentro:
+          type: string
+        free_cancellation:
+          type: boolean
+        deadline_hours:
+          type: integer
+        guia:
+          type: object
+          required:
+            - gui_id
+            - nombre
+          properties:
+            gui_id:
+              type: integer
+              format: int64
+            nombre:
+              type: string
+          nullable: true
+    Guia:
+      type: object
+      required:
+        - codigo
+        - nombre
+        - credencial_mintur
+        - operador
+        - activo
+      properties:
+        codigo:
+          type: string
+          example: GUIA-CARLOS-01
+        nombre:
+          type: string
+        credencial_mintur:
+          type: string
+        operador:
+          type: string
+        usu_id:
+          type: integer
+          format: int64
+          nullable: true
+        activo:
+          type: boolean
+    GuiaRequest:
+      type: object
+      required:
+        - codigo
+        - nombre
+        - credencial_mintur
+        - operador
+      properties:
+        codigo:
+          type: string
+          maxLength: 30
+        nombre:
+          type: string
+          maxLength: 150
+        credencial_mintur:
+          type: string
+          maxLength: 30
+        operador:
+          type: string
+        usu_id:
+          type: integer
+          format: int64
+          nullable: true
+    GuiaUpdateRequest:
+      type: object
+      properties:
+        nombre:
+          type: string
+          maxLength: 150
+        credencial_mintur:
+          type: string
+          maxLength: 30
+        usu_id:
+          type: integer
+          format: int64
+          nullable: true
+        activo:
+          type: boolean
+    Operador:
+      allOf:
+        - $ref: '#/components/schemas/ProveedorInfo'
+        - type: object
+          required:
+            - prov_id
+            - activo
+          properties:
+            direccion:
+              type: string
+              nullable: true
+            prov_id:
+              type: integer
+            activo:
+              type: boolean
+    OperadorRequest:
+      type: object
+      required:
+        - id
+        - nombre_comercial
+        - prov_id
+      properties:
+        id:
+          type: string
+          maxLength: 60
+        nombre_comercial:
+          type: string
+          maxLength: 150
+        ruc:
+          type: string
+          pattern: '^[0-9]{13}$'
+        email_soporte:
+          type: string
+          format: email
+        telefono_emergencia:
+          type: string
+        direccion:
+          type: string
+          maxLength: 255
+        prov_id:
+          type: integer
+    OperadorUpdateRequest:
+      type: object
+      properties:
+        nombre_comercial:
+          type: string
+          maxLength: 150
+        ruc:
+          type: string
+          pattern: '^[0-9]{13}$'
+        email_soporte:
+          type: string
+          format: email
+        telefono_emergencia:
+          type: string
+        direccion:
+          type: string
+          maxLength: 255
+        prov_id:
+          type: integer
+        activo:
+          type: boolean
+    CategoriaRequest:
+      type: object
+      required:
+        - id
+        - nombre
+        - slug
+      properties:
+        id:
+          type: string
+          maxLength: 40
+        padre_id:
+          type: string
+          nullable: true
+        nombre:
+          type: string
+          maxLength: 80
+        slug:
+          type: string
+          maxLength: 80
+        descripcion:
+          type: string
+          maxLength: 255
+        icono:
+          type: string
+          maxLength: 40
+        orden:
+          type: integer
+        incluye_comida:
+          type: boolean
+        incluye_transporte:
+          type: boolean
+        incluye_guia:
+          type: boolean
+    CategoriaUpdateRequest:
+      type: object
+      properties:
+        nombre:
+          type: string
+          maxLength: 80
+        descripcion:
+          type: string
+          maxLength: 255
+        icono:
+          type: string
+          maxLength: 40
+        orden:
+          type: integer
+        incluye_comida:
+          type: boolean
+        incluye_transporte:
+          type: boolean
+        incluye_guia:
+          type: boolean
+        activa:
+          type: boolean
+    Inclusion:
+      type: object
+      required:
+        - id
+        - tipo
+        - nombre
+      properties:
+        id:
+          type: integer
+        tipo:
+          type: string
+        nombre:
+          type: string
+        orden:
+          type: integer
+    AtraccionRequest:
+      type: object
+      required:
+        - name
+        - description
+        - tipo
+        - latitude
+        - longitude
+        - duration_hours
+        - ciu_id
+        - operador
+        - categorias
+      properties:
+        name:
+          type: string
+          maxLength: 200
+        slug:
+          type: string
+          maxLength: 220
+        description:
+          type: string
+        short_description:
+          type: string
+          maxLength: 280
+        tipo:
+          type: string
+          enum:
+            - GUIDED_TOUR
+            - ADMISSION
+            - DAY_TRIP
+            - TRANSPORT
+            - PACKAGE
+        latitude:
+          type: number
+        longitude:
+          type: number
+        address:
+          type: string
+          maxLength: 255
+        meeting_point:
+          type: string
+          maxLength: 255
+        arrival_instructions:
+          type: string
+          maxLength: 500
+        duration_hours:
+          type: number
+        ciu_id:
+          type: integer
+        operador:
+          type: string
+        categorias:
+          type: array
+          items:
+            type: string
+        idiomas:
+          type: array
+          items:
+            type: string
+        inclusiones:
+          type: array
+          items:
+            type: integer
+        fotos:
+          type: array
+          items:
+            type: object
+            required:
+              - url
+              - alt
+            properties:
+              url:
+                type: string
+                maxLength: 500
+              alt:
+                type: string
+                maxLength: 200
+              orden:
+                type: integer
+        itinerario:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItineraryStop'
+        inclusions:
+          $ref: '#/components/schemas/InclusionesFlags'
+        accessibility:
+          $ref: '#/components/schemas/AccessibilityAttributes'
+        cancellation_policy:
+          $ref: '#/components/schemas/CancellationPolicy'
+        permite_paquete:
+          type: boolean
+        porcentaje_descuento_paquete:
+          type: number
+          minimum: 0
+          maximum: 100
+        destacada:
+          type: boolean
+    AtraccionAdmin:
+      allOf:
+        - $ref: '#/components/schemas/AtraccionDetailResponseV2'
+        - type: object
+          required:
+            - estado
+            - tipo
+            - ciu_id
+            - categorias
+            - idiomas
+            - inclusiones
+            - fotos
+          properties:
+            estado:
+              type: string
+              enum:
+                - BORRADOR
+                - PUBLICADA
+                - INACTIVA
+            tipo:
+              type: string
+            ciu_id:
+              type: integer
+            destacada:
+              type: boolean
+            categorias:
+              type: array
+              items:
+                type: string
+            idiomas:
+              type: array
+              items:
+                type: string
+            inclusiones:
+              type: array
+              items:
+                type: integer
+            fotos:
+              type: array
+              items:
+                type: object
+                required:
+                  - url
+                  - alt
+                  - orden
+                properties:
+                  url:
+                    type: string
+                  alt:
+                    type: string
+                  orden:
+                    type: integer
+    AtraccionAdminPage:
+      type: object
+      required:
+        - metadata
+        - data
+      properties:
+        metadata:
+          $ref: '#/components/schemas/PaginationMetadata'
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AtraccionAdmin'
+    ReferenciaAtraccion:
+      type: object
+      required:
+        - atr_id
+        - id
+        - slug
+        - nombre
+      properties:
+        atr_id:
+          type: integer
+          format: int64
+        id:
+          type: string
+        slug:
+          type: string
+        nombre:
+          type: string
+  responses:
+    ProblemDetails500:
+      description: Error interno del servidor en la tienda socia (RFC 7807).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    ProblemDetails400:
+      description: Parámetros inválidos o sintaxis de solicitud incorrecta (RFC 7807).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    ProblemDetails404:
+      description: Recurso no encontrado en el sistema de atracciones (RFC 7807).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    ProblemDetails401:
+      description: No autenticado. Cabecera Authorization con token JWT o X-API-Key ausente o inválida (RFC 7807).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          example:
+            type: 'https://descubreec.com/errors/unauthorized'
+            title: No Autorizado
+            status: 401
+            detail: 'El token JWT no fue provisto, ha expirado o la firma criptográfica es inválida.'
+            instance: /api/v3/atracciones/reservas
+            code: UNAUTHORIZED
+            correlation_id: cid-auth-01
+            timestamp: '2026-10-24T15:00:00Z'
+    ProblemDetails403:
+      description: Acceso denegado. El usuario no posee los permisos o roles requeridos (RFC 7807).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          example:
+            type: 'https://descubreec.com/errors/forbidden'
+            title: Acceso Prohibido
+            status: 403
+            detail: No cuenta con el rol de administración o credenciales de socio requeridas para esta acción.
+            instance: /api/v3/atracciones/promociones/contrato
+            code: FORBIDDEN
+            correlation_id: cid-auth-02
+            timestamp: '2026-10-24T15:00:00Z'
+    ProblemDetails409:
+      description: 'Conflicto de estado, colisión de Idempotencia o Cupos Agotados (RFC 7807).'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    ProblemDetails422:
+      description: Entidad no procesable (ej. fallo algorítmico en la cédula ecuatoriana).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        Token JWT emitido conforme al estándar RFC 7519 para autenticación de usuarios y consumo de microservicios
+        (RDA2 Semana 11).  
+
+        Se transmite en la cabecera `Authorization: Bearer <token>`.
+    ServiceTokenAuth:
+      type: apiKey
+      in: header
+      name: X-Service-Token
+      description: Secreto compartido por los componentes internos.

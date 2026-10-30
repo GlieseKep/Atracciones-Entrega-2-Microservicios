@@ -2,7 +2,7 @@
   "name": "@atracciones/api",
   "version": "1.0.0",
   "private": true,
-  "description": "API REST de atracciones (NestJS): /api/v1, JWT con scopes, errores RFC 7807, idempotencia y Swagger.",
+  "description": "API REST de atracciones (NestJS): /internal/web/v1, JWT con scopes, errores RFC 7807, idempotencia y Swagger.",
   "main": "dist/main.js",
   "scripts": {
     "start": "node dist/main.js"

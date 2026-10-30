@@ -1,0 +1,12 @@
+{
+  "name": "@atracciones/inventory-service",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Inventory & Availability Service (gRPC): guías, turnos y aforo, tarifas, bloqueos de cupos y sincronización con Booking. Base inventory_db.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "dependencies": {
+    "@atracciones/platform": "1.0.0",
+    "typeorm": "0.3.31"
+  }
+}

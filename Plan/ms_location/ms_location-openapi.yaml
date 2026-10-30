@@ -1,0 +1,547 @@
+openapi: 3.0.3
+info:
+  title: ms_location · Location Service (Descubre EC)
+  version: 1.0.0
+  description: >-
+    Contrato propio del microservicio **3 · Location Service** (REST), derivado de la base `ms_location`
+
+    (`Plan/02_microservicios_v2_bases_de_datos.sql`), de `Plan/arquitectura_esb_v3.html` y del contrato
+
+    `Plan/PlanBooking/atracciones-openapi-v3(1).yaml`.
+
+
+    ## Alcance
+
+    Regiones, provincias y ciudades de Ecuador. Es un catálogo de **solo lectura** que consultan otros servicios: no
+    tiene rutas de
+
+    escritura ni publica eventos.
+
+
+    ## Errores
+
+    RFC 7807 (`application/problem+json`), con el esquema `ProblemDetails` del contrato v3.
+servers:
+  - url: /api/v3
+    description: Ruta canónica v3 detrás del API Gateway y el ESB
+  - url: 'http://localhost:4014/api/v3'
+    description: Desarrollo local
+security: []
+tags:
+  - name: Geografía
+    description: Consulta pública.
+  - name: Interno
+    description: Rutas para otros servicios.
+  - name: Salud
+    description: Telemetría del nodo.
+paths:
+  /regiones:
+    get:
+      tags:
+        - Geografía
+      summary: Árbol región → provincia → ciudad
+      description: Solo provincias y ciudades activas.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+      responses:
+        '200':
+          description: Árbol.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RegionArbol'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+  /provincias:
+    get:
+      tags:
+        - Geografía
+      summary: Listar provincias activas
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+        - name: region
+          in: query
+          required: false
+          schema:
+            type: string
+            example: SI
+      responses:
+        '200':
+          description: Provincias.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Provincia'
+        '400':
+          $ref: '#/components/responses/ProblemDetails400'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+  '/provincias/{id}':
+    get:
+      tags:
+        - Geografía
+      summary: Obtener una provincia
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+        - name: id
+          in: path
+          required: true
+          description: '`provincia.prov_id`.'
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Provincia.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Provincia'
+        '404':
+          $ref: '#/components/responses/ProblemDetails404'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+  /ciudades:
+    get:
+      tags:
+        - Geografía
+      summary: Listar o buscar ciudades activas
+      description: '`q` no distingue mayúsculas ni tildes.'
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 80
+        - name: provincia_id
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Ciudades.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Ciudad'
+        '400':
+          $ref: '#/components/responses/ProblemDetails400'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+  '/ciudades/{id}':
+    get:
+      tags:
+        - Geografía
+      summary: Obtener una ciudad
+      description: También responde ciudades inactivas.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+        - name: id
+          in: path
+          required: true
+          description: '`ciudad.ciu_id`.'
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Ciudad.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ciudad'
+        '404':
+          $ref: '#/components/responses/ProblemDetails404'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+  /internal/ciudades/lote:
+    post:
+      tags:
+        - Interno
+      summary: Obtener varias ciudades por ID
+      description: Los IDs que no existen se omiten.
+      security:
+        - ServiceTokenAuth: []
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - ids
+              properties:
+                ids:
+                  type: array
+                  items:
+                    type: integer
+                  minItems: 1
+                  maxItems: 200
+      responses:
+        '200':
+          description: Ciudades encontradas.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Ciudad'
+        '400':
+          $ref: '#/components/responses/ProblemDetails400'
+        '401':
+          $ref: '#/components/responses/ProblemDetails401'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+  /internal/ciudades/resolucion:
+    post:
+      tags:
+        - Interno
+      summary: Convertir nombres en ciudades
+      description: >-
+        No distingue mayúsculas ni tildes. Un nombre de provincia, como Galápagos, devuelve todas sus ciudades. Los
+        que no existen van en `no_encontrados`.
+      security:
+        - ServiceTokenAuth: []
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - nombres
+              properties:
+                nombres:
+                  type: array
+                  items:
+                    type: string
+                    maxLength: 80
+                  minItems: 1
+                  maxItems: 100
+      responses:
+        '200':
+          description: Resultado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Resolucion'
+        '400':
+          $ref: '#/components/responses/ProblemDetails400'
+        '401':
+          $ref: '#/components/responses/ProblemDetails401'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+  /health:
+    get:
+      tags:
+        - Salud
+      summary: Salud del nodo ms_location
+      security: []
+      responses:
+        '200':
+          description: Estado del nodo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NodeHealthResponse'
+        '503':
+          description: Nodo degradado o sin base de datos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NodeHealthResponse'
+components:
+  parameters:
+    XCorrelationIdHeader:
+      name: X-Correlation-Id
+      in: header
+      required: false
+      description: >
+        Identificador unívoco de trazabilidad distribuida (Semana 8 & Consideraciones RDA2).  
+
+        Se propaga de forma invariable entre peticiones HTTP, logs JSON estructurados, mensajes de RabbitMQ y streams
+        de Apache Kafka.
+      schema:
+        type: string
+      example: cid-8821a-9923
+  schemas:
+    Provincia:
+      type: object
+      required:
+        - id
+        - codigo
+        - nombre
+        - region_codigo
+        - activa
+      properties:
+        id:
+          type: integer
+        codigo:
+          type: string
+        nombre:
+          type: string
+        region_codigo:
+          type: string
+        activa:
+          type: boolean
+    Ciudad:
+      type: object
+      required:
+        - id
+        - codigo
+        - nombre
+        - activa
+        - provincia
+        - region
+      properties:
+        id:
+          type: integer
+        codigo:
+          type: string
+        nombre:
+          type: string
+        activa:
+          type: boolean
+        descripcion:
+          type: string
+          nullable: true
+        imagen:
+          type: string
+          nullable: true
+        provincia:
+          type: object
+          required:
+            - id
+            - nombre
+          properties:
+            id:
+              type: integer
+            nombre:
+              type: string
+        region:
+          type: object
+          required:
+            - codigo
+            - nombre
+          properties:
+            codigo:
+              type: string
+            nombre:
+              type: string
+    RegionArbol:
+      type: object
+      required:
+        - id
+        - codigo
+        - nombre
+        - provincias
+      properties:
+        id:
+          type: integer
+        codigo:
+          type: string
+        nombre:
+          type: string
+        provincias:
+          type: array
+          items:
+            type: object
+            required:
+              - id
+              - codigo
+              - nombre
+              - ciudades
+            properties:
+              id:
+                type: integer
+              codigo:
+                type: string
+              nombre:
+                type: string
+              ciudades:
+                type: array
+                items:
+                  type: object
+                  required:
+                    - id
+                    - codigo
+                    - nombre
+                  properties:
+                    id:
+                      type: integer
+                    codigo:
+                      type: string
+                    nombre:
+                      type: string
+    Resolucion:
+      type: object
+      required:
+        - resueltas
+        - no_encontrados
+      properties:
+        resueltas:
+          type: array
+          items:
+            type: object
+            required:
+              - nombre_enviado
+              - ciudades
+            properties:
+              nombre_enviado:
+                type: string
+              ciudades:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Ciudad'
+        no_encontrados:
+          type: array
+          items:
+            type: string
+    NodeHealthResponse:
+      type: object
+      required:
+        - status
+        - node_id
+        - node_code
+        - version
+        - database_connected
+        - latency_ms
+        - timestamp
+      properties:
+        status:
+          type: string
+          enum:
+            - UP
+            - DEGRADED
+            - DOWN
+          example: UP
+        node_id:
+          type: string
+          example: node-dilan-atracciones-01
+        node_code:
+          type: string
+          example: DILAN_ATRACCIONES
+        url_base:
+          type: string
+          example: 'https://descubreec.com/api/v1'
+        version:
+          type: string
+          example: 2.0.0
+        database_connected:
+          type: boolean
+          example: true
+        latency_ms:
+          type: integer
+          description: Tiempo de respuesta del chequeo interno en milisegundos.
+          example: 18
+        memory_usage_mb:
+          type: number
+          example: 142.5
+        uptime_seconds:
+          type: integer
+          example: 86400
+        timestamp:
+          type: string
+          format: date-time
+          example: '2026-10-21T16:44:01Z'
+    ProblemDetails:
+      type: object
+      required:
+        - type
+        - title
+        - status
+        - detail
+      properties:
+        type:
+          type: string
+          description: URI que identifica el tipo de error bajo estándar RFC 7807.
+          example: 'https://booking.epn.edu.ec/errors/sin-cupos'
+        title:
+          type: string
+          description: Resumen corto y legible del problema.
+          example: Cupos Agotados para el Turno Horario
+        status:
+          type: integer
+          description: Código de estado HTTP correspondiente.
+          example: 409
+        detail:
+          type: string
+          description: Explicación detallada de la ocurrencia del error.
+          example: >-
+            No existen suficientes cupos disponibles en el turno seleccionado (10:30 a.m.). Cupos restantes: 1,
+            solicitados: 2.
+        instance:
+          type: string
+          description: URI de la solicitud que originó el error.
+          example: /api/v3/atracciones/reservas
+        code:
+          type: string
+          description: Código nemotécnico interno para evaluación en código.
+          example: OUT_OF_STOCK
+        correlation_id:
+          type: string
+          description: Identificador de correlación propagado para rastrear el fallo en los logs y spans de Jaeger.
+          example: cid-8821a
+        timestamp:
+          type: string
+          format: date-time
+          example: '2026-10-21T16:44:01Z'
+        invalid_params:
+          type: array
+          description: Lista de campos con error en caso de fallo de validación HTTP 400/422.
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                example: customer.phone
+              reason:
+                type: string
+                example: El formato debe ser internacional E.164 o número celular válido de Ecuador (09XXXXXXXX).
+  responses:
+    ProblemDetails400:
+      description: Parámetros inválidos (RFC 7807).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    ProblemDetails401:
+      description: Falta `X-Service-Token` o es inválido (RFC 7807).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    ProblemDetails404:
+      description: '`PROVINCE_NOT_FOUND` o `CITY_NOT_FOUND` (RFC 7807).'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    ProblemDetails500:
+      description: Error interno del servicio (RFC 7807).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+  securitySchemes:
+    ServiceTokenAuth:
+      type: apiKey
+      in: header
+      name: X-Service-Token
+      description: Secreto compartido por los componentes internos.

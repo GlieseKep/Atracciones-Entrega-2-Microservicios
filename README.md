@@ -20,9 +20,11 @@ packages/
   business/         Casos de uso: validación, idempotencia, transacciones, reloj de negocio
   data-access/      PostgreSQL con TypeORM: entidades, repositorios, migraciones, catálogo inicial
   contracts/        DTOs HTTP validados (class-validator) y documentados (OpenAPI)
+  platform/         Código compartido de los microservicios (persistencia, valores del contrato v2)
 apps/
   api/              NestJS: rutas, scopes, permisos locales, errores RFC 7807, rate limit, Swagger
   auth/             dev-auth: cuentas con contraseña (scrypt) que emiten el JWT del API
+  services/         Microservicios del contrato v2, una base de datos cada uno (por ahora, su persistencia)
 AtraccionesService-web/   Portal web
 tools/              PostgreSQL local embebido, alta de administradores, soporte de pruebas
 ```
@@ -69,12 +71,16 @@ El inicio de sesión no está en el Swagger del API: es del servicio de autentic
 
 | Comando | Uso |
 |---|---|
-| `npm run build` | Compila todos los paquetes, el API y auth |
-| `npm test` | Pruebas unitarias y e2e (estas últimas con un PostgreSQL embebido temporal) |
-| `npm run db:local` | Solo el PostgreSQL local |
-| `npm run migration:generate -- packages/data-access/src/migrations/Nombre` | Nueva migración a partir de las entidades |
+| `npm run build` | Compila todos los paquetes, el API, auth y los microservicios |
+| `npm test` | Pruebas unitarias, e2e y de bases de datos (con un PostgreSQL embebido temporal) |
+| `npm run test:db` | Solo las pruebas de las bases de datos de los microservicios |
+| `npm run db:local` | Solo el PostgreSQL local (crea también las 9 bases de los microservicios) |
+| `npm run db:migrate` | Aplica las migraciones de los microservicios (`-- catalog inventory` para algunos) |
+| `npm run migration:generate -- packages/data-access/src/migrations/Nombre` | Nueva migración del monolito a partir de las entidades |
 
-Las migraciones se aplican solas al arrancar el API (`DB_MIGRATIONS_RUN=true`).
+Las migraciones del monolito se aplican solas al arrancar el API (`DB_MIGRATIONS_RUN=true`); las de los
+microservicios, con `npm run db:migrate` (lo hace `start-local.cmd`). El modelo de datos está en
+[BASE_DE_DATOS_MICROSERVICIOS.md](BASE_DE_DATOS_MICROSERVICIOS.md).
 
 ## Despliegue
 

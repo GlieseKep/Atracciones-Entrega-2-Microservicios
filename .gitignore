@@ -40,6 +40,7 @@ $RECYCLE.BIN/
 
 # Backend NestJS: secretos locales (AUTH_JWT_SECRET, DATABASE_URL) y PostgreSQL embebido
 apps/*/.env
+apps/services/*/.env
 /.data/
 *.tsbuildinfo
 coverage/

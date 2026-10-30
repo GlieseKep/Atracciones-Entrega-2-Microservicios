@@ -135,7 +135,7 @@ export class AttractionResponse {
   @ApiProperty() freeCancellation!: boolean;
   @ApiPropertyOptional({ type: RatingDto, nullable: true }) ratings!: RatingDto | null;
   @ApiPropertyOptional({ nullable: true }) url!: { web: string | null; app: string | null } | null;
-  @ApiProperty({ example: { self: '/api/v1/atracciones/{id}', availability: '/api/v1/atracciones/{id}/availability' } })
+  @ApiProperty({ example: { self: '/internal/web/v1/atracciones/{id}', availability: '/internal/web/v1/atracciones/{id}/availability' } })
   _links!: Record<string, string>;
 }
 

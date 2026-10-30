@@ -1,0 +1,158 @@
+// Contrato gRPC interno de Booking Service (plan §3.6): reservas, pasajeros, check-in y cancelación.
+syntax = "proto3";
+package atracciones.booking;
+
+service BookingService {
+  rpc Health (Empty) returns (HealthReply);
+  // Emite la reserva confirmada de una orden (paso final de la saga). Idempotente por external_order_id.
+  rpc CreateReservation (CreateReservationRequest) returns (Reservation);
+  // Por UUID o por código PNR. Solo el dueño, el socio que la creó o un administrador.
+  rpc GetReservation (GetReservationRequest) returns (Reservation);
+  // Compensación / cancelación. Idempotente: una reserva ya cancelada se devuelve tal cual.
+  rpc CancelReservation (CancelReservationRequest) returns (Reservation);
+  rpc CheckIn (CheckInRequest) returns (Reservation);
+  // Reservas del principal (portal: "mis reservas") o, con `todas` y scope attractions:write, las de todos.
+  rpc ListReservations (ListReservationsRequest) returns (ReservationPage);
+  // Totales por estado y por atracción (tablero y reportes de administración).
+  rpc ReservationStats (ReservationStatsRequest) returns (ReservationStatsResult);
+}
+
+message ListReservationsRequest {
+  bool todas = 1;
+  string estado = 2;
+  string fecha_desde = 3;
+  string fecha_hasta = 4;
+  string atraccion_codigo = 5;
+  string search = 6;             // PNR, orden externa, nombre o correo del titular
+  int32 limit = 7;
+  int32 offset = 8;
+  string orden = 9;              // fecha | -fecha | -creado (por defecto)
+}
+
+message ReservationPage {
+  int32 total = 1;
+  repeated Reservation items = 2;
+}
+
+message ReservationStatsRequest {
+  string fecha_desde = 1;        // fecha de la actividad
+  string fecha_hasta = 2;
+}
+
+message StatusCount {
+  string estado = 1;
+  int32 reservas = 2;
+  int32 boletos = 3;
+}
+
+message AttractionCount {
+  string atraccion_codigo = 1;
+  int32 reservas = 2;
+  int32 boletos = 3;
+}
+
+message ReservationStatsResult {
+  repeated StatusCount por_estado = 1;
+  repeated AttractionCount por_atraccion = 2;
+}
+
+message Empty {}
+
+message HealthReply {
+  string status = 1;
+  string service = 2;
+  bool database_connected = 3;
+  int32 latency_ms = 4;
+  double memory_usage_mb = 5;
+  int64 uptime_seconds = 6;
+  string timestamp = 7;
+}
+
+message Customer {
+  string full_name = 1;
+  string email = 2;
+  string phone = 3;
+  string document_type = 4;
+  string document_id = 5;
+}
+
+message Passenger {
+  string full_name = 1;
+  string document_id = 2;
+  string ticket_type = 3;        // ADULT | CHILD | SENIOR | STUDENT | INFANT
+}
+
+message Ticket {
+  string ticket_type = 1;
+  int32 cantidad = 2;
+}
+
+message Reservation {
+  string reservation_id = 1;
+  string reservation_code = 2;   // PNR (DEC-XXXXXX)
+  string external_order_id = 3;
+  string status = 4;             // PENDING | CONFIRMED | CHECKED_IN | COMPLETED | CANCELLED | EXPIRED
+  string atraccion_codigo = 5;
+  string fecha = 6;              // YYYY-MM-DD
+  string hora = 7;               // HH:mm:ss
+  repeated Ticket boletos = 8;
+  double total = 9;
+  string moneda = 10;
+  Customer customer = 11;
+  repeated Passenger passengers = 12;
+  string guia_codigo = 13;
+  string punto_encuentro = 14;
+  string observaciones = 15;
+  string voucher_qr_payload = 16;
+  string cancelable_hasta = 17;  // ISO 8601 UTC; vacío = sin cancelación gratuita
+  string checkin_en = 18;
+  string checkin_documento = 19;
+  string cancelado_en = 20;
+  string reembolso_codigo = 21;
+  double monto_reembolsado = 22;
+  string principal_tipo = 23;
+  string principal_id = 24;
+  string creado_en = 25;
+  string cancelacion_motivo = 26;
+  string cancelacion_solicitante = 27;
+}
+
+message CreateReservationRequest {
+  string external_order_id = 1;
+  string principal_tipo = 2;
+  string principal_id = 3;
+  string atraccion_codigo = 4;
+  string fecha = 5;
+  string hora = 6;
+  repeated Ticket boletos = 7;
+  double total = 8;
+  string moneda = 9;
+  Customer customer = 10;
+  repeated Passenger passengers = 11;
+  string guia_codigo = 12;
+  string punto_encuentro = 13;
+  string cancelable_hasta = 14;
+  string observaciones = 15;
+}
+
+message GetReservationRequest {
+  string id = 1;                 // UUID o PNR
+}
+
+message CancelReservationRequest {
+  string id = 1;                 // UUID, PNR o external_order_id
+  string motivo = 2;
+  string solicitante = 3;        // CLIENTE | SAGA_ORCHESTRATOR | ADMIN
+  string reembolso_codigo = 4;
+  double monto_reembolsado = 5;
+  // Solo comprueba la reserva (estado, dueño, plazo) sin cancelarla todavía.
+  bool solo_validar = 6;
+}
+
+message CheckInRequest {
+  string id = 1;
+  string documento_identidad = 2;
+  string codigo_voucher_qr = 3;
+  string guia_codigo = 4;
+  string scanner_device_id = 5;
+}

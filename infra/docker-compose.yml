@@ -1,0 +1,45 @@
+# Infraestructura de los microservicios: PostgreSQL (una base por servicio), RabbitMQ (bus de eventos) y Redis
+# (read models / caché). Uso: docker compose -f infra/docker-compose.yml up -d
+#
+# Sin Docker también se puede trabajar: `npm run db:local` levanta PostgreSQL embebido y el lanzador de desarrollo usa
+# bus y caché en memoria (ver README).
+name: atracciones
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: postgres
+      # Solo desarrollo local (la misma credencial que el PostgreSQL embebido de `npm run db:local`).
+      POSTGRES_PASSWORD: tourgirls-local
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      retries: 20
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"   # consola: http://localhost:15672 (guest / guest)
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      retries: 20
+
+  redis:
+    image: redis:7.4-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 20
+
+volumes:
+  postgres-data:

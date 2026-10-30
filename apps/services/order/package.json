@@ -1,0 +1,12 @@
+{
+  "name": "@atracciones/order-service",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Order Management Service (gRPC): órdenes, saga de compra, cupones e idempotencia. Base order_db.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "dependencies": {
+    "@atracciones/platform": "1.0.0",
+    "typeorm": "0.3.31"
+  }
+}

@@ -1,0 +1,105 @@
+import {
+  AppError,
+  clientStream,
+  createHttpService,
+  createLogger,
+  listen,
+  loadProto,
+  serviceConstructor,
+  startGrpcServer,
+  unary,
+  type GrpcServerHandle,
+  type RunningServer,
+} from '@atracciones/platform';
+import { createHash } from 'node:crypto';
+
+/** Mensajes del proto oficial (`packages/contracts/proto/booking/inventory.proto`). */
+export interface StockUpdateMessage {
+  service_id: string;
+  item_id: string;
+  date: string;
+  time_slot: string;
+  available_units: number;
+  timestamp: number;
+}
+
+export interface StockChangeEvent {
+  event_id: string;
+  service_id: string;
+  item_id: string;
+  date: string;
+  time_slot: string;
+  delta: number;
+  timestamp: number;
+}
+
+export interface BookingMock {
+  grpcPort: number;
+  /** Lo recibido, en orden de llegada. */
+  received: { pushes: StockUpdateMessage[]; streamed: StockChangeEvent[] };
+  /** Simula una caída de Booking: mientras esté en `true`, los RPC responden UNAVAILABLE. */
+  setDown(down: boolean): void;
+  close(): Promise<void>;
+}
+
+const logger = createLogger('booking-mock');
+
+/** Inicia el mock de Booking Prototipo en el puerto gRPC indicado (50051 en local; 0 = libre, para pruebas). */
+export async function startBookingMock(port = 50051): Promise<BookingMock> {
+  const proto = loadProto('booking/inventory.proto');
+  const service = serviceConstructor(proto, 'inventory.InventoryStockService');
+  const received: BookingMock['received'] = { pushes: [], streamed: [] };
+  let down = false;
+  const unavailable = () => AppError.unavailable('Booking simulado fuera de servicio.');
+
+  const server: GrpcServerHandle = await startGrpcServer(
+    [
+      {
+        definition: service.service,
+        implementation: {
+          PushStockUpdate: unary<StockUpdateMessage, object>('PushStockUpdate', async (message) => {
+            if (down) throw unavailable();
+            received.pushes.push(message);
+            logger.info('PushStockUpdate recibido', { ...message });
+            return { success: true, message: 'Stock actualizado en Booking Prototipo (mock).', processed_at: Date.now() };
+          }, logger),
+          StreamInventoryChanges: clientStream<StockChangeEvent, object>('StreamInventoryChanges', async (events) => {
+            if (down) throw unavailable();
+            const hash = createHash('sha256');
+            let total = 0;
+            for await (const event of events) {
+              received.streamed.push(event);
+              hash.update(event.event_id);
+              total++;
+            }
+            logger.info('StreamInventoryChanges recibido', { total });
+            return { total_events_processed: total, is_synchronized: true, last_sync_hash: hash.digest('hex') };
+          }, logger),
+        },
+      },
+    ],
+    port,
+  );
+
+  return {
+    grpcPort: server.port,
+    received,
+    setDown: (value) => {
+      down = value;
+    },
+    close: () => server.close(),
+  };
+}
+
+/** Consulta HTTP de lo recibido (desarrollo local): `GET /received`. */
+export async function startInspectionServer(mock: BookingMock, port: number): Promise<RunningServer> {
+  const app = createHttpService({
+    service: 'booking-mock',
+    routes: (a) => {
+      a.get('/received', (_req, res) => {
+        res.json(mock.received);
+      });
+    },
+  });
+  return listen(app, port);
+}

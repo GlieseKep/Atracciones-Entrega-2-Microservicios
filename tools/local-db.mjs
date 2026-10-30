@@ -3,7 +3,7 @@
 //
 // Credenciales SOLO de desarrollo local; en Azure se usa DATABASE_URL de Azure Database for PostgreSQL.
 import EmbeddedPostgres from 'embedded-postgres';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -12,7 +12,10 @@ const port = Number(process.env.LOCAL_DB_PORT ?? 5433);
 const databaseDir = join(root, '.data', 'postgres');
 const user = 'postgres';
 const password = 'tourgirls-local';
-const databases = ['tourgirls'];
+// `tourgirls` es la base del monolito; las demás, una por microservicio (sus migraciones: `npm run db:migrate`).
+const services = JSON.parse(readFileSync(join(root, 'apps', 'services', 'services.json'), 'utf8'));
+// Los servicios del diseño v2 (`ms-cart`) usan su propio nombre de base (`ms_cart`); el resto, `<servicio>_db`.
+const databases = ['tourgirls', ...services.map((name) => (name.startsWith('ms-') ? name.replace(/-/g, '_') : `${name}_db`))];
 
 // UTF-8 como en Azure (en Windows el valor por defecto sería WIN1252). Solo aplica al crear el clúster.
 const initdbFlags = ['--encoding=UTF8', '--locale=C'];

@@ -1,0 +1,24 @@
+{
+  "files": [],
+  "references": [
+    { "path": "identity" },
+    { "path": "ms-identity" },
+    { "path": "ms-catalog" },
+    { "path": "catalog" },
+    { "path": "inventory" },
+    { "path": "cart" },
+    { "path": "ms-cart" },
+    { "path": "ms-coupon" },
+    { "path": "ms-pricing" },
+    { "path": "ms-location" },
+    { "path": "ms-billing-profile" },
+    { "path": "ms-review" },
+    { "path": "ms-refund" },
+    { "path": "ms-support" },
+    { "path": "order" },
+    { "path": "booking" },
+    { "path": "payment" },
+    { "path": "invoicing" },
+    { "path": "audit" }
+  ]
+}

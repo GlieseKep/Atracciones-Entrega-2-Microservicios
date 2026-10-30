@@ -1,0 +1,784 @@
+openapi: 3.0.3
+info:
+  title: ms_coupon · Coupon & Promotions Service (Descubre EC)
+  version: 1.0.0
+  description: >-
+    Contrato propio del microservicio **9 · Coupon & Promotions Service** (REST), derivado de
+    `Plan/ms_coupon/ms_coupon.sql`,
+
+    de `Plan/arquitectura_esb_v3.html` y del contrato v3.
+
+
+    ## Alcance
+
+    1. **Acuerdo B2B de promociones:** `GET` y `PUT /atracciones/promociones/contrato`, con los esquemas y códigos del
+    contrato v3.
+
+    2. **Cupones del portal:** administración y validación.
+
+
+    ## Usos del cupón
+
+    Se cuentan en `orden_cupon` (Order). La validación devuelve `cup_id` y `max_uses`, y Order comprueba el límite en
+    su transacción.
+
+
+    ## Errores
+
+    RFC 7807 (`application/problem+json`), con el esquema `ProblemDetails` del contrato v3.
+servers:
+  - url: /api/v3
+    description: Ruta canónica v3 detrás del API Gateway y el ESB
+  - url: 'http://localhost:4011/api/v3'
+    description: Desarrollo local
+security:
+  - BearerAuth: []
+  - ApiKeyAuth: []
+tags:
+  - name: Atracciones - Promociones B2B y Combos v2
+    description: Rutas del contrato v3 (mismo tag que en el contrato).
+  - name: Cupones
+    description: Administración de cupones (solo ADMIN).
+  - name: Validación de cupones
+    description: La usan GraphQL y Order.
+  - name: Salud
+    description: Telemetría del nodo para el monitor del ESB.
+paths:
+  /atracciones/promociones/contrato:
+    get:
+      tags:
+        - Atracciones - Promociones B2B y Combos v2
+      summary: Consultar acuerdo comercial B2B para promociones y paquetes multidominio
+      description: Ruta del contrato v3. Booking Prototipo consulta las condiciones pactadas para armar combos.
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+      responses:
+        '200':
+          description: Términos comerciales de promociones y combos recuperados.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PromocionesContratoResponse'
+        '401':
+          $ref: '#/components/responses/ProblemDetails401'
+        '403':
+          $ref: '#/components/responses/ProblemDetails403'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+    put:
+      tags:
+        - Atracciones - Promociones B2B y Combos v2
+      summary: Actualizar y responder cuestionario B2B de promociones y paquetes multidominio
+      description: >-
+        Ruta del contrato v3. Responde el cuestionario B2B con `X-API-Key` de Booking Prototipo o JWT de `ADMIN`. Los
+        campos opcionales que no se envían conservan su valor. `destinos_habilitados`, si se envía, reemplaza la
+        lista.
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+      requestBody:
+        required: true
+        description: Respuestas formales al cuestionario comercial de promociones y combos.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActualizarPromocionesContratoRequest'
+      responses:
+        '200':
+          description: Términos comerciales de promociones formalizados y actualizados.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PromocionesContratoResponse'
+        '400':
+          $ref: '#/components/responses/ProblemDetails400'
+        '401':
+          $ref: '#/components/responses/ProblemDetails401'
+        '403':
+          $ref: '#/components/responses/ProblemDetails403'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+  /cupones:
+    get:
+      tags:
+        - Cupones
+      summary: Listar cupones
+      parameters:
+        - name: active
+          in: query
+          required: false
+          description: Filtrar por estado activo / inactivo.
+          schema:
+            type: boolean
+        - name: code
+          in: query
+          required: false
+          description: Búsqueda parcial por código.
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            maximum: 50
+            default: 10
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+      responses:
+        '200':
+          description: Página de cupones.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CouponPage'
+        '400':
+          $ref: '#/components/responses/ProblemDetails400'
+        '401':
+          $ref: '#/components/responses/ProblemDetails401'
+        '403':
+          $ref: '#/components/responses/ProblemDetails403'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+    post:
+      tags:
+        - Cupones
+      summary: Crear cupón
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CouponCreateRequest'
+      responses:
+        '201':
+          description: Cupón creado.
+          headers:
+            Location:
+              description: URL del cupón creado.
+              schema:
+                type: string
+                example: /api/v3/cupones/BIENVENIDA10
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Coupon'
+        '400':
+          $ref: '#/components/responses/ProblemDetails400'
+        '401':
+          $ref: '#/components/responses/ProblemDetails401'
+        '403':
+          $ref: '#/components/responses/ProblemDetails403'
+        '409':
+          $ref: '#/components/responses/ProblemDetails409'
+        '422':
+          $ref: '#/components/responses/ProblemDetails422'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+  '/cupones/{code}':
+    parameters:
+      - $ref: '#/components/parameters/CouponCodePath'
+      - $ref: '#/components/parameters/XCorrelationIdHeader'
+    get:
+      tags:
+        - Cupones
+      summary: Consultar un cupón por código
+      responses:
+        '200':
+          description: Cupón encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Coupon'
+        '401':
+          $ref: '#/components/responses/ProblemDetails401'
+        '403':
+          $ref: '#/components/responses/ProblemDetails403'
+        '404':
+          $ref: '#/components/responses/ProblemDetails404'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+    patch:
+      tags:
+        - Cupones
+      summary: 'Modificar vigencia, límite de usos o estado de un cupón'
+      description: >-
+        El código, el tipo y el valor no se cambian (las órdenes ya emitidas los usan); para otro descuento se crea
+        otro cupón.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CouponUpdateRequest'
+      responses:
+        '200':
+          description: Cupón actualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Coupon'
+        '400':
+          $ref: '#/components/responses/ProblemDetails400'
+        '401':
+          $ref: '#/components/responses/ProblemDetails401'
+        '403':
+          $ref: '#/components/responses/ProblemDetails403'
+        '404':
+          $ref: '#/components/responses/ProblemDetails404'
+        '422':
+          $ref: '#/components/responses/ProblemDetails422'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+  /cupones/validacion:
+    post:
+      tags:
+        - Validación de cupones
+      summary: Validar un cupón y calcular el descuento sobre un subtotal
+      description: >-
+        No consume el cupón. Si no aplica, responde `200` con `valid = false` y el motivo en `reason`. `PORCENTAJE`:
+        `subtotal × value / 100`. `FIJO`: `min(value, subtotal)`. Redondeo a 2 decimales.
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CouponValidationRequest'
+      responses:
+        '200':
+          description: Resultado de la validación.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CouponValidationResponse'
+        '400':
+          $ref: '#/components/responses/ProblemDetails400'
+        '401':
+          $ref: '#/components/responses/ProblemDetails401'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+      security:
+        - BearerAuth: []
+        - ServiceTokenAuth: []
+  /health:
+    get:
+      tags:
+        - Salud
+      summary: Salud del nodo ms_coupon
+      security: []
+      responses:
+        '200':
+          description: Estado del nodo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NodeHealthResponse'
+        '503':
+          description: Nodo degradado o sin base de datos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NodeHealthResponse'
+components:
+  parameters:
+    XCorrelationIdHeader:
+      name: X-Correlation-Id
+      in: header
+      required: false
+      description: >
+        Identificador unívoco de trazabilidad distribuida (Semana 8 & Consideraciones RDA2).  
+
+        Se propaga de forma invariable entre peticiones HTTP, logs JSON estructurados, mensajes de RabbitMQ y streams
+        de Apache Kafka.
+      schema:
+        type: string
+      example: cid-8821a-9923
+    CouponCodePath:
+      name: code
+      in: path
+      required: true
+      description: 'Código del cupón (`cupon.cup_codigo`), sin distinguir mayúsculas.'
+      schema:
+        type: string
+        maxLength: 30
+      example: BIENVENIDA10
+  schemas:
+    PromocionesContratoResponse:
+      type: object
+      required:
+        - proveedor_id
+        - permite_promociones
+        - porcentaje_descuento_maximo
+        - destinos_habilitados
+        - vigencia_hasta
+      properties:
+        proveedor_id:
+          type: string
+          example: proveedor-atracciones-dilan
+        nombre_comercial:
+          type: string
+          example: Descubre EC
+        permite_promociones:
+          type: boolean
+          description: Autorización formal para que Booking Prototipo arme paquetes combinados.
+          example: true
+        porcentaje_descuento_maximo:
+          type: number
+          description: Porcentaje tope de descuento acordado para combos turísticos (ej. 15.0 = 15%).
+          example: 15
+        destinos_habilitados:
+          type: array
+          items:
+            type: string
+          example:
+            - Quito
+            - Baños
+            - Cuenca
+            - Galápagos
+        fecha_acuerdo:
+          type: string
+          format: date
+          example: '2026-10-01'
+        vigencia_hasta:
+          type: string
+          format: date
+          example: '2027-12-31'
+        condiciones_combo:
+          type: string
+          example: >-
+            Aplica en paquetes de al menos 2 servicios en la misma ciudad de destino con un mínimo de 48 horas de
+            anticipación.
+    ActualizarPromocionesContratoRequest:
+      type: object
+      required:
+        - permite_promociones
+        - porcentaje_descuento_maximo
+      properties:
+        permite_promociones:
+          type: boolean
+          description: >-
+            Pregunta obligatoria 1: ¿Acepta participar en la creación de promociones y combos de paquetes turísticos
+            multidominio con Booking Prototipo?
+          example: true
+        porcentaje_descuento_maximo:
+          type: number
+          minimum: 0
+          maximum: 50
+          description: >-
+            Pregunta obligatoria 2: Si acepta hacer promociones, ¿cuál es el porcentaje máximo de descuento que está
+            dispuesto a aplicar sobre su tarifa pública? (0.0 a 50.0%)
+          example: 15
+        destinos_habilitados:
+          type: array
+          description: Lista de ciudades o destinos donde aplica el descuento promocional.
+          items:
+            type: string
+          example:
+            - Quito
+            - Baños
+            - Cuenca
+            - Galápagos
+        vigencia_hasta:
+          type: string
+          format: date
+          description: Fecha límite hasta la cual el partner garantiza mantener este acuerdo comercial.
+          example: '2027-12-31'
+        condiciones_combo:
+          type: string
+          description: 'Restricciones de operación (anticipación mínima, no reembolsable en temporadas altas, etc.).'
+          example: >-
+            Aplica en paquetes de al menos 2 servicios en la misma ciudad de destino con un mínimo de 48 horas de
+            anticipación.
+        contacto_comercial:
+          type: object
+          properties:
+            nombre:
+              type: string
+              example: Dilan Mendoza
+            email:
+              type: string
+              format: email
+              example: dilan.mendoza@descubreec.com
+            telefono:
+              type: string
+              example: '+593998765432'
+    Coupon:
+      type: object
+      required:
+        - code
+        - type
+        - value
+        - start_date
+        - active
+      properties:
+        code:
+          type: string
+          example: BIENVENIDA10
+        type:
+          type: string
+          enum:
+            - PORCENTAJE
+            - FIJO
+          example: PORCENTAJE
+        value:
+          type: number
+          minimum: 0
+          description: Porcentaje (0–100) si `type = PORCENTAJE`; monto en USD si `type = FIJO`.
+          example: 10
+        start_date:
+          type: string
+          format: date
+          example: '2026-11-01'
+        end_date:
+          type: string
+          format: date
+          nullable: true
+          description: null = sin fecha de fin.
+          example: '2026-12-31'
+        max_uses:
+          type: integer
+          minimum: 1
+          nullable: true
+          description: null = sin límite. Los usos se cuentan en Order (`orden_cupon`).
+          example: 500
+        active:
+          type: boolean
+          example: true
+    CouponCreateRequest:
+      type: object
+      required:
+        - code
+        - type
+        - value
+        - start_date
+      properties:
+        code:
+          type: string
+          pattern: '^[A-Z0-9_-]{3,30}$'
+          example: BIENVENIDA10
+        type:
+          type: string
+          enum:
+            - PORCENTAJE
+            - FIJO
+        value:
+          type: number
+          minimum: 0
+          description: 'Con `PORCENTAJE` debe ser ≤ 100 (si no, `422`).'
+          example: 10
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+          nullable: true
+          description: 'Debe ser ≥ `start_date` (si no, `422`).'
+        max_uses:
+          type: integer
+          minimum: 1
+          nullable: true
+        active:
+          type: boolean
+          default: true
+    CouponUpdateRequest:
+      type: object
+      minProperties: 1
+      properties:
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+          nullable: true
+        max_uses:
+          type: integer
+          minimum: 1
+          nullable: true
+        active:
+          type: boolean
+    CouponPage:
+      type: object
+      required:
+        - metadata
+        - data
+      properties:
+        metadata:
+          $ref: '#/components/schemas/PaginationMetadata'
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Coupon'
+    PaginationMetadata:
+      type: object
+      required:
+        - total_results
+        - page
+        - limit
+        - total_pages
+      properties:
+        total_results:
+          type: integer
+          example: 32
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 10
+        total_pages:
+          type: integer
+          example: 4
+        next_cursor:
+          type: string
+          nullable: true
+          example: eyJvZmZzZXQiOjEwfQ==
+    CouponValidationRequest:
+      type: object
+      required:
+        - code
+        - subtotal
+      properties:
+        code:
+          type: string
+          example: BIENVENIDA10
+        subtotal:
+          type: number
+          minimum: 0
+          description: 'Subtotal de la orden, con IVA incluido.'
+          example: 75
+        currency:
+          type: string
+          default: USD
+          example: USD
+        date:
+          type: string
+          format: date
+          description: 'Fecha de la compra, para la vigencia. Por defecto, hoy.'
+          example: '2026-11-15'
+    CouponValidationResponse:
+      type: object
+      required:
+        - code
+        - valid
+        - discount_amount
+        - currency
+      properties:
+        cup_id:
+          type: integer
+          format: int64
+          nullable: true
+          description: '`null` si el cupón no existe.'
+        code:
+          type: string
+          example: BIENVENIDA10
+        valid:
+          type: boolean
+          example: true
+        reason:
+          type: string
+          nullable: true
+          enum:
+            - COUPON_NOT_FOUND
+            - COUPON_INACTIVE
+            - COUPON_NOT_STARTED
+            - COUPON_EXPIRED
+            - null
+          description: Motivo cuando `valid = false`.
+          example: null
+        type:
+          type: string
+          enum:
+            - PORCENTAJE
+            - FIJO
+          example: PORCENTAJE
+        value:
+          type: number
+          example: 10
+        discount_amount:
+          type: number
+          description: Descuento a aplicar (0 si `valid = false`).
+          example: 7.5
+        currency:
+          type: string
+          example: USD
+        max_uses:
+          type: integer
+          nullable: true
+          description: Límite que Order debe comparar con los usos en `orden_cupon`.
+          example: 500
+    NodeHealthResponse:
+      type: object
+      required:
+        - status
+        - node_id
+        - node_code
+        - version
+        - database_connected
+        - latency_ms
+        - timestamp
+      properties:
+        status:
+          type: string
+          enum:
+            - UP
+            - DEGRADED
+            - DOWN
+          example: UP
+        node_id:
+          type: string
+          example: node-dilan-atracciones-01
+        node_code:
+          type: string
+          example: DILAN_ATRACCIONES
+        url_base:
+          type: string
+          example: 'https://descubreec.com/api/v1'
+        version:
+          type: string
+          example: 2.0.0
+        database_connected:
+          type: boolean
+          example: true
+        latency_ms:
+          type: integer
+          description: Tiempo de respuesta del chequeo interno en milisegundos.
+          example: 18
+        memory_usage_mb:
+          type: number
+          example: 142.5
+        uptime_seconds:
+          type: integer
+          example: 86400
+        timestamp:
+          type: string
+          format: date-time
+          example: '2026-10-21T16:44:01Z'
+    ProblemDetails:
+      type: object
+      required:
+        - type
+        - title
+        - status
+        - detail
+      properties:
+        type:
+          type: string
+          description: URI que identifica el tipo de error bajo estándar RFC 7807.
+          example: 'https://booking.epn.edu.ec/errors/sin-cupos'
+        title:
+          type: string
+          description: Resumen corto y legible del problema.
+          example: Cupos Agotados para el Turno Horario
+        status:
+          type: integer
+          description: Código de estado HTTP correspondiente.
+          example: 409
+        detail:
+          type: string
+          description: Explicación detallada de la ocurrencia del error.
+          example: >-
+            No existen suficientes cupos disponibles en el turno seleccionado (10:30 a.m.). Cupos restantes: 1,
+            solicitados: 2.
+        instance:
+          type: string
+          description: URI de la solicitud que originó el error.
+          example: /api/v3/atracciones/reservas
+        code:
+          type: string
+          description: Código nemotécnico interno para evaluación en código.
+          example: OUT_OF_STOCK
+        correlation_id:
+          type: string
+          description: Identificador de correlación propagado para rastrear el fallo en los logs y spans de Jaeger.
+          example: cid-8821a
+        timestamp:
+          type: string
+          format: date-time
+          example: '2026-10-21T16:44:01Z'
+        invalid_params:
+          type: array
+          description: Lista de campos con error en caso de fallo de validación HTTP 400/422.
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                example: customer.phone
+              reason:
+                type: string
+                example: El formato debe ser internacional E.164 o número celular válido de Ecuador (09XXXXXXXX).
+  responses:
+    ProblemDetails400:
+      description: |
+        Parámetros inválidos o sintaxis incorrecta (RFC 7807). En `PUT /atracciones/promociones/contrato` también
+        cubre `porcentaje_descuento_maximo` fuera de 0–50 y destinos que no existen en Location
+        (`DESTINATION_NOT_FOUND`), porque el contrato v3 no lista `422` para esa ruta.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    ProblemDetails401:
+      description: No autenticado. JWT o X-API-Key ausente o inválida (RFC 7807).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    ProblemDetails403:
+      description: |
+        Sin permiso (RFC 7807). `PUT /atracciones/promociones/contrato` y `/cupones/**` exigen JWT de rol ADMIN;
+        un socio con X-API-Key solo puede hacer `GET /atracciones/promociones/contrato`.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    ProblemDetails404:
+      description: Cupón no encontrado (RFC 7807).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    ProblemDetails409:
+      description: '`COUPON_CODE_EXISTS` (RFC 7807).'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    ProblemDetails422:
+      description: 'Validación semántica (porcentaje > 100, fecha de fin anterior a la de inicio) (RFC 7807).'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    ProblemDetails500:
+      description: Error interno del servicio (RFC 7807).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: 'JWT del administrador (rol ADMIN), del usuario del portal (validación) o token de servicio de Order.'
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: Clave de Booking Prototipo (`cliente_api` en Identity). Solo para `/atracciones/promociones/contrato`.
+    ServiceTokenAuth:
+      type: apiKey
+      in: header
+      name: X-Service-Token
+      description: Secreto compartido por los componentes internos.

@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arquitectura ESB v3</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #172033;
+    --muted: #5b6475;
+    --line: #8a93a3;
+    --box-bg: #ffffff;
+    --rest: #1f6fd1;      --rest-bg: #eaf2fc;
+    --grpc: #0f8a68;      --grpc-bg: #e4f5ef;
+    --soap: #b8640b;      --soap-bg: #fdf1e3;
+    --gql: #b8327a;       --gql-bg: #fbe8f1;
+    --evt: #6b4fc8;       --evt-bg: #efeafb;
+    --neutral: #5b6475;   --neutral-bg: #f3f4f6;
+    --esb: #172033;       --esb-bg: #e7e9ed;
+    --corr: #d42f2f;
+    --note-bg: #f6f7f9;   --note-border: #dde1e7;
+    --band: #8a93a3;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #12161d; --fg: #e6e9ef; --muted: #9aa3b2; --line: #6b7483; --box-bg: #1b212b;
+      --rest: #6aa8f2; --rest-bg: #18263a;
+      --grpc: #4cc79f; --grpc-bg: #142c25;
+      --soap: #f0a354; --soap-bg: #2e2215;
+      --gql: #e57bb4;  --gql-bg: #2f1a26;
+      --evt: #a690f0;  --evt-bg: #221c36;
+      --neutral: #9aa3b2; --neutral-bg: #1b212b;
+      --esb: #e6e9ef;  --esb-bg: #232a35;
+      --corr: #f06262;
+      --note-bg: #181d25; --note-border: #2b323d;
+      --band: #6b7483;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #12161d; --fg: #e6e9ef; --muted: #9aa3b2; --line: #6b7483; --box-bg: #1b212b;
+    --rest: #6aa8f2; --rest-bg: #18263a;
+    --grpc: #4cc79f; --grpc-bg: #142c25;
+    --soap: #f0a354; --soap-bg: #2e2215;
+    --gql: #e57bb4;  --gql-bg: #2f1a26;
+    --evt: #a690f0;  --evt-bg: #221c36;
+    --neutral: #9aa3b2; --neutral-bg: #1b212b;
+    --esb: #e6e9ef;  --esb-bg: #232a35;
+    --corr: #f06262;
+    --note-bg: #181d25; --note-border: #2b323d;
+    --band: #6b7483;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 1800px; margin: 0 auto; padding: 24px 16px 40px; }
+  h1 { font-size: 28px; margin: 0 0 6px; }
+  .sub { color: var(--muted); margin: 0 0 18px; font-size: 14px; }
+  .scroll { overflow-x: auto; }
+  #arq { width: 100%; min-width: 1100px; height: auto; display: block; }
+
+  /* SVG */
+  svg text { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .mono { font-family: ui-monospace, Consolas, "Courier New", monospace !important; }
+  .blk rect { stroke-width: 2; }
+  .blk-t { font-size: 17px; font-weight: 700; }
+  .blk-s { font-size: 13px; fill: var(--fg); }
+  .k-neutral rect { fill: var(--neutral-bg); stroke: var(--neutral); }  .k-neutral .blk-t { fill: var(--neutral); }
+  .k-gql rect     { fill: var(--gql-bg);     stroke: var(--gql); }      .k-gql .blk-t     { fill: var(--gql); }
+  .k-evt rect     { fill: var(--evt-bg);     stroke: var(--evt); }      .k-evt .blk-t     { fill: var(--evt); }
+  .k-soap rect    { fill: var(--soap-bg);    stroke: var(--soap); }     .k-soap .blk-t    { fill: var(--soap); }
+  .k-grpc rect    { fill: var(--grpc-bg);    stroke: var(--grpc); }     .k-grpc .blk-t    { fill: var(--grpc); }
+  .k-esb rect     { fill: var(--esb-bg);     stroke: var(--esb); stroke-width: 2.6; } .k-esb .blk-t { fill: var(--esb); }
+  .k-partner rect { fill: var(--neutral-bg); stroke: var(--neutral); stroke-dasharray: 8 5; } .k-partner .blk-t { fill: var(--neutral); }
+
+  .band { fill: none; stroke: var(--band); stroke-width: 1.6; stroke-dasharray: 8 6; }
+  .band.evt { stroke: var(--evt); }
+  .band.soap { stroke: var(--soap); }
+  .band-lbl rect { fill: var(--bg); stroke: var(--band); stroke-width: 1.2; }
+  .band-lbl text { font-size: 12px; font-weight: 700; fill: var(--muted); letter-spacing: .03em; }
+  .band-lbl.evt rect { stroke: var(--evt); } .band-lbl.evt text { fill: var(--evt); }
+  .band-lbl.soap rect { stroke: var(--soap); } .band-lbl.soap text { fill: var(--soap); }
+
+  .rail { stroke: var(--esb); stroke-width: 3.5; fill: none; }
+  .drop { stroke: var(--esb); stroke-width: 1.6; fill: none; }
+  .ln { fill: none; stroke-width: 1.8; }
+  .ln.dash { stroke-dasharray: 8 6; }
+  .c-gray   { stroke: var(--line); }  .f-gray   { fill: var(--line); }
+  .c-gql    { stroke: var(--gql); }   .f-gql    { fill: var(--gql); }
+  .c-evt    { stroke: var(--evt); }   .f-evt    { fill: var(--evt); }
+  .c-soap   { stroke: var(--soap); }  .f-soap   { fill: var(--soap); }
+  .c-grpc   { stroke: var(--grpc); }  .f-grpc   { fill: var(--grpc); }
+  .c-rest   { stroke: var(--rest); }  .f-rest   { fill: var(--rest); }
+  .lbl { font-size: 12.5px; }
+
+  .num circle { fill: var(--fg); }
+  .num text { fill: var(--bg); font-size: 13px; font-weight: 700; }
+  .corr rect { fill: var(--corr); }
+  .corr text { fill: #fff; font-size: 11.5px; font-weight: 700; }
+
+  .svc .frame { stroke: var(--c); fill: var(--cbg); stroke-width: 2; }
+  .svc .s-title { font-size: 16px; font-weight: 700; fill: var(--fg); }
+  .svc .pill rect { fill: var(--c); }
+  .svc .pill text { fill: var(--bg); font-size: 12px; font-weight: 700; letter-spacing: .04em; }
+  .svc .tagp rect { fill: none; stroke: var(--c); }
+  .svc .tagp text { fill: var(--c); font-size: 11.5px; }
+  .svc .ext { font-size: 11.5px; font-style: italic; fill: var(--muted); }
+  .tbl rect { fill: var(--box-bg); stroke: var(--c); stroke-width: 1.5; }
+  .tbl.bridge rect { stroke-dasharray: 5 4; }
+  .tbl text { fill: var(--fg); font-size: 12.5px; }
+  .edge { stroke: var(--line); stroke-width: 1.3; fill: none; }
+  .card-lbl { fill: var(--c); font-size: 11.5px; font-weight: 700; }
+  .caption { font-size: 13px; fill: var(--muted); }
+
+  /* Notas */
+  .notes { display: grid; grid-template-columns: 1fr 2fr; gap: 16px; margin-top: 18px; }
+  .notes.two { grid-template-columns: 1fr 1fr; }
+  @media (max-width: 1000px) { .notes, .notes.two { grid-template-columns: 1fr; } }
+  .note { background: var(--note-bg); border: 1px solid var(--note-border); border-radius: 10px; padding: 14px 18px; font-size: 14px; min-width: 0; }
+  .note h3 { margin: 0 0 10px; font-size: 16px; }
+  .note ul { margin: 0; padding-left: 18px; }
+  .note li { margin: 3px 0; }
+  .cls h4 { margin: 10px 0 2px; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+  .cls h4:first-of-type { margin-top: 0; }
+  .cls p { margin: 0 0 0 20px; font-size: 13px; }
+  .sq { width: 12px; height: 12px; display: inline-block; border-radius: 2px; }
+  code { font-family: ui-monospace, Consolas, monospace; font-size: .92em; }
+
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--note-border); vertical-align: top; }
+  th { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+  .chip { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 1px 9px; border-radius: 999px; color: var(--bg); white-space: nowrap; }
+  .chip.rest { background: var(--rest); } .chip.grpc { background: var(--grpc); } .chip.soap { background: var(--soap); }
+  .chip.evt { background: var(--evt); } .chip.http { background: var(--neutral); }
+  .tbl-wrap { overflow-x: auto; }
+
+  .botl { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 26px; }
+  @media (max-width: 700px) { .botl { grid-template-columns: 1fr; } }
+  .botl div { display: grid; grid-template-columns: 26px 1fr; gap: 10px; align-items: start; }
+  .n { width: 24px; height: 24px; border-radius: 50%; background: var(--fg); color: var(--bg); font-size: 12px; font-weight: 700; display: grid; place-items: center; }
+  .botl b { display: block; font-size: 14px; }
+  .botl span { color: var(--muted); font-size: 13px; }
+
+  .corr-box { border: 2px solid var(--corr); border-radius: 10px; padding: 14px 18px; margin-top: 16px; }
+  .corr-box h3 { margin: 0 0 12px; color: var(--corr); font-size: 16px; }
+  .flow { display: grid; grid-template-columns: repeat(6, 1fr); gap: 22px; }
+  @media (max-width: 1000px) { .flow { grid-template-columns: 1fr 1fr; } }
+  .flow div { border: 1.5px solid var(--corr); border-radius: 8px; padding: 10px 12px; position: relative; font-size: 13px; }
+  .flow b { display: block; margin-bottom: 4px; }
+  .flow span { color: var(--muted); }
+  .flow div:not(:last-child)::after { content: "→"; position: absolute; right: -18px; top: 40%; color: var(--corr); font-weight: 700; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Integración de microservicios: ESB, bus de eventos y GraphQL</h1>
+  <p class="sub">16 microservicios de <code>microservicios_tablas_v2.html</code> con las tablas de <code>02_microservicios_v2_bases_de_datos.sql</code> (contrato OpenAPI v3). Flechas continuas: llamada síncrona. Flechas punteadas: evento asíncrono. Líneas grises con 1 / N: relación entre tablas. Borde punteado: tabla intermedia. Círculos numerados: medidas contra cuellos de botella. Etiqueta roja: correlation_id.</p>
+
+  <div class="scroll">
+    <svg id="arq" viewBox="0 0 2420 1745" role="img" aria-label="Arquitectura de integración: clientes, API Gateway, GraphQL, ESB, microservicios y bus de eventos"></svg>
+  </div>
+
+  <div class="notes">
+    <div class="note cls">
+      <h3>Clasificación</h3>
+      <h4><i class="sq" style="background:var(--neutral)"></i>Síncrono: ESB → GraphQL directo</h4>
+      <p>1 Identity, 2 Billing Profile, 3 Location, 4 Catalog, 5 Review, 6 Pricing, 8 Cart, 9 Coupon &amp; Promotions, 15 Support: respuesta inmediata al usuario.</p>
+      <p>Review publica <code>RESENA_PUBLICADA</code> y Pricing <code>TARIFA_ACTUALIZADA</code>; Catalog los consume.</p>
+      <h4><i class="sq" style="background:var(--evt)"></i>Asíncrono: bus de eventos → read model → GraphQL</h4>
+      <p>7 Inventory: CupoBloqueado, CupoLiberado</p>
+      <p>10 Order: OrdenCreada, OrdenPagada</p>
+      <p>11 Booking (Outbox): RESERVA_CREADA, RESERVA_CONFIRMADA, RESERVA_CANCELADA, STOCK_ACTUALIZADO</p>
+      <p>12 Payment: PagoAprobado, PagoRechazado</p>
+      <p>13 Refund: ReembolsoEmitido</p>
+      <p>14 Invoicing: FacturaAutorizada (el SRI responde lento)</p>
+      <h4><i class="sq" style="background:var(--soap)"></i>Consumidor de eventos</h4>
+      <p>16 Audit: guarda todos los eventos en la bitácora con su correlation_id.</p>
+      <h4><i class="sq" style="border:2px dashed var(--neutral)"></i>Socio externo: Booking Prototipo</h4>
+      <p>Entra por el API Gateway con REST <code>/api/v3</code> y <code>X-API-Key</code>. Recibe el stock por gRPC en el puerto 50051 y lee los eventos en <code>GET /atracciones/eventos</code>.</p>
+    </div>
+
+    <div class="note">
+      <h3>Comunicaciones entre servicios (todas pasan por el ESB)</h3>
+      <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Origen</th><th>Destino</th><th>Tipo</th><th>Para qué</th></tr></thead>
+        <tbody>
+          <tr><td>Booking Prototipo</td><td>11 Booking</td><td><span class="chip rest">REST</span></td><td><code>POST /reservas</code> (201 / 409 <code>OUT_OF_STOCK</code>), <code>/cancel</code>, <code>/checkin</code>, <code>GET /reservas/{id}</code></td></tr>
+          <tr><td>Booking Prototipo</td><td>4 Catalog</td><td><span class="chip rest">REST</span></td><td><code>GET /atracciones</code>, <code>/search</code>, <code>/{id}</code>, <code>/categorias/arbol</code></td></tr>
+          <tr><td>Booking Prototipo</td><td>7 Inventory</td><td><span class="chip rest">REST</span></td><td><code>GET /atracciones/{id}/disponibilidad</code>; el ESB lo traduce a gRPC</td></tr>
+          <tr><td>Booking Prototipo</td><td>9 Coupon &amp; Promotions</td><td><span class="chip rest">REST</span></td><td><code>GET</code> / <code>PUT /promociones/contrato</code></td></tr>
+          <tr><td>Booking Prototipo</td><td>11 Booking</td><td><span class="chip rest">REST</span></td><td><code>GET /atracciones/eventos</code> (lee el Outbox)</td></tr>
+          <tr><td>7 Inventory</td><td>Booking Prototipo :50051</td><td><span class="chip grpc">gRPC</span></td><td><code>PushStockUpdate</code> / <code>StreamInventoryChanges</code> en cada cambio de cupo</td></tr>
+          <tr><td>11 Booking</td><td>10 Order</td><td><span class="chip grpc">gRPC</span></td><td>Crear la orden y sus líneas (<code>external_order_id</code>)</td></tr>
+          <tr><td>11 Booking</td><td>7 Inventory</td><td><span class="chip grpc">gRPC</span></td><td>Descontar cupos por <code>slot_id</code>; reintegrarlos al cancelar (compensación de la saga)</td></tr>
+          <tr><td>10 Order</td><td>6 Pricing</td><td><span class="chip grpc">gRPC</span></td><td>Tarifa vigente por tipo de boleto</td></tr>
+          <tr><td>10 Order</td><td>8 Cart · 9 Coupon</td><td><span class="chip rest">REST</span></td><td>Convertir el carrito en orden; validar el cupón y su vigencia</td></tr>
+          <tr><td>11 Booking</td><td>4 Catalog</td><td><span class="chip rest">REST</span></td><td>Guía asignado y punto de encuentro de la reserva</td></tr>
+          <tr><td>API Gateway</td><td>1 Identity</td><td><span class="chip rest">REST</span></td><td>Validar el JWT o la <code>X-API-Key</code> (<code>cliente_api</code>)</td></tr>
+          <tr><td>13 Refund</td><td>12 Payment</td><td><span class="chip rest">REST</span></td><td>Monto cobrado, para no devolver más de lo pagado</td></tr>
+          <tr><td>14 Invoicing</td><td>2 Billing Profile · 10 Order</td><td><span class="chip rest">REST</span></td><td>Datos de facturación y líneas de la orden</td></tr>
+          <tr><td>14 Invoicing</td><td>SRI Ecuador</td><td><span class="chip soap">SOAP</span></td><td>Autorización de la factura electrónica (XML firmado)</td></tr>
+          <tr><td>Pasarelas de pago</td><td>12 Payment</td><td><span class="chip http">Webhook</span></td><td>Resultado del cobro; Payment responde 202 y lo encola</td></tr>
+          <tr><td>12 Payment</td><td>10 Order · 11 Booking · 14 Invoicing</td><td><span class="chip evt">Evento</span></td><td><code>PagoAprobado</code> / <code>PagoRechazado</code></td></tr>
+          <tr><td>13 Refund</td><td>10 Order · 11 Booking</td><td><span class="chip evt">Evento</span></td><td><code>ReembolsoEmitido</code></td></tr>
+          <tr><td>5 Review · 6 Pricing</td><td>4 Catalog</td><td><span class="chip evt">Evento</span></td><td><code>RESENA_PUBLICADA</code> actualiza las calificaciones; <code>TARIFA_ACTUALIZADA</code> actualiza el precio "desde"</td></tr>
+          <tr><td>Todos</td><td>16 Audit · read models</td><td><span class="chip evt">Evento</span></td><td>Bitácora y proyecciones CQRS</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="note" style="margin-top:16px">
+    <h3>Cómo evitar cuellos de botella</h3>
+    <div class="botl">
+      <div><i class="n">1</i><p style="margin:0"><b>Rate limiting</b><span>Token bucket por cliente y por <code>X-API-Key</code> en el gateway; el exceso recibe 429 y no llega al ESB.</span></p></div>
+      <div><i class="n">6</i><p style="margin:0"><b>CQRS</b><span>Las consultas masivas leen proyecciones en Redis, no llaman a los servicios.</span></p></div>
+      <div><i class="n">2</i><p style="margin:0"><b>Caché en el borde</b><span>El catálogo se sirve desde CDN; la mayoría de lecturas no entra al sistema.</span></p></div>
+      <div><i class="n">7</i><p style="margin:0"><b>Outbox + idempotencia</b><span>Booking escribe el evento en <code>outbox_evento</code> en la misma transacción; <code>idempotencia</code> devuelve la misma respuesta ante reintentos con la misma <code>Idempotency-Key</code>.</span></p></div>
+      <div><i class="n">3</i><p style="margin:0"><b>GraphQL eficiente</b><span>DataLoader agrupa llamadas (evita N+1); límite de profundidad y complejidad.</span></p></div>
+      <div><i class="n">8</i><p style="margin:0"><b>Webhook rápido</b><span>Payment responde 202 a la pasarela y encola el procesamiento.</span></p></div>
+      <div><i class="n">4</i><p style="margin:0"><b>ESB ligero</b><span>Solo enruta y transforma (REST ↔ gRPC ↔ SOAP); instancias stateless, timeouts y circuit breaker.</span></p></div>
+      <div><i class="n">9</i><p style="margin:0"><b>Nivelación de carga</b><span>Facturas en cola; los workers envían al SRI a ritmo controlado con reintento exponencial.</span></p></div>
+      <div><i class="n">5</i><p style="margin:0"><b>Particiones</b><span>Cada topic se reparte por clave (<code>atr_id</code>, <code>ord_id</code>, <code>res_id</code>); consumer groups en paralelo y DLQ.</span></p></div>
+      <div><i class="n">10</i><p style="margin:0"><b>gRPC streaming</b><span>Inventory envía los deltas de cupo a Booking Prototipo en lote por un solo canal HTTP/2 (<code>StreamInventoryChanges</code>).</span></p></div>
+    </div>
+  </div>
+
+  <div class="corr-box">
+    <h3>Correlation ID: una misma petición, rastreable en todos los servicios</h3>
+    <div class="flow">
+      <div><b>1 API Gateway</b><span>Genera <code>X-Correlation-Id</code> o reutiliza el que envía el cliente o Booking Prototipo.</span></div>
+      <div><b>2 GraphQL</b><span>Lo guarda en el contexto y lo reenvía en cada llamada al ESB.</span></div>
+      <div><b>3 ESB</b><span>Lo traduce: header HTTP, metadata gRPC o SOAP Header hacia el SRI.</span></div>
+      <div><b>4 Microservicio</b><span>Lo escribe en cada log y en <code>outbox_evento.evt_correlation_id</code>.</span></div>
+      <div><b>5 Bus de eventos</b><span>Viaja en los headers del mensaje (CloudEvents); cada consumidor lo continúa.</span></div>
+      <div><b>6 Audit</b><span>Lo guarda en <code>bitacora.bit_correlation_id</code> para rastrear el flujo completo.</span></div>
+    </div>
+  </div>
+</main>
+
+<script>
+const NS = 'http://www.w3.org/2000/svg';
+const svg = document.getElementById('arq');
+const el = (tag, attrs, parent = svg) => {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  parent.appendChild(e);
+  return e;
+};
+const text = (x, y, s, cls, parent = svg, anchor = 'start') => {
+  const t = el('text', { x, y, class: cls, 'text-anchor': anchor }, parent);
+  t.textContent = s;
+  return t;
+};
+function wrap(s, max) {
+  const lines = [];
+  let cur = '';
+  for (const w of s.split(' ')) {
+    if (cur && (cur + ' ' + w).length > max) { lines.push(cur); cur = w; }
+    else cur = cur ? cur + ' ' + w : w;
+  }
+  if (cur) lines.push(cur);
+  return lines;
+}
+
+// Flechas: un marcador por color
+const defs = el('defs', {});
+for (const c of ['gray', 'gql', 'evt', 'soap', 'grpc', 'rest']) {
+  const m = el('marker', { id: 'm-' + c, viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: 'auto-start-reverse' }, defs);
+  el('path', { d: 'M0 0 L10 5 L0 10 z', class: 'f-' + c }, m);
+}
+function arrow(pts, color, o = {}) {
+  const d = pts.map((p, i) => (i ? 'L' : 'M') + p[0] + ' ' + p[1]).join(' ');
+  const a = { d, class: `ln c-${color}${o.dash ? ' dash' : ''}`, 'marker-end': `url(#m-${color})` };
+  if (o.both) a['marker-start'] = `url(#m-${color})`;
+  el('path', a);
+  if (o.label) text(o.lx, o.ly, o.label, 'lbl f-' + color, svg, o.anchor || 'start');
+}
+
+function block(x, y, w, h, kind, title, sub) {
+  const g = el('g', { class: 'blk k-' + kind });
+  el('rect', { x, y, width: w, height: h, rx: 8 }, g);
+  text(x + 18, y + 27, title, 'blk-t', g);
+  if (sub) text(x + 18, y + (h > 70 ? 56 : 49), sub, 'blk-s', g);
+}
+function num(x, y, n) {
+  const g = el('g', { class: 'num' });
+  el('circle', { cx: x, cy: y, r: 13 }, g);
+  text(x, y + 4.5, n, '', g, 'middle');
+}
+function corr(x, y) {
+  const g = el('g', { class: 'corr' });
+  el('rect', { x: x - 48, y: y - 11, width: 96, height: 22, rx: 11 }, g);
+  text(x, y + 4, 'correlation_id', '', g, 'middle');
+}
+function band(x, y, w, h, kind, label) {
+  el('rect', { x, y, width: w, height: h, rx: 10, class: 'band ' + kind });
+  const g = el('g', { class: 'band-lbl ' + kind });
+  const lw = label.length * 7.4 + 16;
+  el('rect', { x: x + 14, y: y - 11, width: lw, height: 22, rx: 4 }, g);
+  text(x + 22, y + 4, label, '', g);
+}
+
+// --------------------------------------------------------------------------
+// Microservicios y sus tablas (coordenadas de las tablas relativas a la tarjeta)
+// --------------------------------------------------------------------------
+const R1 = 560, R1H = 300, R2 = 910, R2H = 220, RA = 1230, RAH = 310;
+const SERVICES = [
+  // Síncronos · fila 1
+  { n: 1, name: 'Identity & Access', proto: 'rest', x: 40, y: R1, w: 580, h: R1H,
+    nodes: { rol: [80, 110], usuario_rol: [300, 110, 'b'], cliente_api: [485, 110], sesion: [80, 180], usuario: [300, 180], token_verificacion: [300, 245] },
+    edges: [['rol', 'usuario_rol', '1', 'N'], ['usuario', 'usuario_rol', '1', 'N'], ['usuario', 'sesion', '1', 'N'], ['usuario', 'token_verificacion', '1', 'N']],
+    ext: 'Sin referencias externas. cliente_api guarda el hash de la X-API-Key de Booking Prototipo.' },
+  { n: 4, name: 'Catalog & Attractions', proto: 'rest', x: 640, y: R1, w: 1140, h: R1H,
+    nodes: { categoria: [160, 110], atraccion_categoria: [400, 110, 'b'], atraccion_foto: [680, 110], atraccion_itinerario: [960, 110],
+             operador_usuario: [140, 180, 'b'], operador: [400, 180], atraccion: [680, 180], atraccion_inclusion: [900, 180, 'b'], inclusion: [1070, 180],
+             guia: [400, 245], atraccion_idioma: [680, 245, 'b'], idioma: [900, 245] },
+    edges: [['categoria', 'categoria', '1', 'N'], ['categoria', 'atraccion_categoria', '1', 'N'], ['atraccion', 'atraccion_categoria', '1', 'N'],
+            ['atraccion', 'atraccion_foto', '1', 'N'], ['atraccion', 'atraccion_itinerario', '1', 'N'],
+            ['operador', 'atraccion', '1', 'N'], ['operador', 'operador_usuario', '1', 'N'], ['operador', 'guia', '1', 'N'],
+            ['atraccion', 'atraccion_inclusion', '1', 'N'], ['inclusion', 'atraccion_inclusion', '1', 'N'],
+            ['atraccion', 'atraccion_idioma', '1', 'N'], ['idioma', 'atraccion_idioma', '1', 'N']],
+    ext: 'Ref. externa: atraccion → ciudad (Location); operador → provincia (Location); operador_usuario, guia → usuario (Identity). Consume RESENA_PUBLICADA (Review) y TARIFA_ACTUALIZADA (Pricing).' },
+  { n: 3, name: 'Location', proto: 'rest', x: 1800, y: R1, w: 560, h: R1H,
+    nodes: { region: [280, 110], provincia: [280, 180], ciudad: [280, 245] },
+    edges: [['region', 'provincia', '1', 'N'], ['provincia', 'ciudad', '1', 'N']],
+    ext: 'Sin referencias externas. Catálogo de solo lectura que consultan otros servicios.' },
+  // Síncronos · fila 2
+  { n: 2, name: 'Billing Profile', proto: 'rest', x: 40, y: R2, w: 260, h: R2H,
+    nodes: { dato_facturacion: [130, 118] }, edges: [],
+    ext: 'Ref. externa: dato_facturacion → usuario (Identity).' },
+  { n: 5, name: 'Review', proto: 'rest', x: 316, y: R2, w: 304, h: R2H,
+    nodes: { resena: [152, 118] }, edges: [],
+    ext: 'Ref. externa: → atraccion (Catalog), usuario (Identity). Publica RESENA_PUBLICADA.' },
+  { n: 6, name: 'Pricing', proto: 'grpc', x: 640, y: R2, w: 260, h: R2H,
+    nodes: { tarifa: [130, 118] }, edges: [],
+    ext: 'Ref. externa: → atraccion (Catalog). ADULT, CHILD, SENIOR, INFANT, STUDENT.' },
+  { n: 8, name: 'Cart', proto: 'rest', x: 916, y: R2, w: 384, h: R2H,
+    nodes: { carrito: [95, 118], carrito_item: [275, 118] },
+    edges: [['carrito', 'carrito_item', '1', 'N']],
+    ext: 'Ref. externa: carrito → usuario (Identity); carrito_item → atraccion (Catalog), disponibilidad (Inventory).' },
+  { n: 9, name: 'Coupon & Promotions', proto: 'rest', x: 1316, y: R2, w: 464, h: R2H,
+    nodes: { cupon: [70, 118], acuerdo_promocion: [300, 92], acuerdo_promocion_destino: [300, 150] },
+    edges: [['acuerdo_promocion', 'acuerdo_promocion_destino', '1', 'N']],
+    ext: 'acuerdo_promocion: GET/PUT /promociones/contrato. Ref. externa: destino → ciudad (Location); usos de cupón en orden_cupon (Order).' },
+  { n: 15, name: 'Support', proto: 'rest', x: 1800, y: R2, w: 560, h: R2H,
+    nodes: { mensaje_contacto: [280, 118] }, edges: [],
+    ext: 'Sin referencias externas. Mensajes de contacto de los visitantes.' },
+  // Asíncronos
+  { n: 7, name: 'Inventory', proto: 'grpc', badge: 10, x: 40, y: RA, w: 260, h: RAH,
+    nodes: { horario: [130, 100], disponibilidad: [130, 160], fecha_bloqueada: [130, 220] },
+    edges: [['horario', 'disponibilidad', '1', 'N']],
+    ext: 'Ref. externa: → atraccion (Catalog). slot_id = dis_slot_codigo. Stock → Booking Prototipo por gRPC.' },
+  { n: 10, name: 'Order Management', proto: 'grpc', x: 316, y: RA, w: 304, h: RAH,
+    nodes: { orden: [90, 100], estado: [240, 100], orden_detalle: [85, 165], orden_cupon: [228, 165, 'b'], idempotencia: [152, 225] },
+    edges: [['estado', 'orden', '1', 'N'], ['orden', 'orden_detalle', '1', 'N'], ['orden', 'orden_cupon', '1', 'N']],
+    ext: 'Ref. externa: orden → usuario, cliente_api (Identity), carrito, metodo_pago; orden_detalle → atraccion.' },
+  { n: 11, name: 'Booking', proto: 'grpc', badge: 7, x: 640, y: RA, w: 340, h: RAH,
+    nodes: { reserva: [100, 100], estado: [262, 100], reserva_pasajero: [100, 165], outbox_evento: [262, 165], idempotencia: [100, 225] },
+    edges: [['estado', 'reserva', '1', 'N'], ['reserva', 'reserva_pasajero', '1', 'N']],
+    ext: 'Ref. externa: → orden_detalle (Order), disponibilidad (Inventory), guia (Catalog). Outbox → GET /eventos.' },
+  { n: 12, name: 'Payment', proto: 'rest', x: 996, y: RA, w: 404, h: RAH,
+    nodes: { metodo_pago: [85, 100], pago: [220, 100], estado: [332, 100], pago_tarjeta: [120, 175], pago_transferencia: [298, 175] },
+    edges: [['metodo_pago', 'pago', '1', 'N'], ['estado', 'pago', '1', 'N'], ['pago', 'pago_tarjeta', '1', '1'], ['pago', 'pago_transferencia', '1', '1']],
+    ext: 'Ref. externa: pago → orden (Order). Métodos CREDIT_CARD, DEBIT_CARD, PAYPAL, TRANSFER.' },
+  { n: 13, name: 'Refund', proto: 'rest', x: 1416, y: RA, w: 144, h: RAH,
+    nodes: { reembolso: [72, 130] }, edges: [],
+    ext: 'Ref. externa: → pago (Payment).' },
+  { n: 14, name: 'Invoicing', proto: 'soap', badge: 9, x: 1576, y: RA, w: 204, h: RAH,
+    nodes: { estado: [102, 95], factura: [102, 155], factura_detalle: [102, 215] },
+    edges: [['estado', 'factura', '1', 'N'], ['factura', 'factura_detalle', '1', 'N']],
+    ext: 'Ref. externa: → orden, orden_detalle (Order), dato_facturacion (Billing).' },
+  // Consumidor
+  { n: 16, name: 'Audit', proto: 'rest', tag: 'Consumidor de eventos', x: 1820, y: RA, w: 540, h: RAH,
+    nodes: { bitacora: [270, 135] }, edges: [],
+    ext: 'Consume todos los eventos del bus. Ref. externa: bitacora → usuario (Identity). Guarda el correlation_id.' }
+];
+
+const CHAR = 7.3, BOX_H = 30;
+const boxW = name => Math.round(name.length * CHAR + 26);
+
+function clip(cx, cy, w, h, dx, dy) {
+  const len = Math.hypot(dx, dy) || 1, ux = dx / len, uy = dy / len;
+  const t = Math.min(ux ? (w / 2) / Math.abs(ux) : Infinity, uy ? (h / 2) / Math.abs(uy) : Infinity);
+  return [cx + ux * t, cy + uy * t, ux, uy];
+}
+function card(s) {
+  const pal = { rest: ['--rest', '--rest-bg'], grpc: ['--grpc', '--grpc-bg'], soap: ['--soap', '--soap-bg'] }[s.proto];
+  const g = el('g', { class: 'svc', style: `--c: var(${pal[0]}); --cbg: var(${pal[1]})`, transform: `translate(${s.x} ${s.y})` });
+  el('rect', { class: 'frame', x: 0, y: 0, width: s.w, height: s.h, rx: 10 }, g);
+  text(16, 28, `${s.n}  ${s.name}`, 's-title', g);
+  const pill = el('g', { class: 'pill' }, g);
+  el('rect', { x: 16, y: 40, width: 58, height: 22, rx: 11 }, pill);
+  text(45, 55.5, s.proto === 'grpc' ? 'gRPC' : s.proto.toUpperCase(), '', pill, 'middle');
+  if (s.tag) {
+    const tg = el('g', { class: 'tagp' }, g);
+    el('rect', { x: 82, y: 40, width: s.tag.length * 6.6 + 18, height: 22, rx: 11 }, tg);
+    text(91, 55.5, s.tag, '', tg);
+  }
+  if (s.badge) num(s.x + s.w - 4, s.y + 4, s.badge);
+
+  const nodes = {};
+  for (const [name, [x, y, kind]] of Object.entries(s.nodes)) nodes[name] = { x, y, w: boxW(name), h: BOX_H, bridge: kind === 'b' };
+  const lbl = (x, y, t) => text(x, y + 4, t, 'card-lbl', g, 'middle');
+  for (const [a, b, ca, cb] of s.edges) {
+    const A = nodes[a], B = nodes[b];
+    if (a === b) {
+      const top = A.y - A.h / 2;
+      el('path', { class: 'edge', d: `M ${A.x - 12} ${top} C ${A.x - 30} ${top - 38}, ${A.x + 30} ${top - 38}, ${A.x + 12} ${top}` }, g);
+      lbl(A.x - 28, top - 12, ca);
+      lbl(A.x + 28, top - 12, cb);
+      continue;
+    }
+    const [ax, ay, aux, auy] = clip(A.x, A.y, A.w + 4, A.h + 4, B.x - A.x, B.y - A.y);
+    const [bx, by, bux, buy] = clip(B.x, B.y, B.w + 4, B.h + 4, A.x - B.x, A.y - B.y);
+    el('path', { class: 'edge', d: `M ${ax} ${ay} L ${bx} ${by}` }, g);
+    const gx = bx - ax, gy = by - ay, gl = Math.hypot(gx, gy) || 1, nx = -gy / gl, ny = gx / gl;
+    lbl(ax + aux * 13 + nx * 9, ay + auy * 13 + ny * 9, ca);
+    lbl(bx + bux * 13 + nx * 9, by + buy * 13 + ny * 9, cb);
+  }
+  for (const [name, n] of Object.entries(nodes)) {
+    const t = el('g', { class: 'tbl' + (n.bridge ? ' bridge' : '') }, g);
+    el('rect', { x: n.x - n.w / 2, y: n.y - n.h / 2, width: n.w, height: n.h, rx: 4 }, t);
+    text(n.x, n.y + 4.5, name, 'mono', t, 'middle');
+  }
+  const lines = wrap(s.ext, Math.floor((s.w - 30) / 6.1));
+  lines.forEach((ln, i) => text(16, s.h - 12 - (lines.length - 1 - i) * 14, ln, 'ext', g));
+}
+
+// --------------------------------------------------------------------------
+// Capas superiores
+// --------------------------------------------------------------------------
+block(20, 20, 620, 64, 'neutral', 'Clientes', 'Web Descubre EC · App móvil');
+block(700, 20, 620, 64, 'partner', 'Booking Prototipo (socio B2B)', 'Agregador externo · REST /api/v3 · X-API-Key · Saga LIFO');
+block(20, 124, 1300, 64, 'neutral', 'CDN + API Gateway', 'Caché estática · auth JWT y X-API-Key · rate limiting · genera el correlation_id');
+num(1290, 124, 2); num(1320, 124, 1);
+block(20, 228, 620, 64, 'gql', 'GraphQL (Federation)', 'Una sola API para el frontend · DataLoader · caché de consultas');
+num(640, 228, 3);
+block(700, 228, 480, 64, 'evt', 'Read models (CQRS)', 'Proyecciones en Redis · atienden las consultas masivas');
+num(1180, 228, 6);
+block(1400, 228, 300, 64, 'neutral', 'Pasarelas de pago', 'PayPhone · PayPal · Kushki');
+num(1700, 228, 8);
+block(1740, 228, 300, 64, 'soap', 'SRI Ecuador', 'Web service SOAP');
+block(2080, 228, 300, 64, 'grpc', 'Booking · ingesta gRPC', 'InventoryStockService :50051');
+block(20, 400, 2360, 76, 'esb', 'Enterprise Service Bus (ESB)', 'Mediación y enrutamiento · transformación de protocolo con adaptadores REST ↔ gRPC ↔ SOAP · sin lógica de negocio');
+num(2380, 400, 4);
+
+arrow([[330, 84], [330, 122]], 'gray');
+arrow([[1010, 84], [1010, 122]], 'gray', { label: 'REST /api/v3 · X-API-Key', lx: 1022, ly: 108 });
+arrow([[330, 188], [330, 226]], 'gray');
+corr(440, 208);
+arrow([[640, 260], [698, 260]], 'gql');
+arrow([[330, 292], [330, 398]], 'gql', { label: 'comandos y consultas directas', lx: 342, ly: 350 });
+corr(600, 345);
+arrow([[1250, 188], [1250, 398]], 'gray', { label: 'contrato REST v3 (socios)', lx: 1240, ly: 350, anchor: 'end' });
+arrow([[1550, 292], [1550, 398]], 'gray', { label: 'webhook HTTP', lx: 1562, ly: 350 });
+arrow([[1890, 296], [1890, 398]], 'soap', { both: true, label: 'SOAP/XML + firma', lx: 1902, ly: 350 });
+arrow([[2230, 400], [2230, 294]], 'grpc', { label: 'gRPC · PushStockUpdate', lx: 2242, ly: 350 });
+
+// Proyección del bus a los read models
+arrow([[2380, 1656], [2405, 1656], [2405, 205], [940, 205], [940, 226]], 'evt', { dash: true, label: 'proyección de eventos → read models', lx: 1460, ly: 198 });
+
+// --------------------------------------------------------------------------
+// Bandas, rieles del ESB y tarjetas
+// --------------------------------------------------------------------------
+band(20, 530, 2360, 620, '', 'SÍNCRONO · ESB → GraphQL directo');
+band(20, 1200, 1770, 360, 'evt', 'ASÍNCRONO · bus de eventos → read model → GraphQL');
+band(1800, 1200, 580, 360, 'soap', 'CONSUMIDOR');
+corr(460, 505);
+
+const D1 = 885, D2 = 1175;
+for (const x of [630, 1790]) el('path', { class: 'rail', d: `M ${x} 476 L ${x} ${D2}` });
+el('path', { class: 'rail', d: `M 170 ${D1} L 2080 ${D1}` });
+el('path', { class: 'rail', d: `M 170 ${D2} L 2090 ${D2}` });
+for (const x of [330, 1210, 2080]) el('path', { class: 'drop', d: `M ${x} 476 L ${x} ${R1}` });
+for (const s of SERVICES) {
+  const cx = s.x + s.w / 2;
+  if (s.y === R2) el('path', { class: 'drop', d: `M ${cx} ${D1} L ${cx} ${R2}` });
+  if (s.y === RA) el('path', { class: 'drop', d: `M ${cx} ${D2} L ${cx} ${RA}` });
+}
+for (const s of SERVICES) card(s);
+
+// --------------------------------------------------------------------------
+// Bus de eventos
+// --------------------------------------------------------------------------
+block(20, 1620, 2360, 72, 'evt', 'Bus de eventos (Kafka / RabbitMQ)', 'Topics particionados por clave: atr_id, ord_id, res_id · consumer groups · DLQ · formato CloudEvents v1.0');
+num(2380, 1620, 5);
+for (const s of SERVICES) {
+  if (s.y !== RA) continue;
+  const cx = s.x + s.w / 2;
+  if (s.n === 16) arrow([[cx, 1620], [cx, RA + RAH + 2]], 'soap', { dash: true });
+  else arrow([[cx, RA + RAH], [cx, 1618]], 'evt', { dash: true });
+}
+corr(1340, 1590);
+text(20, 1722, 'Las consultas de 1–6, 8, 9 y 15 pasan por el ESB en tiempo real. El estado de 7 y 10–14 llega a GraphQL desde los read models alimentados por el bus. Audit (16) consume todos los eventos para la bitácora. Booking Prototipo entra por el gateway con REST y recibe el stock por gRPC a través del ESB.', 'caption');
+</script>
+</body>
+</html>

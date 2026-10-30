@@ -1,0 +1,13 @@
+{
+  "name": "@atracciones/booking-service",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Booking Service (gRPC): reservas, pasajeros, check-in y cancelaciones. Base booking_db.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "dependencies": {
+    "@atracciones/platform": "1.0.0",
+    "jose": "^5.10.0",
+    "typeorm": "0.3.31"
+  }
+}

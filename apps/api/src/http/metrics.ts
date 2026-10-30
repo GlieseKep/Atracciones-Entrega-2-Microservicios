@@ -59,7 +59,7 @@ export class RequestMetrics {
     const start = process.hrtime.bigint();
     res.on('finish', () => {
       const durationMs = Number(process.hrtime.bigint() - start) / 1e6;
-      // Patrón de la ruta (`/api/v1/atracciones/:id`) en vez de la URL concreta, para agrupar sin datos personales.
+      // Patrón de la ruta (`/internal/web/v1/atracciones/:id`) en vez de la URL concreta, para agrupar sin datos personales.
       const pattern = req.route?.path ? `${req.baseUrl ?? ''}${String(req.route.path)}` : '(sin ruta)';
       this.record(req.method, pattern, req.originalUrl.split('?')[0], res.statusCode, durationMs, req.id ?? null);
     });

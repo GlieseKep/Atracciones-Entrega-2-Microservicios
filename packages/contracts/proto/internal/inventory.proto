@@ -1,0 +1,212 @@
+// Contrato gRPC interno de Inventory & Availability Service (plan §3.3). Lo usan el ESB y, a través de él, la Partner
+// API y Order. No es el proto del contrato con Booking (ese es booking/inventory.proto, sin cambios).
+syntax = "proto3";
+package atracciones.inventory;
+
+service InventoryService {
+  rpc Health (Empty) returns (HealthReply);
+  // Turnos de una atracción en una fecha (GET /atracciones/{id}/disponibilidad).
+  rpc GetAvailability (GetAvailabilityRequest) returns (AvailabilityDay);
+  // Tarifa vigente de una atracción en una fecha (vacía = hoy).
+  rpc GetTariff (GetTariffRequest) returns (Tariff);
+  // Tarifas vigentes de varias atracciones (listados y búsqueda).
+  rpc GetTariffs (GetTariffsRequest) returns (TariffList);
+  rpc GetGuide (GetGuideRequest) returns (Guide);
+  // Atracciones con al menos un turno con cupos suficientes en el rango de fechas (filtro de /search).
+  rpc HasAvailability (HasAvailabilityRequest) returns (HasAvailabilityResult);
+  // Bloquea cupos de un turno (paso de la saga de compra). Idempotente por clave.
+  rpc ReserveSeats (ReserveSeatsRequest) returns (ReserveSeatsResult);
+  // Libera cupos bloqueados (compensación o cancelación). Idempotente.
+  rpc ReleaseSeats (ReleaseSeatsRequest) returns (ReleaseSeatsResult);
+  // Bloqueos en lote por un solo canal HTTP/2 (plan D10).
+  rpc ReserveSeatsBatch (stream ReserveSeatsRequest) returns (stream ReserveSeatsResult);
+
+  // Administración del portal (scope attractions:write): turnos, aforo y tarifas. Los cambios de cupos se envían a Booking.
+  rpc ListSlots (ListSlotsRequest) returns (SlotPage);
+  rpc UpsertSlots (UpsertSlotsRequest) returns (UpsertSlotsResult);
+  rpc SetSlotCapacity (SetSlotCapacityRequest) returns (AdminSlot);
+  rpc SetSlotClosed (SetSlotClosedRequest) returns (AdminSlot);
+  rpc SetTariff (SetTariffRequest) returns (Tariff);
+  rpc CapacitySummary (CapacitySummaryRequest) returns (CapacitySummaryResult);
+}
+
+message Empty {}
+
+message HealthReply {
+  string status = 1;
+  string service = 2;
+  bool database_connected = 3;
+  int32 latency_ms = 4;
+  double memory_usage_mb = 5;
+  int64 uptime_seconds = 6;
+  string timestamp = 7;
+}
+
+message GetAvailabilityRequest {
+  string atraccion_codigo = 1;
+  string fecha = 2;              // YYYY-MM-DD
+}
+
+message TimeSlot {
+  string fecha = 1;
+  string hora = 2;               // HH:mm:ss
+  int32 cupos_totales = 3;
+  int32 cupos_disponibles = 4;
+  double precio_adulto = 5;      // precio del turno o tarifa vigente
+  double precio_nino = 6;
+  string guia_codigo = 7;        // vacío si el turno no tiene guía
+}
+
+message AvailabilityDay {
+  string atraccion_codigo = 1;
+  string fecha = 2;
+  repeated TimeSlot turnos = 3;
+}
+
+message GetTariffRequest {
+  string atraccion_codigo = 1;
+  string fecha = 2;
+}
+
+message Tariff {
+  string atraccion_codigo = 1;
+  string moneda = 2;
+  double adult = 3;
+  double child = 4;
+  double senior = 5;
+  double infant = 6;
+  double student = 7;
+  bool has_student = 8;
+}
+
+message GetTariffsRequest {
+  repeated string atraccion_codigos = 1;
+  string fecha = 2;
+}
+
+message TariffList {
+  repeated Tariff tarifas = 1;
+}
+
+message GetGuideRequest {
+  string codigo = 1;
+}
+
+message Guide {
+  string codigo = 1;
+  string titulo = 2;
+  string nombre = 3;
+  string credencial_mintur = 4;
+  // Texto del contrato: "Lic. Carlos Morales (Credencial Mintur #5541)".
+  string nombre_visible = 5;
+}
+
+message HasAvailabilityRequest {
+  repeated string atraccion_codigos = 1;
+  string fecha_inicio = 2;
+  string fecha_fin = 3;
+  int32 cupos_minimos = 4;
+}
+
+message HasAvailabilityResult {
+  repeated string atraccion_codigos = 1;
+}
+
+message ReserveSeatsRequest {
+  string atraccion_codigo = 1;
+  string fecha = 2;
+  string hora = 3;               // HH:mm:ss
+  int32 cantidad = 4;            // incluye infantes (ocupan cupo)
+  string orden_id = 5;
+  string clave_idempotencia = 6;
+}
+
+message ReserveSeatsResult {
+  string reserva_cupo_id = 1;
+  int32 cupos_disponibles = 2;
+  string guia_codigo = 3;
+}
+
+message ReleaseSeatsRequest {
+  string clave_idempotencia = 1; // la misma clave con la que se reservaron los cupos
+}
+
+message ReleaseSeatsResult {
+  bool liberado = 1;             // false si ya estaban liberados o nunca se reservaron
+  int32 cupos_disponibles = 2;
+}
+
+message ListSlotsRequest {
+  string atraccion_codigo = 1;   // vacío = todas
+  string fecha_desde = 2;
+  string fecha_hasta = 3;
+  int32 limit = 4;
+  int32 offset = 5;
+}
+
+message AdminSlot {
+  string atraccion_codigo = 1;
+  string fecha = 2;
+  string hora = 3;
+  int32 cupos_totales = 4;
+  int32 cupos_reservados = 5;
+  int32 cupos_disponibles = 6;
+  bool cerrado = 7;
+  string guia_codigo = 8;
+}
+
+message SlotPage {
+  int32 total = 1;
+  repeated AdminSlot items = 2;
+}
+
+message UpsertSlotsRequest {
+  string atraccion_codigo = 1;
+  string fecha_desde = 2;
+  string fecha_hasta = 3;
+  repeated string horas = 4;     // HH:mm o HH:mm:ss
+  int32 cupos_totales = 5;
+  string guia_codigo = 6;        // vacío = sin guía (o conserva el que tenía)
+}
+
+message UpsertSlotsResult {
+  int32 creados = 1;
+  int32 actualizados = 2;
+}
+
+message SetSlotCapacityRequest {
+  string atraccion_codigo = 1;
+  string fecha = 2;
+  string hora = 3;
+  int32 cupos_totales = 4;
+}
+
+message SetSlotClosedRequest {
+  string atraccion_codigo = 1;
+  string fecha = 2;
+  string hora = 3;
+  bool cerrado = 4;
+}
+
+message SetTariffRequest {
+  string atraccion_codigo = 1;
+  string moneda = 2;
+  double adult = 3;
+  double child = 4;
+  double senior = 5;
+  double infant = 6;
+  double student = 7;
+  bool has_student = 8;
+  string vigente_desde = 9;      // vacío = hoy
+}
+
+message CapacitySummaryRequest {
+  string fecha_desde = 1;
+  string fecha_hasta = 2;
+}
+
+message CapacitySummaryResult {
+  int32 turnos = 1;
+  int32 cupos_totales = 2;
+  int32 cupos_reservados = 3;
+}

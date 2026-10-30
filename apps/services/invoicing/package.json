@@ -1,0 +1,16 @@
+{
+  "name": "@atracciones/invoicing-service",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Electronic Invoicing Service (SOAP): facturas y notas de crédito electrónicas del SRI. Base invoicing_db.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "dependencies": {
+    "@atracciones/platform": "1.0.0",
+    "express": "^5.2.1",
+    "typeorm": "0.3.31"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6"
+  }
+}
