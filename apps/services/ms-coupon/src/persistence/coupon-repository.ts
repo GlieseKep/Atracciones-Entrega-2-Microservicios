@@ -1,66 +1,66 @@
-import { AppError, returnedRows } from '@atracciones/platform';
+import { AppError } from '@atracciones/platform';
 import type { DataSource } from 'typeorm';
-import type { CouponCreate, CouponFilters, CouponPatch } from '../application/coupon-input';
-import type { CouponDto } from '../contract';
+import type { CouponCreate, CouponDto, CouponPatch, CouponType } from '../contract';
 
-/** Columnas con los nombres del esquema `Coupon` del contrato (fechas como texto: sin corrimientos de zona horaria). */
-const COLUMNS = `cup_codigo AS code, cup_tipo AS type, cup_valor::float8 AS value, cup_fecha_inicio::text AS start_date,
-  cup_fecha_fin::text AS end_date, cup_usos_max AS max_uses, cup_activo AS active`;
+interface CouponRow {
+  cup_id: string;
+  cup_codigo: string;
+  cup_tipo: CouponType;
+  cup_valor: string;
+  cup_fecha_inicio: string;
+  cup_fecha_fin: string | null;
+  cup_usos_max: number | null;
+  cup_activo: boolean;
+}
 
-const isUniqueViolation = (error: unknown) => (error as { driverError?: { code?: string } }).driverError?.code === '23505';
+/** Las columnas DATE se leen como texto: convertirlas a `Date` las movería de día según la zona horaria. */
+const COLUMNS = `cup_id, cup_codigo, cup_tipo, cup_valor, cup_fecha_inicio::text AS cup_fecha_inicio, cup_fecha_fin::text AS cup_fecha_fin, cup_usos_max, cup_activo`;
 
-/** Cupones de descuento. Los usos no se guardan aquí: los cuenta Order en `orden_cupon`. */
+const toDto = (row: CouponRow): CouponDto => ({
+  code: row.cup_codigo,
+  type: row.cup_tipo,
+  value: Number(row.cup_valor),
+  start_date: row.cup_fecha_inicio,
+  end_date: row.cup_fecha_fin,
+  max_uses: row.cup_usos_max,
+  active: row.cup_activo,
+});
+
 export class CouponRepository {
   constructor(private readonly db: DataSource) {}
 
-  async list(filters: CouponFilters): Promise<{ total: number; items: CouponDto[] }> {
-    const where = `($1::boolean IS NULL OR cup_activo = $1) AND ($2::varchar IS NULL OR position(upper($2) IN cup_codigo) > 0)`;
-    const params = [filters.active, filters.code];
-    const [{ total }] = await this.db.query(`SELECT count(*)::int AS total FROM cupon WHERE ${where}`, params);
-    const items: CouponDto[] = await this.db.query(
-      `SELECT ${COLUMNS} FROM cupon WHERE ${where} ORDER BY cup_codigo LIMIT $3 OFFSET $4`,
-      [...params, filters.limit, (filters.page - 1) * filters.limit],
-    );
-    return { total, items };
+  async list(filters: { active: boolean | null; code: string | null }, page: number, limit: number): Promise<{ total: number; items: CouponDto[] }> {
+    const where = `WHERE ($1::boolean IS NULL OR cup_activo = $1) AND ($2::text IS NULL OR cup_codigo ILIKE $2)`;
+    const params = [filters.active, filters.code ? `%${filters.code.replace(/[\\%_]/g, '\\$&')}%` : null];
+    const [{ total }] = await this.db.query(`SELECT count(*)::int AS total FROM cupon ${where}`, params);
+    const rows: CouponRow[] = await this.db.query(`SELECT ${COLUMNS} FROM cupon ${where} ORDER BY cup_codigo LIMIT $3 OFFSET $4`, [...params, limit, (page - 1) * limit]);
+    return { total, items: rows.map(toDto) };
   }
 
-  async get(code: string): Promise<CouponDto | null> {
+  async find(code: string): Promise<{ id: number; coupon: CouponDto } | null> {
     const [row] = await this.db.query(`SELECT ${COLUMNS} FROM cupon WHERE cup_codigo = $1`, [code]);
-    return row ?? null;
+    return row ? { id: Number(row.cup_id), coupon: toDto(row) } : null;
   }
 
-  async create(c: CouponCreate): Promise<CouponDto> {
+  async create(input: CouponCreate): Promise<CouponDto> {
     try {
       const [row] = await this.db.query(
         `INSERT INTO cupon (cup_codigo, cup_tipo, cup_valor, cup_fecha_inicio, cup_fecha_fin, cup_usos_max, cup_activo)
          VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING ${COLUMNS}`,
-        [c.code, c.type, c.value, c.startDate, c.endDate, c.maxUses, c.active],
+        [input.code, input.type, input.value, input.start_date, input.end_date, input.max_uses, input.active],
       );
-      return row;
+      return toDto(row);
     } catch (error) {
-      if (isUniqueViolation(error)) throw AppError.conflict('COUPON_CODE_EXISTS', `Ya existe un cupón con el código ${c.code}.`);
+      const driver = (error as { driverError?: { code?: string; constraint?: string } }).driverError;
+      if (driver?.code === '23505' && driver.constraint === 'cupon_cup_codigo_key') throw AppError.conflict('COUPON_EXISTS', `Ya existe el cupón ${input.code}.`);
       throw error;
     }
   }
 
-  /** Aplica los cambios con el cupón bloqueado; `check` valida el resultado combinado antes de guardarlo. */
-  async update(code: string, patch: CouponPatch, check: (merged: CouponDto) => void): Promise<CouponDto | null> {
-    return this.db.transaction(async (m) => {
-      const [current]: CouponDto[] = await m.query(`SELECT ${COLUMNS} FROM cupon WHERE cup_codigo = $1 FOR UPDATE`, [code]);
-      if (!current) return null;
-      const merged: CouponDto = {
-        ...current,
-        start_date: patch.startDate ?? current.start_date,
-        end_date: patch.endDate !== undefined ? patch.endDate : current.end_date,
-        max_uses: patch.maxUses !== undefined ? patch.maxUses : current.max_uses,
-        active: patch.active ?? current.active,
-      };
-      check(merged);
-      const [row] = returnedRows<CouponDto>(await m.query(
-        `UPDATE cupon SET cup_fecha_inicio = $2, cup_fecha_fin = $3, cup_usos_max = $4, cup_activo = $5 WHERE cup_codigo = $1 RETURNING ${COLUMNS}`,
-        [code, merged.start_date, merged.end_date, merged.max_uses, merged.active],
-      ));
-      return row;
-    });
+  async update(code: string, patch: CouponPatch): Promise<void> {
+    const columns: Record<keyof CouponPatch, string> = { start_date: 'cup_fecha_inicio', end_date: 'cup_fecha_fin', max_uses: 'cup_usos_max', active: 'cup_activo' };
+    const fields = Object.keys(patch) as (keyof CouponPatch)[];
+    const sets = fields.map((field, index) => `${columns[field]} = $${index + 2}`);
+    await this.db.query(`UPDATE cupon SET ${sets.join(', ')} WHERE cup_codigo = $1`, [code, ...fields.map((field) => patch[field])]);
   }
 }

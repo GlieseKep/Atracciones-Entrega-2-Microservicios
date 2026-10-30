@@ -1,30 +1,9 @@
-/** Tipos del contrato `Plan/ms_coupon/ms_coupon-openapi.yaml`, compartidos por el servicio y por `CouponClient`. */
+/** Tipos del contrato `Plan/ms_coupon/ms_coupon-openapi.yaml`. El acuerdo B2B usa los esquemas del contrato v3. */
+export const COUPON_TYPES = ['PORCENTAJE', 'FIJO'] as const;
+export type CouponType = (typeof COUPON_TYPES)[number];
 
-/** `PromocionesContratoResponse` (idéntico al contrato v3). */
-export interface PromocionesContratoResponse {
-  proveedor_id: string;
-  nombre_comercial?: string;
-  permite_promociones: boolean;
-  porcentaje_descuento_maximo: number;
-  destinos_habilitados: string[];
-  fecha_acuerdo?: string;
-  vigencia_hasta: string;
-  condiciones_combo?: string;
-}
+export type CouponRejection = 'COUPON_NOT_FOUND' | 'COUPON_INACTIVE' | 'COUPON_NOT_STARTED' | 'COUPON_EXPIRED';
 
-/** `ActualizarPromocionesContratoRequest` (idéntico al contrato v3). */
-export interface ActualizarPromocionesContratoRequest {
-  permite_promociones: boolean;
-  porcentaje_descuento_maximo: number;
-  destinos_habilitados?: string[];
-  vigencia_hasta?: string;
-  condiciones_combo?: string;
-  contacto_comercial?: { nombre?: string; email?: string; telefono?: string };
-}
-
-export type CouponType = 'PORCENTAJE' | 'FIJO';
-
-/** `Coupon`. */
 export interface CouponDto {
   code: string;
   type: CouponType;
@@ -35,69 +14,54 @@ export interface CouponDto {
   active: boolean;
 }
 
-/** `CouponCreateRequest`. */
-export interface CouponCreateRequestDto {
-  code: string;
-  type: CouponType;
-  value: number;
-  start_date: string;
-  end_date?: string | null;
-  max_uses?: number | null;
-  active?: boolean;
-}
-
-/** `CouponUpdateRequest`: código, tipo y valor no cambian. */
-export interface CouponUpdateRequestDto {
-  start_date?: string;
-  end_date?: string | null;
-  max_uses?: number | null;
-  active?: boolean;
-}
-
-/** `PaginationMetadata` (igual que el contrato v3). */
-export interface PaginationMetadata {
-  total_results: number;
-  page: number;
-  limit: number;
-  total_pages: number;
-  next_cursor: string | null;
-}
-
-/** `CouponPage`. */
-export interface CouponPageDto {
-  metadata: PaginationMetadata;
+export interface CouponPage {
+  metadata: { total_results: number; page: number; limit: number; total_pages: number };
   data: CouponDto[];
 }
 
-export type CouponInvalidReason = 'COUPON_NOT_FOUND' | 'COUPON_INACTIVE' | 'COUPON_NOT_STARTED' | 'COUPON_EXPIRED';
+export type CouponCreate = CouponDto;
 
-/** `CouponValidationRequest`. */
-export interface CouponValidationRequestDto {
+/** Solo trae los campos enviados. */
+export type CouponPatch = Partial<Pick<CouponDto, 'start_date' | 'end_date' | 'max_uses' | 'active'>>;
+
+export interface CouponValidationRequest {
   code: string;
   subtotal: number;
-  currency?: string;
-  date?: string;
+  currency: string;
+  date: string | null;
 }
 
-/** `CouponValidationResponse`. */
-export interface CouponValidationResponseDto {
+export interface CouponValidationResponse {
+  cup_id: number | null;
   code: string;
   valid: boolean;
-  reason: CouponInvalidReason | null;
+  reason: CouponRejection | null;
   type?: CouponType;
   value?: number;
   discount_amount: number;
   currency: string;
-  max_uses: number | null;
+  max_uses?: number | null;
 }
 
-/** `GET /health` (ServiceHealth de la plataforma). */
-export interface CouponHealthDto {
-  status: 'UP' | 'DOWN';
-  service: string;
-  database_connected: boolean | null;
-  latency_ms: number;
-  memory_usage_mb: number;
-  uptime_seconds: number;
-  timestamp: string;
+export interface PromocionesContratoResponse {
+  proveedor_id: string;
+  nombre_comercial?: string;
+  permite_promociones: boolean;
+  porcentaje_descuento_maximo: number;
+  destinos_habilitados: string[];
+  fecha_acuerdo: string;
+  vigencia_hasta: string;
+  condiciones_combo?: string;
+}
+
+/** `ActualizarPromocionesContratoRequest` validado. Lo que no se envía queda `undefined` y conserva su valor. */
+export interface AgreementInput {
+  permite: boolean;
+  porcentaje: number;
+  destinos?: string[];
+  vigenciaHasta?: string;
+  condiciones?: string | null;
+  contactoNombre?: string | null;
+  contactoCorreo?: string | null;
+  contactoTelefono?: string | null;
 }

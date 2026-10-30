@@ -1,36 +1,32 @@
 import { money } from '@atracciones/platform';
-import type { CouponInvalidReason, CouponType } from '../contract';
+import type { CouponDto, CouponRejection, CouponValidationRequest, CouponValidationResponse } from '../contract';
 
-export interface CouponRule {
-  code: string;
-  type: CouponType;
-  value: number;
-  startDate: string;
-  endDate: string | null;
-  maxUses: number | null;
-  active: boolean;
+function rejection(coupon: CouponDto, date: string): CouponRejection | null {
+  if (!coupon.active) return 'COUPON_INACTIVE';
+  if (date < coupon.start_date) return 'COUPON_NOT_STARTED';
+  return coupon.end_date !== null && date > coupon.end_date ? 'COUPON_EXPIRED' : null;
 }
 
-export interface CouponEvaluation {
-  valid: boolean;
-  reason: CouponInvalidReason | null;
-  discount: number;
-}
-
-/** Descuento sobre el subtotal: porcentaje del subtotal, o el monto fijo sin pasar del subtotal. Redondeo a 2 decimales. */
-export function discountFor(type: CouponType, value: number, subtotal: number): number {
-  return type === 'PORCENTAJE' ? money((subtotal * value) / 100) : money(Math.min(value, subtotal));
-}
+const discount = (coupon: CouponDto, subtotal: number) =>
+  coupon.type === 'PORCENTAJE' ? money((subtotal * coupon.value) / 100) : money(Math.min(coupon.value, subtotal));
 
 /**
- * Evalúa un cupón en una fecha. No cuenta usos: eso lo hace Order con `max_uses`, en la misma transacción que registra el
- * uso en `orden_cupon`.
+ * No consume el cupón. La vigencia se compara con la fecha de compra. Los usos se cuentan en Order: aquí solo se devuelve
+ * `max_uses`.
  */
-export function evaluateCoupon(coupon: CouponRule | null, subtotal: number, date: string): CouponEvaluation {
-  const invalid = (reason: CouponInvalidReason): CouponEvaluation => ({ valid: false, reason, discount: 0 });
-  if (!coupon) return invalid('COUPON_NOT_FOUND');
-  if (!coupon.active) return invalid('COUPON_INACTIVE');
-  if (date < coupon.startDate) return invalid('COUPON_NOT_STARTED');
-  if (coupon.endDate && date > coupon.endDate) return invalid('COUPON_EXPIRED');
-  return { valid: true, reason: null, discount: discountFor(coupon.type, coupon.value, subtotal) };
+export function validateCoupon(request: CouponValidationRequest, found: { id: number; coupon: CouponDto } | null, today: string): CouponValidationResponse {
+  const base = { code: request.code, currency: request.currency };
+  if (!found) return { ...base, cup_id: null, valid: false, reason: 'COUPON_NOT_FOUND', discount_amount: 0 };
+  const { id, coupon } = found;
+  const reason = rejection(coupon, request.date ?? today);
+  return {
+    ...base,
+    cup_id: id,
+    valid: reason === null,
+    reason,
+    type: coupon.type,
+    value: coupon.value,
+    discount_amount: reason === null ? discount(coupon, request.subtotal) : 0,
+    max_uses: coupon.max_uses,
+  };
 }

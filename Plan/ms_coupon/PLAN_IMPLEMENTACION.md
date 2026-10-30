@@ -75,21 +75,23 @@ apps/services/ms-coupon/
 
 ## 5. Fases
 
+**Estado (2026-10-30):** Fases 0 a 2 programadas en `apps/services/ms-coupon`; compila y el contrato pasa Spectral sin errores. Sin pruebas. Falta la Fase 3, excepto las rutas para el ESB y el cliente, que ya están dentro del servicio.
+
 ### Fase 0 · Preparación
 - [x] Cerrar las decisiones de la sección 3.
-- [ ] Copiar el contrato a `packages/contracts/openapi/ms-coupon.yaml` y lintarlo con Spectral.
-- [ ] Registrar el servicio en el workspace, la compilación, la creación de bases y el script de arranque.
+- [x] Copiar el contrato a `packages/contracts/openapi/ms-coupon.yaml` y lintarlo con Spectral.
+- [x] Registrar el servicio en el workspace, la compilación, la creación de bases y el script de arranque.
 
 ### Fase 1 · Persistencia
-- [ ] Migración con el DDL y el acuerdo inicial de `ms_coupon.sql`.
-- [ ] `CouponRepository`: listar, crear, leer por código y modificar. `23505` en `cup_codigo` → `409 COUPON_EXISTS`.
-- [ ] `AgreementRepository`: leer el acuerdo con sus destinos y guardarlo en una transacción.
+- [x] Migración con el DDL y el acuerdo inicial de `ms_coupon.sql`.
+- [x] `CouponRepository`: listar, crear, leer por código y modificar. `23505` en `cup_codigo` → `409 COUPON_EXISTS`.
+- [x] `AgreementRepository`: leer el acuerdo con sus destinos y guardarlo en una transacción.
 
 ### Fase 2 · API REST
-- [ ] `GET` y `PUT /atracciones/promociones/contrato`, según las decisiones 1 a 4.
-- [ ] `GET` y `POST /cupones`, `GET` y `PATCH /cupones/{code}`.
-- [ ] `POST /cupones/validacion`, con `cup_id`, `discount_amount` y `max_uses`.
-- [ ] `/health` con `NodeHealthResponse`, y errores RFC 7807.
+- [x] `GET` y `PUT /atracciones/promociones/contrato`, según las decisiones 1 a 4.
+- [x] `GET` y `POST /cupones`, `GET` y `PATCH /cupones/{code}`.
+- [x] `POST /cupones/validacion`, con `cup_id`, `discount_amount` y `max_uses`.
+- [x] `/health` con `NodeHealthResponse`, y errores RFC 7807.
 
 ### Fase 3 · Integración
 - [ ] **ESB:** registrar las rutas `coupon.*`, con `PATCH`.

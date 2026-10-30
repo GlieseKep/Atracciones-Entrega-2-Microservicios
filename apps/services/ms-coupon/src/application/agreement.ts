@@ -1,143 +1,109 @@
-import { AppError, type InvalidParam } from '@atracciones/platform';
-import type { PromocionesContratoResponse } from '../contract';
-import { isDate } from './dates';
-import { hasAtMostTwoDecimals } from './numbers';
+import { AppError, errorFields, todayIn, type EsbClient, type InvalidParam, type Logger } from '@atracciones/platform';
+import type { AgreementInput, PromocionesContratoResponse } from '../contract';
+import type { AgreementRepository } from '../persistence/agreement-repository';
+import { isDate } from './coupon-input';
 
-/** Acuerdo B2B tal como se guarda (los destinos como ids de ciudad). */
-export interface Agreement {
-  providerCode: string;
-  commercialName: string | null;
-  allowsPromotions: boolean;
-  maxDiscount: number;
-  agreementDate: string;
-  validUntil: string;
-  comboConditions: string | null;
-  contact: { name: string | null; email: string | null; phone: string | null };
-  destinationIds: number[];
+interface City {
+  id: number;
+  nombre: string;
 }
 
-/** Respuestas del cuestionario (`ActualizarPromocionesContratoRequest`). `undefined` = conservar el valor anterior. */
-export interface AgreementUpdate {
-  allowsPromotions: boolean;
-  maxDiscount: number;
-  destinations?: string[];
-  validUntil?: string;
-  comboConditions?: string | null;
-  contact?: { name?: string; email?: string; phone?: string };
+export function parseAgreement(body: unknown): AgreementInput {
+  const b = (body && typeof body === 'object' ? body : {}) as Record<string, unknown>;
+  const errors: InvalidParam[] = [];
+  if (typeof b.permite_promociones !== 'boolean') errors.push({ name: 'permite_promociones', reason: 'Debe ser booleano.' });
+  const porcentaje = b.porcentaje_descuento_maximo;
+  if (typeof porcentaje !== 'number' || !Number.isFinite(porcentaje) || porcentaje < 0 || porcentaje > 50) {
+    errors.push({ name: 'porcentaje_descuento_maximo', reason: 'Debe estar entre 0 y 50.' });
+  }
+  const destinos = b.destinos_habilitados;
+  if (destinos !== undefined && (!Array.isArray(destinos) || destinos.some((item) => typeof item !== 'string' || item.trim() === ''))) {
+    errors.push({ name: 'destinos_habilitados', reason: 'Debe ser una lista de nombres.' });
+  }
+  if (b.vigencia_hasta !== undefined && !isDate(b.vigencia_hasta)) errors.push({ name: 'vigencia_hasta', reason: 'Debe ser una fecha YYYY-MM-DD.' });
+  const text = (value: unknown, name: string, max: number): string | null | undefined => {
+    if (value === undefined || value === null) return value as undefined | null;
+    if (typeof value !== 'string' || value.length > max) errors.push({ name, reason: `Debe ser texto de hasta ${max} caracteres.` });
+    return value as string;
+  };
+  const contacto = (b.contacto_comercial ?? {}) as Record<string, unknown>;
+  const input: AgreementInput = {
+    // Sin promociones no hay descuento.
+    permite: b.permite_promociones as boolean,
+    porcentaje: b.permite_promociones === true ? (porcentaje as number) : 0,
+    destinos: destinos as string[] | undefined,
+    vigenciaHasta: b.vigencia_hasta as string | undefined,
+    condiciones: text(b.condiciones_combo, 'condiciones_combo', 500),
+    contactoNombre: text(contacto.nombre, 'contacto_comercial.nombre', 120),
+    contactoCorreo: text(contacto.email, 'contacto_comercial.email', 160),
+    contactoTelefono: text(contacto.telefono, 'contacto_comercial.telefono', 20),
+  };
+  if (errors.length > 0) throw AppError.validation('El cuestionario tiene campos inválidos.', errors);
+  return input;
 }
 
-const EMAIL = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
-const PHONE = /^\+?[0-9]{7,15}$/;
+/** Acuerdo B2B. Los destinos se guardan como `ciu_id` y el contrato los usa por nombre. */
+export class AgreementService {
+  private readonly names = new Map<number, string>();
 
-/**
- * Valida el cuerpo del `PUT /atracciones/promociones/contrato`. Todo error es `400`: el contrato v3 no lista `422`
- * para esta ruta.
- */
-export function parseAgreementUpdate(value: unknown): AgreementUpdate {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) throw AppError.validation('El cuerpo debe ser un objeto JSON.');
-  const body = value as Record<string, unknown>;
-  const invalid: InvalidParam[] = [];
+  constructor(
+    private readonly agreements: AgreementRepository,
+    private readonly esb: EsbClient,
+    private readonly logger: Logger,
+  ) {}
 
-  if (typeof body.permite_promociones !== 'boolean') invalid.push({ name: 'permite_promociones', reason: 'Es obligatorio y debe ser true o false.' });
-  const pct = body.porcentaje_descuento_maximo;
-  if (typeof pct !== 'number' || !Number.isFinite(pct) || pct < 0 || pct > 50) {
-    invalid.push({ name: 'porcentaje_descuento_maximo', reason: 'Es obligatorio y debe estar entre 0 y 50.' });
-  } else if (!hasAtMostTwoDecimals(pct)) {
-    invalid.push({ name: 'porcentaje_descuento_maximo', reason: 'Máximo dos decimales.' });
-  }
-
-  let destinations: string[] | undefined;
-  if (body.destinos_habilitados !== undefined) {
-    const list = body.destinos_habilitados;
-    if (!Array.isArray(list) || list.some((d) => typeof d !== 'string' || !d.trim() || d.length > 120)) {
-      invalid.push({ name: 'destinos_habilitados', reason: 'Lista de nombres de ciudad (texto de 1 a 120 caracteres).' });
-    } else {
-      destinations = [...new Set(list.map((d: string) => d.trim()))];
-    }
-  }
-
-  if (body.vigencia_hasta !== undefined && !isDate(body.vigencia_hasta)) invalid.push({ name: 'vigencia_hasta', reason: 'Fecha YYYY-MM-DD.' });
-
-  let comboConditions: string | null | undefined;
-  if (body.condiciones_combo !== undefined) {
-    if (body.condiciones_combo !== null && (typeof body.condiciones_combo !== 'string' || body.condiciones_combo.length > 500)) {
-      invalid.push({ name: 'condiciones_combo', reason: 'Texto de hasta 500 caracteres.' });
-    } else {
-      comboConditions = typeof body.condiciones_combo === 'string' && body.condiciones_combo.trim() ? body.condiciones_combo.trim() : null;
-    }
-  }
-
-  let contact: AgreementUpdate['contact'];
-  if (body.contacto_comercial !== undefined) {
-    const c = body.contacto_comercial as Record<string, unknown> | null;
-    if (!c || typeof c !== 'object' || Array.isArray(c)) {
-      invalid.push({ name: 'contacto_comercial', reason: 'Objeto con nombre, email y telefono.' });
-    } else {
-      contact = {};
-      if (c.nombre !== undefined) {
-        if (typeof c.nombre !== 'string' || !c.nombre.trim() || c.nombre.length > 120) invalid.push({ name: 'contacto_comercial.nombre', reason: 'Texto de 1 a 120 caracteres.' });
-        else contact.name = c.nombre.trim();
-      }
-      if (c.email !== undefined) {
-        if (typeof c.email !== 'string' || c.email.length > 160 || !EMAIL.test(c.email)) invalid.push({ name: 'contacto_comercial.email', reason: 'Correo electrónico válido.' });
-        else contact.email = c.email;
-      }
-      if (c.telefono !== undefined) {
-        if (typeof c.telefono !== 'string' || !PHONE.test(c.telefono)) invalid.push({ name: 'contacto_comercial.telefono', reason: 'Formato internacional, 7 a 15 dígitos (+593…).' });
-        else contact.phone = c.telefono;
+  /** Si Location no responde, el `GET` sigue con los nombres ya conocidos. */
+  private async cityNames(ids: number[]): Promise<string[]> {
+    const missing = ids.filter((id) => !this.names.has(id));
+    if (missing.length > 0) {
+      try {
+        const cities = await this.esb.call<City[]>('location', 'getCities', { ids: missing });
+        for (const city of cities) this.names.set(city.id, city.nombre);
+      } catch (error) {
+        this.logger.warn('Location no respondió; se usan los nombres en caché', errorFields(error));
       }
     }
+    return ids.flatMap((id) => this.names.get(id) ?? []).sort((a, b) => a.localeCompare(b, 'es'));
   }
 
-  if (invalid.length) throw AppError.validation('El acuerdo de promociones no es válido.', invalid);
-  return {
-    allowsPromotions: body.permite_promociones as boolean,
-    maxDiscount: pct as number,
-    ...(destinations !== undefined ? { destinations } : {}),
-    ...(body.vigencia_hasta !== undefined ? { validUntil: body.vigencia_hasta as string } : {}),
-    ...(comboConditions !== undefined ? { comboConditions } : {}),
-    ...(contact !== undefined ? { contact } : {}),
-  };
-}
-
-/**
- * Nuevo estado del acuerdo: las preguntas obligatorias se reemplazan, los campos opcionales que no se envían conservan
- * su valor y `fecha_acuerdo` pasa a hoy (el acuerdo se formaliza de nuevo). `destinationIds` solo cambia si se enviaron
- * destinos (ya resueltos a ids).
- */
-export function mergeAgreement(current: Agreement, update: AgreementUpdate, today: string, destinationIds?: number[]): Agreement {
-  const merged: Agreement = {
-    ...current,
-    allowsPromotions: update.allowsPromotions,
-    maxDiscount: update.maxDiscount,
-    agreementDate: today,
-    validUntil: update.validUntil ?? current.validUntil,
-    comboConditions: update.comboConditions !== undefined ? update.comboConditions : current.comboConditions,
-    contact: {
-      name: update.contact?.name ?? current.contact.name,
-      email: update.contact?.email ?? current.contact.email,
-      phone: update.contact?.phone ?? current.contact.phone,
-    },
-    destinationIds: destinationIds ?? current.destinationIds,
-  };
-  if (merged.validUntil < today) {
-    throw AppError.validation('La vigencia del acuerdo no puede terminar antes de hoy.', [
-      { name: 'vigencia_hasta', reason: `Debe ser igual o posterior a ${today}${update.validUntil ? '' : ' (la vigencia guardada ya venció: envíe una nueva)'}.` },
-    ]);
+  async get(): Promise<PromocionesContratoResponse> {
+    const { row, cityIds } = await this.agreements.get();
+    return {
+      proveedor_id: row.apr_proveedor_codigo,
+      ...(row.apr_nombre_comercial ? { nombre_comercial: row.apr_nombre_comercial } : {}),
+      permite_promociones: row.apr_permite_promociones,
+      porcentaje_descuento_maximo: Number(row.apr_porcentaje_descuento_max),
+      destinos_habilitados: await this.cityNames(cityIds),
+      fecha_acuerdo: row.apr_fecha_acuerdo,
+      vigencia_hasta: row.apr_vigencia_hasta,
+      ...(row.apr_condiciones_combo ? { condiciones_combo: row.apr_condiciones_combo } : {}),
+    };
   }
-  return merged;
-}
 
-/** `PromocionesContratoResponse`: los campos opcionales vacíos se omiten. */
-export function toAgreementResponse(agreement: Agreement, destinationNames: string[]): PromocionesContratoResponse {
-  return {
-    proveedor_id: agreement.providerCode,
-    ...(agreement.commercialName ? { nombre_comercial: agreement.commercialName } : {}),
-    permite_promociones: agreement.allowsPromotions,
-    porcentaje_descuento_maximo: agreement.maxDiscount,
-    destinos_habilitados: destinationNames,
-    fecha_acuerdo: agreement.agreementDate,
-    vigencia_hasta: agreement.validUntil,
-    ...(agreement.comboConditions ? { condiciones_combo: agreement.comboConditions } : {}),
-  };
+  /** Una provincia como Galápagos se guarda como sus ciudades. Un nombre desconocido responde `400`. */
+  private async resolveDestinations(destinos: string[]): Promise<number[]> {
+    if (destinos.length === 0) return [];
+    const result = await this.esb.call<{ resueltas: { ciudades: City[] }[]; no_encontrados: string[] }>('location', 'resolveCities', { nombres: destinos });
+    if (result.no_encontrados.length > 0) {
+      throw AppError.validation(
+        `Destinos desconocidos: ${result.no_encontrados.join(', ')}.`,
+        result.no_encontrados.map((nombre) => ({ name: 'destinos_habilitados', reason: `Destino desconocido: ${nombre}.` })),
+        'DESTINATION_NOT_FOUND',
+      );
+    }
+    const cities = result.resueltas.flatMap((item) => item.ciudades);
+    for (const city of cities) this.names.set(city.id, city.nombre);
+    return [...new Set(cities.map((city) => city.id))];
+  }
+
+  async update(input: AgreementInput): Promise<PromocionesContratoResponse> {
+    const today = todayIn();
+    const { row } = await this.agreements.get();
+    if ((input.vigenciaHasta ?? row.apr_vigencia_hasta) < today) {
+      throw AppError.validation('vigencia_hasta no puede ser anterior a la fecha del acuerdo.', [{ name: 'vigencia_hasta', reason: 'Debe ser hoy o posterior.' }]);
+    }
+    const cityIds = input.destinos === undefined ? undefined : await this.resolveDestinations(input.destinos);
+    await this.agreements.update(row.apr_id, input, today, cityIds);
+    return this.get();
+  }
 }

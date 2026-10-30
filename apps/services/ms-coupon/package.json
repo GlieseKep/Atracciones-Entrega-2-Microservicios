@@ -2,7 +2,7 @@
   "name": "@atracciones/ms-coupon-service",
   "version": "1.0.0",
   "private": true,
-  "description": "Coupon & Promotions Service (REST, contrato Plan/ms_coupon/ms_coupon-openapi.yaml): acuerdo B2B de promociones con Booking y cupones del portal. Base ms_coupon.",
+  "description": "Coupon & Promotions Service (REST, contrato Plan/ms_coupon/ms_coupon-openapi.yaml): cupones del portal y acuerdo de promociones con Booking Prototipo. Base ms_coupon.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "dependencies": {
