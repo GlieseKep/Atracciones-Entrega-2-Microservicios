@@ -8,6 +8,7 @@
     { "path": "ms-payment" },
     { "path": "ms-order" },
     { "path": "ms-booking" },
+    { "path": "ms-invoicing" },
     { "path": "catalog" },
     { "path": "inventory" },
     { "path": "cart" },

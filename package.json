@@ -19,6 +19,7 @@
     "apps/services/ms-payment",
     "apps/services/ms-order",
     "apps/services/ms-booking",
+    "apps/services/ms-invoicing",
     "apps/services/catalog",
     "apps/services/inventory",
     "apps/services/cart",

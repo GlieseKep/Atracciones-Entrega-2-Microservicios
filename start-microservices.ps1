@@ -29,6 +29,7 @@ $apps = [ordered]@{
   'ms-payment'   = @{ file = 'apps/services/ms-payment/dist/main.js'; env = @{ WEBHOOK_SECRET = 'webhook-secret-local-solo-para-desarrollo' } }
   'ms-order'     = @{ file = 'apps/services/ms-order/dist/main.js'; env = @{} }
   'ms-booking'   = @{ file = 'apps/services/ms-booking/dist/main.js'; env = @{ VOUCHER_SECRET = 'voucher-secret-local-solo-para-desarrollo' } }
+  'ms-invoicing' = @{ file = 'apps/services/ms-invoicing/dist/main.js'; env = @{} }
   'ms-billing-profile' = @{ file = 'apps/services/ms-billing-profile/dist/main.js'; env = @{} }
   'catalog'      = @{ file = 'apps/services/catalog/dist/main.js'; env = @{} }
   'ms-location'  = @{ file = 'apps/services/ms-location/dist/main.js'; env = @{} }

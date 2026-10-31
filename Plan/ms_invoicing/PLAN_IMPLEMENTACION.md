@@ -38,8 +38,8 @@ El contrato v3 no incluye facturación.
 
 El diseño no define estos puntos.
 
-1. **SRI simulado.** Como es un proyecto académico, un SRI simulado que expone SOAP y responde `AUTORIZADO`, con la URL en
-   `SRI_URL`. El XML se arma con el formato del SRI, y la firma se simula porque la real exige un certificado digital.
+1. **SRI simulado.** Como es un proyecto académico, el SRI simulado `apps/sri-mock`, que ya expone SOAP y responde `AUTORIZADO`. El ESB
+   conoce sus URL. El XML se arma con el formato del SRI, y la firma se simula porque la real exige un certificado digital.
 2. **Desglose del IVA.** Con `IVA_PORCENTAJE = 15`, `fde_precio_unitario` = precio de la orden / 1,15, redondeado a 2
    decimales; `fde_iva` = total de la línea − `fde_subtotal`. Así `fac_total` es **exactamente** `ord_total`, sin diferencias de centavos.
 3. **Descuento del cupón.** `ord_descuento` se reparte entre las líneas en proporción a su valor; la diferencia de centavos va
@@ -86,40 +86,41 @@ apps/services/ms-invoicing/
       migrations/
         index.ts
         <timestamp>-InvoicingSchema.ts      DDL y estados de ms_invoicing.sql
-apps/sri-simulado/                   SRI simulado con SOAP (decisión 1)
 ```
 
 ## 5. Fases
 
+**Estado (2026-10-30):** Fases 0 a 4 programadas en `apps/services/ms-invoicing`; compila y el contrato pasa Spectral sin errores. Sin pruebas. Falta la Fase 5, excepto las rutas para el ESB y el cliente, que ya están dentro del servicio.
+
 ### Fase 0 · Preparación
 - [x] Cerrar las decisiones de la sección 3.
-- [ ] Copiar el contrato a `packages/contracts/openapi/ms-invoicing.yaml` y lintarlo con Spectral.
-- [ ] Registrar el servicio en el workspace, la compilación, la creación de bases y el script de arranque.
+- [x] Copiar el contrato a `packages/contracts/openapi/ms-invoicing.yaml` y lintarlo con Spectral.
+- [x] Registrar el servicio en el workspace, la compilación, la creación de bases y el script de arranque.
 
 ### Fase 1 · Persistencia
-- [ ] Migración con el DDL completo de `ms_invoicing.sql`.
-- [ ] `InvoiceRepository`: crear factura y detalle en una transacción, consultar y actualizar el estado del SRI.
+- [x] Migración con el DDL completo de `ms_invoicing.sql`.
+- [x] `InvoiceRepository`: crear factura y detalle en una transacción, consultar y actualizar el estado del SRI.
   - `23505` en `uq_factura_orden` → el evento ya se procesó y se ignora.
-- [ ] Toma de la cola con `FOR UPDATE SKIP LOCKED`, para que varios workers no envíen la misma factura.
+- [x] Toma de la cola con `FOR UPDATE SKIP LOCKED`, para que varios workers no envíen la misma factura.
 
 ### Fase 2 · Emisión
-- [ ] Consumidor de `OrdenPagada`:
+- [x] Consumidor de `OrdenPagada`:
   1. Lee la orden y sus líneas con `GetOrder`.
   2. Obtiene el comprador.
   3. Calcula el desglose con `tax.ts`.
   4. Genera número y clave de acceso, y guarda la factura en `PAGADA` y `PENDIENTE`.
 
 ### Fase 3 · SRI
-- [ ] Worker con ritmo controlado, por `SRI_MAX_POR_MINUTO`.
-- [ ] Envía por el ESB `validarComprobante` y `autorizacionComprobante`.
-- [ ] Reintento exponencial con `fac_proximo_intento_en`: 1, 2, 4, 8 y 16 minutos.
-- [ ] Autorizada: `fac_autorizacion_sri`, `AUTORIZADA` y `FacturaAutorizada` en la misma transacción.
-- [ ] SRI simulado.
+- [x] Worker con ritmo controlado, por `SRI_MAX_POR_MINUTO`.
+- [x] Envía por el ESB `validarComprobante` y `autorizacionComprobante`.
+- [x] Reintento exponencial con `fac_proximo_intento_en`: 1, 2, 4, 8 y 16 minutos.
+- [x] Autorizada: `fac_autorizacion_sri`, `AUTORIZADA` y `FacturaAutorizada` en la misma transacción.
+- [x] SRI simulado: se usa `apps/sri-mock`.
 
 ### Fase 4 · Consulta y reembolsos
-- [ ] `GET /facturas`, `/facturas/{id}` y `/facturas/orden/{ord_id}`.
-- [ ] Consumidor de `ReembolsoEmitido`, según la decisión 6.
-- [ ] `/health` con `NodeHealthResponse`.
+- [x] `GET /facturas`, `/facturas/{id}` y `/facturas/orden/{ord_id}`.
+- [x] Consumidor de `ReembolsoEmitido`, según la decisión 6.
+- [x] `/health` con `NodeHealthResponse`.
 
 ### Fase 5 · Integración
 - [ ] **ESB:** registrar las rutas `invoicing.*` y las operaciones SOAP del SRI.
