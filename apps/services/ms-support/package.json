@@ -2,7 +2,7 @@
   "name": "@atracciones/ms-support-service",
   "version": "1.0.0",
   "private": true,
-  "description": "Support Service (REST, contrato Plan/ms_support/ms_support-openapi.yaml): mensajes del formulario de contacto y su seguimiento. Base ms_support.",
+  "description": "Support Service (REST, contrato Plan/ms_support/ms_support-openapi.yaml): mensajes de contacto de los visitantes. Base ms_support.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "dependencies": {

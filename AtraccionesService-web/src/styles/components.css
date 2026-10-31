@@ -1,0 +1,59 @@
+@layer components {
+  .page-container {
+    @apply mx-auto w-full max-w-page px-4 sm:px-6 lg:px-8;
+  }
+
+  .field-label {
+    @apply mb-1.5 block text-sm font-semibold text-ink;
+  }
+
+  .field-input {
+    @apply block w-full rounded-sm border border-line bg-white px-3.5 py-2.5 text-[15px] text-ink placeholder:text-ink-muted transition-colors hover:border-brand-300 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100;
+  }
+
+  .field-input[aria-invalid='true'] {
+    @apply border-danger focus:ring-danger/20;
+  }
+
+  .field-error {
+    @apply mt-1.5 text-sm text-danger;
+  }
+
+  .field-help {
+    @apply mt-1.5 text-sm text-ink-muted;
+  }
+
+  .link {
+    @apply font-semibold text-brand-500 underline-offset-2 hover:text-brand-600 hover:underline;
+  }
+
+  .card-surface {
+    @apply rounded-md border border-line bg-white;
+  }
+
+  .skeleton {
+    @apply animate-pulse rounded-sm bg-surface;
+  }
+
+  .fade-in {
+    animation: fade-in 280ms ease-out both;
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}

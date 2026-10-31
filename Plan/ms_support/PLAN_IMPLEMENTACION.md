@@ -61,19 +61,21 @@ apps/services/ms-support/
 
 ## 5. Fases
 
+**Estado (2026-10-30):** Fases 0 a 2 programadas en `apps/services/ms-support`; compila y el contrato pasa Spectral sin errores. Sin pruebas. Falta la Fase 3, excepto las rutas para el ESB y el cliente, que ya están dentro del servicio.
+
 ### Fase 0 · Preparación
 - [x] Cerrar las decisiones de la sección 3.
-- [ ] Copiar el contrato a `packages/contracts/openapi/ms-support.yaml` y lintarlo con Spectral.
-- [ ] Registrar el servicio en el workspace, la compilación, la creación de bases y el script de arranque.
+- [x] Copiar el contrato a `packages/contracts/openapi/ms-support.yaml` y lintarlo con Spectral.
+- [x] Registrar el servicio en el workspace, la compilación, la creación de bases y el script de arranque.
 
 ### Fase 1 · Persistencia
-- [ ] Migración con el DDL de `ms_support.sql`.
-- [ ] `MessageRepository`: crear, listar con filtro `leido` y cambiar `men_leido`.
+- [x] Migración con el DDL de `ms_support.sql`.
+- [x] `MessageRepository`: crear, listar con filtro `leido` y cambiar `men_leido`.
 
 ### Fase 2 · API REST
-- [ ] `POST /mensajes-contacto`: público; el texto se recorta y no se acepta vacío.
-- [ ] `GET /mensajes-contacto` y `PUT /mensajes-contacto/{id}/leido`, solo `ADMIN`.
-- [ ] `/health` con `NodeHealthResponse`, y errores RFC 7807.
+- [x] `POST /mensajes-contacto`: público; el texto se recorta y no se acepta vacío.
+- [x] `GET /mensajes-contacto` y `PUT /mensajes-contacto/{id}/leido`, solo `ADMIN`.
+- [x] `/health` con `NodeHealthResponse`, y errores RFC 7807.
 
 ### Fase 3 · Integración
 - [ ] **ESB:** registrar las rutas `support.*`.

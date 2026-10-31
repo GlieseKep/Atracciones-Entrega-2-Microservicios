@@ -1,0 +1,46 @@
+/* Los @import deben ir antes de cualquier otra regla; Tailwind reubica los @layer en su directiva. */
+@import './tokens.css';
+@import './components.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-white font-sans text-[15px] leading-relaxed text-ink antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-bold tracking-tight text-ink;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-brand-500 ring-offset-2;
+  }
+
+  img {
+    @apply max-w-full;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

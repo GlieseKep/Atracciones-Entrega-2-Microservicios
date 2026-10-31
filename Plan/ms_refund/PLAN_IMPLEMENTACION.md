@@ -83,27 +83,29 @@ apps/services/ms-refund/
 
 ## 5. Fases
 
+**Estado (2026-10-30):** Fases 0 a 3 programadas en `apps/services/ms-refund`; compila y el contrato pasa Spectral sin errores. Sin pruebas. Falta la Fase 4, excepto las rutas para el ESB y el cliente, que ya están dentro del servicio.
+
 ### Fase 0 · Preparación
 - [x] Cerrar las decisiones de la sección 3.
-- [ ] Copiar el contrato a `packages/contracts/openapi/ms-refund.yaml` y lintarlo con Spectral.
-- [ ] Registrar el servicio en el workspace, la compilación, la creación de bases y el script de arranque.
+- [x] Copiar el contrato a `packages/contracts/openapi/ms-refund.yaml` y lintarlo con Spectral.
+- [x] Registrar el servicio en el workspace, la compilación, la creación de bases y el script de arranque.
 
 ### Fase 1 · Persistencia
-- [ ] Migración con el DDL de `ms_refund.sql`.
-- [ ] `RefundRepository`: suma del saldo, creación con outbox en una transacción, búsqueda por clave y por número, y lista.
+- [x] Migración con el DDL de `ms_refund.sql`.
+- [x] `RefundRepository`: suma del saldo, creación con outbox en una transacción, búsqueda por clave y por número, y lista.
   - `23505` en `rem_clave_idempotencia` → se devuelve el reembolso existente.
 
 ### Fase 2 · API REST
-- [ ] `POST /reembolsos`:
+- [x] `POST /reembolsos`:
   1. Busca la clave; si existe, responde el mismo reembolso.
   2. Pide a Payment el pago `APROBADO` de la orden.
   3. Con bloqueo por `pag_id`, calcula el saldo, valida el monto y crea la fila y `ReembolsoEmitido`.
-- [ ] `GET /reembolsos` y `GET /reembolsos/{numero}`.
-- [ ] `/health` con `NodeHealthResponse`, y errores RFC 7807.
+- [x] `GET /reembolsos` y `GET /reembolsos/{numero}`.
+- [x] `/health` con `NodeHealthResponse`, y errores RFC 7807.
 
 ### Fase 3 · Eventos
-- [ ] Publicador del outbox hacia RabbitMQ.
-- [ ] `ReembolsoEmitido` con `reembolso_id`, `pag_id`, `ord_id`, `monto` y `monto_acumulado`.
+- [x] Publicador del outbox hacia RabbitMQ.
+- [x] `ReembolsoEmitido` con `reembolso_id`, `pag_id`, `ord_id`, `monto` y `monto_acumulado`.
 
 ### Fase 4 · Integración
 - [ ] **ESB:** registrar las rutas `refund.*`.

@@ -1,0 +1,21 @@
+/* Tokens visuales: paleta del plan (rosa coral / tierra) sobre la composición neutra de Viator. */
+:root {
+  --color-bg: #ffffff;
+  --color-bg-soft: #fff9f7;
+  --color-bg-rose: #fbe8e8;
+  --color-brand: #c94d6b;
+  --color-brand-strong: #b03f5c;
+  --color-brand-vivid: #e85a8a;
+  --color-peach: #f4b183;
+  --color-honey: #d7a65c;
+  --color-text: #332326;
+  --color-text-soft: #6b4d50;
+  --color-line: #e7e1e2;
+  --color-night: #2a1b1d;
+  --color-danger: #b93d4a;
+  --color-success: #3a7f64;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --header-height: 72px;
+}

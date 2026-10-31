@@ -1,29 +1,35 @@
 import {
   AppError,
   checkHealth,
+  checkNodeHealth,
   createHttpService,
   createLogger,
+  currentContext,
   EsbClient,
-  requireAdmin,
+  hasRole,
+  requirePrincipal,
+  requireServiceToken,
   type DatabaseSettings,
   type Logger,
 } from '@atracciones/platform';
-import { Router, type Express } from 'express';
+import { Router, type Express, type RequestHandler } from 'express';
 import type { DataSource } from 'typeorm';
-import { esbPaymentLookup, type PaymentLookup } from './application/payments';
-import { RefundFlow } from './application/refund-flow';
-import { isUuid, parsePaymentIds, parseRefundFilters, parseRefundRequest } from './application/refund-input';
+import { parseIdempotencyKey, parseRefund, parseRefundQuery } from './application/refund-input';
+import { RefundService } from './application/refund-service';
 import { REFUND_BASE_PATH } from './integration/esb-routes';
-import { simulatedRefundGateway, type RefundGateway } from './integration/payment-gateway';
 import { RefundRepository } from './persistence/refund-repository';
 
 export interface MsRefundConfig {
   port: number;
   database: DatabaseSettings;
+  /** Verifica el principal que reenvía el Gateway. */
   internalTokenSecret: string;
-  esbUrl: string;
-  /** Prefijo de las rutas del contrato (`servers[0].url`). */
+  /** Cabecera `X-Service-Token`, con la que llama Booking. */
+  serviceToken: string;
   basePath: string;
+  esbUrl: string;
+  nodeId: string;
+  nodeCode: string;
 }
 
 export function readMsRefundConfig(env: NodeJS.ProcessEnv = process.env): MsRefundConfig {
@@ -31,81 +37,64 @@ export function readMsRefundConfig(env: NodeJS.ProcessEnv = process.env): MsRefu
     port: Number(env.PORT ?? 4016),
     database: { url: env.DATABASE_URL ?? 'postgres://postgres:tourgirls-local@localhost:5433/ms_refund', ssl: env.DATABASE_SSL === 'true' },
     internalTokenSecret: env.INTERNAL_TOKEN_SECRET ?? '',
-    esbUrl: env.ESB_URL ?? 'http://127.0.0.1:3300',
+    serviceToken: env.SERVICE_TOKEN ?? '',
     basePath: env.BASE_PATH ?? REFUND_BASE_PATH,
+    esbUrl: env.ESB_URL ?? 'http://127.0.0.1:3300',
+    nodeId: env.NODE_ID ?? 'node-dilan-refund-01',
+    nodeCode: env.NODE_CODE ?? 'DILAN_REFUND',
   };
 }
 
 export interface MsRefundDependencies {
-  payments?: PaymentLookup;
-  gateway?: RefundGateway;
   logger?: Logger;
+  esb?: EsbClient;
 }
 
-export interface MsRefundService {
-  app: Express;
-  refunds: RefundRepository;
-  flow: RefundFlow;
-}
+const VERSION = '1.0.0';
 
-/**
- * Refund Service (REST, contrato `Plan/ms_refund/ms_refund-openapi.yaml`): reembolsos de pagos aprobados. `POST
- * /reembolsos` tiene la misma entrada y salida que tenía Payment, para que la saga de cancelación solo cambie de
- * servicio. Publica `refund.ReembolsoEmitido` (Invoicing emite la nota de crédito).
- *
- * Todas las rutas son internas: cuentas de servicio (Order, GraphQL) o el administrador.
- */
-export function createMsRefundService(config: MsRefundConfig, dataSource: DataSource, deps: MsRefundDependencies = {}): MsRefundService {
+/** Refund Service (REST, contrato `Plan/ms_refund/ms_refund-openapi.yaml`): reembolsos sin superar lo cobrado. */
+export function createMsRefundService(config: MsRefundConfig, dataSource: DataSource, deps: MsRefundDependencies = {}): Express {
   const logger = deps.logger ?? createLogger('ms-refund');
   const refunds = new RefundRepository(dataSource);
-  const payments = deps.payments ?? esbPaymentLookup(new EsbClient(config.esbUrl), config.internalTokenSecret);
-  const flow = new RefundFlow(dataSource, refunds, payments, deps.gateway ?? simulatedRefundGateway, logger);
+  const service = new RefundService(refunds, deps.esb ?? new EsbClient(config.esbUrl));
+  const serviceToken = requireServiceToken(config.serviceToken);
+
+  /** Booking con `X-Service-Token`, o un `ADMIN`. El cliente ve su reembolso en la reserva. */
+  const serviceOrAdmin: RequestHandler = async (req, res, next) => {
+    if (req.get('x-service-token')) return serviceToken(req, res, next);
+    if (!hasRole(await requirePrincipal(config.internalTokenSecret), 'ADMIN')) throw AppError.forbidden('Esta operación requiere el rol ADMIN.');
+    next();
+  };
 
   const api = Router();
 
-  api.post('/reembolsos', async (req, res) => {
-    await requireAdmin(config.internalTokenSecret);
-    res.status(201).json(await flow.refund(parseRefundRequest(req.body)));
+  api.get('/health', async (_req, res) => {
+    const health = await checkNodeHealth('ms-refund', dataSource, { nodeId: config.nodeId, nodeCode: config.nodeCode, version: VERSION });
+    res.status(health.status === 'UP' ? 200 : 503).json(health);
   });
 
-  api.get('/reembolsos', async (req, res) => {
-    await requireAdmin(config.internalTokenSecret);
-    res.json(await refunds.list(parseRefundFilters(req.query as Record<string, unknown>)));
+  api.post('/reembolsos', serviceOrAdmin, async (req, res) => {
+    const clave = parseIdempotencyKey(currentContext()?.idempotencyKey);
+    const { refund, created } = await service.emit(parseRefund(req.body), clave);
+    res.status(created ? 201 : 200).json(refund);
   });
 
-  // Van antes de `/reembolsos/:codigo`.
-  api.post('/reembolsos/pagos', async (req, res) => {
-    await requireAdmin(config.internalTokenSecret);
-    res.json(await refunds.byPayments(parsePaymentIds(req.body)));
+  api.get('/reembolsos', serviceOrAdmin, async (req, res) => {
+    const { pagId, page, limit } = parseRefundQuery(req.query as Record<string, unknown>);
+    const { total, items } = await refunds.list(pagId, page, limit);
+    res.json({ data: items, pagination: { total_results: total, page, limit, total_pages: Math.ceil(total / limit) } });
   });
 
-  api.get('/reembolsos/orden/:orden_id', async (req, res) => {
-    await requireAdmin(config.internalTokenSecret);
-    const orderId = String(req.params.orden_id);
-    res.json(isUuid(orderId) ? await refunds.byOrder(orderId.toLowerCase()) : []);
-  });
-
-  api.get('/reembolsos/:codigo', async (req, res) => {
-    await requireAdmin(config.internalTokenSecret);
-    const code = String(req.params.codigo).toUpperCase();
-    const refund = await refunds.get(code);
-    if (!refund) throw AppError.notFound(`No existe el reembolso ${code}.`, 'REFUND_NOT_FOUND');
+  api.get('/reembolsos/:numero', serviceOrAdmin, async (req, res) => {
+    const refund = await refunds.findByNumber(req.params.numero as string);
+    if (!refund) throw AppError.notFound(`No existe el reembolso ${req.params.numero}.`, 'REFUND_NOT_FOUND');
     res.json(refund);
   });
 
-  const health = () => checkHealth('ms-refund', dataSource);
-  const app = createHttpService({
+  return createHttpService({
     service: 'ms-refund',
     logger,
-    health,
-    routes: (a) => {
-      // `/health` lo agrega createHttpService; el contrato lo publica también bajo el prefijo.
-      a.get(`${config.basePath}/health`, async (_req, res) => {
-        const report = await health();
-        res.status(report.status === 'UP' ? 200 : 503).json(report);
-      });
-      a.use(config.basePath, api);
-    },
+    health: () => checkHealth('ms-refund', dataSource),
+    routes: (app) => app.use(config.basePath, api),
   });
-  return { app, refunds, flow };
 }

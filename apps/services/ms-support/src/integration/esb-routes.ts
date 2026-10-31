@@ -1,13 +1,11 @@
 /**
  * Rutas del ESB hacia Support (`servicio.operación` → método y ruta REST), con la misma forma que `RestRoute` de
- * `apps/esb/src/routes.ts`. El ESB las registra tal cual en el corte (reemplazan a `audit.*ContactMessage*`).
- *
- * El ESB toma los `:parametros` de la entrada y manda el resto en la query (GET/DELETE) o en el cuerpo.
+ * `apps/esb/src/routes.ts`. El ESB toma los `:parametros` de la entrada y manda el resto en la query (GET) o en el cuerpo.
  */
 export interface SupportRestRoute {
   protocol: 'rest';
   target: 'support';
-  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  method: 'GET' | 'POST' | 'PUT';
   path: string;
   timeoutMs: number;
 }
@@ -21,17 +19,12 @@ const route = (method: SupportRestRoute['method'], path: string, timeoutMs = 300
 
 export const MS_SUPPORT_ROUTES = {
   'support.health': route('GET', '/health', 1000),
-
-  // Formulario del portal (GraphQL, con o sin sesión).
-  'support.sendContactMessage': route('POST', '/mensajes-contacto'),
-
-  // Bandeja de soporte (GraphQL, rol ADMIN).
-  'support.listContactMessages': route('GET', '/mensajes-contacto'),
-  'support.contactSummary': route('GET', '/mensajes-contacto/resumen'),
-  'support.setContactMessageStatus': route('PUT', '/mensajes-contacto/:id/estado'),
+  'support.sendMessage': route('POST', '/mensajes-contacto'),
+  'support.listMessages': route('GET', '/mensajes-contacto'),
+  'support.setMessageRead': route('PUT', '/mensajes-contacto/:id/leido'),
 } as const satisfies Record<string, SupportRestRoute>;
 
 export type SupportRouteKey = keyof typeof MS_SUPPORT_ROUTES;
 
-/** Nombre de la operación para `EsbClient.call('support', operación)` (`support.contactSummary` → `contactSummary`). */
+/** Nombre de la operación para `EsbClient.call('support', operación)` (`support.sendMessage` → `sendMessage`). */
 export type SupportOperation = SupportRouteKey extends `support.${infer O}` ? O : never;

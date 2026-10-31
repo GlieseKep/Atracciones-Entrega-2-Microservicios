@@ -97,49 +97,51 @@ apps/services/ms-booking/
 
 ## 5. Fases
 
+**Estado (2026-10-30):** Fases 0 a 4 programadas en `apps/services/ms-booking`; compila y el `.proto` carga. Sin pruebas. Falta la Fase 5, excepto las rutas para el ESB y el cliente, que ya están dentro del servicio.
+
 ### Fase 0 · Preparación
 - [x] Cerrar las decisiones de la sección 3.
-- [ ] Copiar `booking.proto` a `packages/contracts/proto/`.
-- [ ] Registrar el servicio en el workspace, la compilación, la creación de bases y el script de arranque.
+- [x] Copiar `booking.proto` a `packages/contracts/proto/`.
+- [x] Registrar el servicio en el workspace, la compilación, la creación de bases y el script de arranque.
 
 ### Fase 1 · Persistencia
-- [ ] Migración con el DDL completo de `ms_booking.sql`.
-- [ ] `ReservationRepository`: crear con el titular, buscar por `res_uuid` o `res_codigo`, cambiar de estado y listar.
-- [ ] `EventRepository`: escribir `outbox_evento` en la transacción de la reserva, y listar por `after`, `limit` y `type`.
-- [ ] `IdempotencyRepository`: reservar la clave, guardar la respuesta y limpiar las vencidas.
+- [x] Migración con el DDL completo de `ms_booking.sql`.
+- [x] `ReservationRepository`: crear con el titular, buscar por `res_uuid` o `res_codigo`, cambiar de estado y listar.
+- [x] `EventRepository`: escribir `outbox_evento` en la transacción de la reserva, y listar por `after`, `limit` y `type`.
+- [x] `IdempotencyRepository`: reservar la clave, guardar la respuesta y limpiar las vencidas.
 
 ### Fase 2 · Compra (`CreateReservation`)
-- [ ] Idempotencia: una clave ya procesada devuelve la misma respuesta.
-- [ ] Validación:
+- [x] Idempotencia: una clave ya procesada devuelve la misma respuesta.
+- [x] Validación:
   - `slot_id` distinto de `date` o `time` → `400 SLOT_TIME_MISMATCH`.
   - Fecha pasada, `adult_count < 1` o atracción inexistente → `422`.
-- [ ] Pasos:
+- [x] Pasos:
   1. Catalog: atracción y guía.
   2. Order: crea la orden y sus líneas, con la fecha de la actividad para la tarifa; devuelve `ord_numero`, `det_id` y el total.
   3. Inventory: `ReserveSeats` por `slot_id`. Sin cupos: cancela la orden y responde `409 OUT_OF_STOCK`.
   4. Guarda la reserva y escribe `RESERVA_CREADA` y `STOCK_ACTUALIZADO`.
   5. Order inicia el pago con `StartPayment`, con los cupos ya descontados. Si queda aprobado, `CONFIRMED` y `RESERVA_CONFIRMADA`.
   6. Si un paso falla, deshace los anteriores en orden inverso y responde `500` o `503`.
-- [ ] `res_codigo` con formato `DEC-XXXXXX`, y voucher firmado con HMAC-SHA256 en `res_voucher_qr`.
-- [ ] Cabecera `Location` y `_links`.
+- [x] `res_codigo` con formato `DEC-XXXXXX`, y voucher firmado con HMAC-SHA256 en `res_voucher_qr`.
+- [x] Cabecera `Location` y `_links`.
 
 ### Fase 3 · Consulta, cancelación y check-in
-- [ ] **`GetReservation`:** acepta UUID o PNR; arma la respuesta con Inventory y Catalog.
-- [ ] **`CancelReservation`:** idempotente. Refund con `res_uuid` como clave (con `409 NO_APPROVED_PAYMENT` llama a `CancelOrder`), `ReleaseSeats`, `CANCELLED` y `RESERVA_CANCELADA`, en ese orden. Una reserva ya
+- [x] **`GetReservation`:** acepta UUID o PNR; arma la respuesta con Inventory y Catalog.
+- [x] **`CancelReservation`:** idempotente. Refund con `res_uuid` como clave (con `409 NO_APPROVED_PAYMENT` llama a `CancelOrder`), `ReleaseSeats`, `CANCELLED` y `RESERVA_CANCELADA`, en ese orden. Una reserva ya
       cancelada devuelve la misma respuesta. `CHECKED_IN` o `COMPLETED` → `409`.
-- [ ] **`CheckIn`:**
+- [x] **`CheckIn`:**
   - Solo `CONFIRMED`, y `documento_identidad` debe ser el del titular.
   - Si llega `codigo_voucher_qr`, se verifica su firma.
   - Reserva cancelada → `409`.
   - Guarda hora, documento, guía y dispositivo. Responde `CheckinResponse`.
   - Permisos: `ADMIN`, `OPERADOR` de la atracción, o un `CLIENTE_API`.
-- [ ] `ListReservations` y `Health`.
+- [x] `ListReservations` y `Health`.
 
 ### Fase 4 · Eventos
-- [ ] Publicador: envía al bus lo pendiente de `outbox_evento` y marca `evt_publicado_en`.
-- [ ] `ListEvents`: `limit` máximo del contrato; `payload` y `data` llevan el mismo contenido; `aggregate_id` es el PNR.
-- [ ] Consumidores de `PagoAprobado`, `PagoRechazado` y `ReembolsoEmitido`, idempotentes por el estado de la reserva.
-- [ ] Proceso de estados de la decisión 8.
+- [x] Publicador: envía al bus lo pendiente de `outbox_evento` y marca `evt_publicado_en`.
+- [x] `ListEvents`: `limit` máximo del contrato; `payload` y `data` llevan el mismo contenido; `aggregate_id` es el PNR.
+- [x] Consumidores de `PagoAprobado`, `PagoRechazado` y `ReembolsoEmitido`, idempotentes por el estado de la reserva.
+- [x] Proceso de estados de la decisión 8.
 
 ### Fase 5 · Integración
 - [ ] **ESB:** registrar las rutas `booking.*`, traduciendo REST a gRPC y `payload_json` a `payload` y `data`.

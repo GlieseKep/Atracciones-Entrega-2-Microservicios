@@ -1,0 +1,7 @@
+node_modules
+dist
+coverage
+obj
+.env
+.env.local
+*.csproj
