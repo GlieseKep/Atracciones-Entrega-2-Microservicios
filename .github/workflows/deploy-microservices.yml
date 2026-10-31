@@ -49,6 +49,8 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    # Si Kudu se cuelga (plan sin memoria), la acción espera sin límite: mejor fallar y reintentar esa app.
+    timeout-minutes: 12
     strategy:
       fail-fast: false
       max-parallel: 2
