@@ -9,6 +9,7 @@
     { "path": "ms-order" },
     { "path": "ms-booking" },
     { "path": "ms-invoicing" },
+    { "path": "ms-audit" },
     { "path": "catalog" },
     { "path": "inventory" },
     { "path": "cart" },

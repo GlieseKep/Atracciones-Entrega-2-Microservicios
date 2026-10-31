@@ -73,22 +73,24 @@ apps/services/ms-audit/
 
 ## 5. Fases
 
+**Estado (2026-10-30):** Fases 0 a 3 programadas en `apps/services/ms-audit`. Sin pruebas. Falta la Fase 4, excepto las rutas para el ESB y el cliente, que ya están dentro del servicio.
+
 ### Fase 0 · Preparación
 - [x] Cerrar las decisiones de la sección 3.
-- [ ] Copiar el contrato a `packages/contracts/openapi/ms-audit.yaml` y lintarlo con Spectral.
-- [ ] Registrar el servicio en el workspace, la compilación, la creación de bases y el script de arranque.
+- [x] Copiar el contrato a `packages/contracts/openapi/ms-audit.yaml` y lintarlo con Spectral.
+- [x] Registrar el servicio en el workspace, la compilación, la creación de bases y el script de arranque.
 
 ### Fase 1 · Persistencia
-- [ ] Migración con el DDL completo de `ms_audit.sql`.
-- [ ] `AuditRepository`: `record` con `ON CONFLICT (bit_event_id) DO NOTHING`, `list` con filtros, y `actions`.
+- [x] Migración con el DDL completo de `ms_audit.sql`.
+- [x] `AuditRepository`: `record` con `ON CONFLICT (bit_event_id) DO NOTHING`, `list` con filtros, y `actions`.
 
 ### Fase 2 · Consumidor
-- [ ] Cola `audit`, suscrita a todas las claves del bus.
-- [ ] Registrar cada evento según la decisión 1.
+- [x] Cola `ms-audit`, suscrita a todas las claves del bus. `audit` es la cola del servicio viejo: compartirla repartiría los eventos entre ambos.
+- [x] Registrar cada evento según la decisión 1.
 
 ### Fase 3 · API REST
-- [ ] `GET /bitacora` y `GET /bitacora/acciones`: solo rol `ADMIN`.
-- [ ] `/health` con `NodeHealthResponse`.
+- [x] `GET /bitacora` y `GET /bitacora/acciones`: solo rol `ADMIN`.
+- [x] `/health` con `NodeHealthResponse`.
 
 ### Fase 4 · Integración
 - [ ] **ESB:** registrar las rutas `audit.*`.

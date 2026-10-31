@@ -42,6 +42,7 @@ $apps = [ordered]@{
   'ms-refund'    = @{ file = 'apps/services/ms-refund/dist/main.js'; env = @{} }
   'invoicing'    = @{ file = 'apps/services/invoicing/dist/main.js'; env = @{} }
   'audit'        = @{ file = 'apps/services/audit/dist/main.js'; env = @{} }
+  'ms-audit'     = @{ file = 'apps/services/ms-audit/dist/main.js'; env = @{} }
   'ms-support'   = @{ file = 'apps/services/ms-support/dist/main.js'; env = @{} }
   'esb'          = @{ file = 'apps/esb/dist/main.js'; env = @{} }
   'partner-api'  = @{ file = 'apps/partner-api/dist/main.js'; env = @{ PUBLIC_BASE_URL = 'http://localhost:3000/api/v2' } }

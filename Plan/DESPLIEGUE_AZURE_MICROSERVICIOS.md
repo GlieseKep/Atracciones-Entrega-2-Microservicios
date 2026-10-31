@@ -53,12 +53,12 @@ flowchart LR
 |----------|-------|
 | App Service B2 | ~US$26/mes |
 | VM Standard_B2s | ~US$30/mes, más ~US$5 de disco e IP |
-| PostgreSQL B1ms | ~US$15/mes |
+| PostgreSQL B1ms, 32 GB | ~US$33/mes en Brazil South. El portal ofrece 750 horas y 32 GB gratis: si se aplican, US$0 |
 | CloudAMQP Little Lemur | US$0 |
 | Static Web Apps Free | US$0 |
-| **Total** | **~US$75/mes** |
+| **Total** | **~US$94/mes**, o ~US$61/mes con PostgreSQL gratis |
 
-> **Ahorro:** Azure for Students da **US$100 de crédito**, unas 5 semanas con todo encendido. Detén la VM (**Detener**, no solo apagar
+> **Ahorro:** Azure for Students da **US$100 de crédito**, entre 1 mes y 7 semanas con todo encendido. Detén la VM (**Detener**, no solo apagar
 > desde Linux) y el servidor de PostgreSQL cuando no los uses. El plan B2 se puede bajar de nivel después de la evaluación.
 
 ---
@@ -134,7 +134,7 @@ git push -u origin main
 1. Buscador → **Azure Database for PostgreSQL flexible servers** → **+ Crear**.
 
 > ⚠️ **Cuidado con el costo.** El formulario viene en **Producción** con un servidor de ~USD 275/mes. Cámbialo a **Desarrollo/pruebas**
-> y, en **Configurar servidor**, a **Burstable → Standard_B1ms, 32 GiB**. Si el total supera ~USD 20/mes, **no lo crees**.
+> y, en **Configurar servidor**, a **Burstable → Standard_B1ms, 32 GiB**. Si el total supera ~USD 35/mes, **no lo crees**.
 
 2. Pestaña **Básico**:
 

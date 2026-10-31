@@ -1,0 +1,16 @@
+{
+  "name": "@atracciones/ms-audit-service",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Audit Service (contrato Plan/ms_audit/ms_audit-openapi.yaml): bitacora de todos los eventos del bus. Base ms_audit.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "dependencies": {
+    "@atracciones/platform": "1.0.0",
+    "express": "^5.2.1",
+    "typeorm": "0.3.31"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6"
+  }
+}
