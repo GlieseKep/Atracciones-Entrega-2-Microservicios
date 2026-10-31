@@ -181,9 +181,4 @@ export class PaymentRepository {
     );
     return rows.length > 0;
   }
-
-  async transferReceipt(id: number): Promise<string | null> {
-    const [row] = await this.db.query(`SELECT ptr_numero_comprobante FROM pago_transferencia WHERE pag_id = $1`, [id]);
-    return row?.ptr_numero_comprobante ?? null;
-  }
 }

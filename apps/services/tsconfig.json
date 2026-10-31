@@ -6,6 +6,8 @@
     { "path": "ms-catalog" },
     { "path": "ms-inventory" },
     { "path": "ms-payment" },
+    { "path": "ms-order" },
+    { "path": "ms-booking" },
     { "path": "catalog" },
     { "path": "inventory" },
     { "path": "cart" },

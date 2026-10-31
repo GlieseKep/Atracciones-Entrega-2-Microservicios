@@ -44,7 +44,7 @@ tags:
   - name: Pasarelas
     description: Webhook de la pasarela simulada.
   - name: Transferencias
-    description: Comprobante y verificación.
+    description: Comprobante del cliente. Lo valida la pasarela simulada.
   - name: Catálogos
     description: Métodos de pago.
   - name: Salud
@@ -320,54 +320,9 @@ paths:
           $ref: '#/components/responses/ProblemDetails409'
         '500':
           $ref: '#/components/responses/ProblemDetails500'
-  '/pagos/{id}/verificacion':
-    put:
-      tags:
-        - Transferencias
-      summary: Aprobar o rechazar una transferencia
-      description: Rol ADMIN. Publica `PagoAprobado` o `PagoRechazado`.
-      parameters:
-        - $ref: '#/components/parameters/XCorrelationIdHeader'
-        - name: id
-          in: path
-          required: true
-          description: '`pago.pag_id`.'
-          schema:
-            type: integer
-            format: int64
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - aprobado
-              properties:
-                aprobado:
-                  type: boolean
-                motivo:
-                  type: string
-                  maxLength: 300
-      responses:
-        '200':
-          description: Pago actualizado.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Pago'
-        '400':
-          $ref: '#/components/responses/ProblemDetails400'
-        '401':
-          $ref: '#/components/responses/ProblemDetails401'
-        '403':
-          $ref: '#/components/responses/ProblemDetails403'
-        '404':
-          $ref: '#/components/responses/ProblemDetails404'
-        '409':
-          $ref: '#/components/responses/ProblemDetails409'
-        '500':
-          $ref: '#/components/responses/ProblemDetails500'
+      description: >-
+        El dueño de la orden envía el comprobante y la pasarela simulada lo valida. El resultado llega por el webhook,
+        como con las tarjetas. Un comprobante terminado en `0000` simula un rechazo.
   /health:
     get:
       tags:

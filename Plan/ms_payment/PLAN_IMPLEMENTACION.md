@@ -41,9 +41,9 @@ El diseño y el contrato no definen estos puntos.
    Order llama a `POST /pagos` por el ESB, porque `orden` guarda el método de pago.
 2. **Canal B2B.** El contrato solo envía `method`, sin datos de tarjeta, y Booking Prototipo cobra al turista: con `canal = B2B`
    el pago queda `APROBADO` de inmediato, sin pasarela y sin fila en `pago_tarjeta`.
-3. **Pasarela simulada.** Es la única pasarela: atiende `CREDIT_CARD`, `DEBIT_CARD` y `PAYPAL`, y confirma por el webhook,
+3. **Pasarela simulada.** Es la única pasarela: atiende los cuatro métodos, y confirma por el webhook,
    como lo haría una pasarela. Queda detrás de una interfaz, por si se reemplaza por una API o un microservicio de simulación más completo.
-4. **Resultado de la simulación.** Se aprueba siempre, salvo con `ultimos4 = 0000`, que simula un rechazo. Sirve para probar
+4. **Resultado de la simulación.** Se aprueba siempre, salvo con `ultimos4 = 0000` o un comprobante terminado en `0000`, que simulan un rechazo. Sirve para probar
    las dos ramas de la saga. `PAYPAL` siempre se aprueba.
 5. **Idempotencia.** La tabla no tiene una columna para esto: `pag_numero` lo genera Order (`PAG-<ord_numero>-<intento>`),
    así un reintento repite el mismo número. Un nuevo intento tras un rechazo usa otro número.
@@ -51,8 +51,8 @@ El diseño y el contrato no definen estos puntos.
    siempre con Refund.
 7. **Orden sin cobro.** `pag_monto` debe ser mayor que 0: si un cupón deja el total en 0, Order no crea pago.
 8. **Moneda.** No se guarda, como indica el script general. Order la envía en `POST /pagos` solo para la pasarela.
-9. **Transferencias.** El cliente envía el comprobante y un `ADMIN` lo aprueba o rechaza. La orden queda en espera hasta
-   entonces.
+9. **Transferencias.** El cliente envía el comprobante y la pasarela lo valida, por el mismo webhook que las tarjetas. Ninguna persona
+   las aprueba, porque una transacción puede ocurrir a cualquier hora. Si el comprobante no llega, la orden se cancela a los 30 minutos.
 10. **Cola del webhook.** Se publica en una cola del bus. Si no se puede publicar, responde `503` y la pasarela reintenta. No
     se agrega una tabla de webhooks.
 11. **Firma del webhook.** HMAC-SHA256 con el secreto `WEBHOOK_SECRET`, en la cabecera `X-Signature`, para que nadie más
@@ -73,7 +73,7 @@ apps/services/ms-payment/
     application/
       payment-service.ts             registro, cancelación y resultado del cobro
       webhook-processor.ts           mensajes de la cola -> resultado del pago
-      transfer-service.ts            comprobante y verificación
+      transfer-service.ts            comprobante, que pasa a la pasarela
       input.ts                       validación
     integration/
       gateways/
@@ -123,8 +123,7 @@ apps/services/ms-payment/
       `pag_autorizacion` generados.
 
 ### Fase 4 · Transferencias
-- [x] `POST /pagos/{id}/transferencia`: solo para `TRANSFER` y `PENDIENTE`.
-- [x] `PUT /pagos/{id}/verificacion`: rol `ADMIN`; publica el evento.
+- [x] `POST /pagos/{id}/transferencia`: solo para `TRANSFER` y `PENDIENTE`, y solo el dueño de la orden. Guarda el comprobante y llama a la pasarela.
 
 ### Fase 5 · Integración
 - [ ] **ESB:** registrar las rutas `payment.*`. Los webhooks entran por el API Gateway.

@@ -1,0 +1,12 @@
+{
+  "name": "@atracciones/ms-order-service",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Order Management Service (gRPC, contrato Plan/ms_order/order.proto): ordenes, cupones aplicados y seguimiento del pago. Base ms_order.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "dependencies": {
+    "@atracciones/platform": "1.0.0",
+    "typeorm": "0.3.31"
+  }
+}

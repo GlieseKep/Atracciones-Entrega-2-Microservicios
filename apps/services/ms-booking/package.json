@@ -1,0 +1,12 @@
+{
+  "name": "@atracciones/ms-booking-service",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Booking Service (gRPC, contrato Plan/ms_booking/booking.proto): reservas, proceso de compra, check-in y feed de eventos. Base ms_booking.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "dependencies": {
+    "@atracciones/platform": "1.0.0",
+    "typeorm": "0.3.31"
+  }
+}

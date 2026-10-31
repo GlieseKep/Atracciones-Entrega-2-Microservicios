@@ -58,7 +58,7 @@ export interface PagoPage {
   data: PagoDto[];
 }
 
-/** Resultado del cobro: lo informa la pasarela o lo decide un `ADMIN` en una transferencia. */
+/** Resultado del cobro: siempre lo informa la pasarela. */
 export type PaymentResult =
   | { aprobado: true; referencia: string | null; autorizacion: string | null }
   | { aprobado: false; motivo: string };

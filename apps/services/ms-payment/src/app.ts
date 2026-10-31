@@ -15,7 +15,7 @@ import {
 } from '@atracciones/platform';
 import { Router, type Express, type RequestHandler } from 'express';
 import type { DataSource } from 'typeorm';
-import { parseId, parsePayment, parsePaymentQuery, parseTransfer, parseVerification, parseWebhook } from './application/input';
+import { parseId, parsePayment, parsePaymentQuery, parseTransfer, parseWebhook } from './application/input';
 import { PaymentService } from './application/payment-service';
 import { TransferService } from './application/transfer-service';
 import { assertSignature, enqueueWebhook, webhookHandler } from './application/webhook-processor';
@@ -79,7 +79,7 @@ export function createMsPaymentService(config: MsPaymentConfig, dataSource: Data
   const payments = new PaymentRepository(dataSource);
   const gateway = deps.gateway ?? new SimulatedGateway(config.webhookUrl, config.webhookSecret, logger);
   const service = new PaymentService(payments, gateway, logger);
-  const transfers = new TransferService(payments, service, deps.esb ?? new EsbClient(config.esbUrl));
+  const transfers = new TransferService(payments, service, gateway, deps.esb ?? new EsbClient(config.esbUrl));
   const internal = requireServiceToken(config.serviceToken);
 
   async function requireAdmin(): Promise<void> {
@@ -131,12 +131,6 @@ export function createMsPaymentService(config: MsPaymentConfig, dataSource: Data
   api.post('/pagos/:id/transferencia', async (req, res) => {
     const principal = await requirePrincipal(config.internalTokenSecret);
     res.json(await transfers.submit(parseId(req.params.id), parseTransfer(req.body), principal));
-  });
-
-  api.put('/pagos/:id/verificacion', async (req, res) => {
-    await requireAdmin();
-    const { aprobado, motivo } = parseVerification(req.body);
-    res.json(await transfers.verify(parseId(req.params.id), aprobado, motivo));
   });
 
   api.post('/webhooks/:pasarela', async (req, res) => {

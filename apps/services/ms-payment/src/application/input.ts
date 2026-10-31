@@ -63,16 +63,6 @@ export function parseTransfer(body: unknown): TransferenciaInput {
   return { banco, numero_comprobante: comprobante, fecha_transferencia: fecha as string, archivo_adjunto: archivo as string | null };
 }
 
-export function parseVerification(body: unknown): { aprobado: boolean; motivo: string } {
-  const b = asBody(body);
-  const errors: InvalidParam[] = [];
-  if (typeof b.aprobado !== 'boolean') errors.push({ name: 'aprobado', reason: 'Debe ser booleano.' });
-  const motivo = typeof b.motivo === 'string' ? b.motivo.trim() : '';
-  if (motivo.length > 300) errors.push({ name: 'motivo', reason: 'Máximo 300 caracteres.' });
-  stop(errors);
-  return { aprobado: b.aprobado as boolean, motivo: motivo || 'Transferencia rechazada.' };
-}
-
 export function parseWebhook(body: unknown): WebhookResult {
   const b = asBody(body);
   if (typeof b.numero !== 'string' || (b.resultado !== 'APROBADO' && b.resultado !== 'RECHAZADO')) {

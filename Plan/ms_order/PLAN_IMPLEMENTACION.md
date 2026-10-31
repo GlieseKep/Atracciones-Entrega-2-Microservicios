@@ -89,41 +89,43 @@ apps/services/ms-order/
 
 ## 5. Fases
 
+**Estado (2026-10-30):** Fases 0 a 4 programadas en `apps/services/ms-order`; compila y el `.proto` carga. Sin pruebas. Falta la Fase 5, excepto las rutas para el ESB y el cliente, que ya están dentro del servicio.
+
 ### Fase 0 · Preparación
 - [x] Cerrar las decisiones de la sección 3.
-- [ ] Copiar `order.proto` a `packages/contracts/proto/`.
-- [ ] Registrar el servicio en el workspace, la compilación, la creación de bases y el script de arranque.
+- [x] Copiar `order.proto` a `packages/contracts/proto/`.
+- [x] Registrar el servicio en el workspace, la compilación, la creación de bases y el script de arranque.
 
 ### Fase 1 · Persistencia
-- [ ] Migración con el DDL completo de `ms_order.sql`: dominios, trigger de una sola atracción, vista y estados.
-- [ ] `OrderRepository`: crear orden y líneas, buscar por ID o número, cambiar de estado y listar.
-- [ ] `IdempotencyRepository`: reservar la clave, guardar la respuesta y limpiar las vencidas.
+- [x] Migración con el DDL completo de `ms_order.sql`: dominios, trigger de una sola atracción, vista y estados.
+- [x] `OrderRepository`: crear orden y líneas, buscar por ID o número, cambiar de estado y listar.
+- [x] `IdempotencyRepository`: reservar la clave, guardar la respuesta y limpiar las vencidas.
 
 ### Fase 2 · Crear la orden
-- [ ] **`CreateOrder`:**
+- [x] **`CreateOrder`:**
   1. Idempotencia por `Idempotency-Key` y sujeto.
   2. Con `cart_item_id`: valida el ítem con Cart.
   3. Pide a Pricing la tarifa vigente en la fecha de la actividad, por tipo de boleto.
   4. Con `coupon_code`: valida con Coupon y calcula `ord_descuento`.
   5. En una transacción: `orden` en `CREADA`, una línea por tipo de boleto con el nombre y precio congelados, `orden_cupon` y `OrdenCreada`.
   6. Con `cart_item_id`: liga el ítem con Cart (`EN_PAGO`). Si Cart lo rechaza, cancela la orden.
-- [ ] Respuesta con `ord_numero`, la línea de adultos y los totales.
+- [x] Respuesta con `ord_numero`, la línea de adultos y los totales.
 
 ### Fase 3 · Pago y cancelación
-- [ ] **`StartPayment`:**
+- [x] **`StartPayment`:**
   - Total 0: pasa a `PAGADA` sin crear pago.
   - Si no: `POST /pagos` con `numero` = `PAG-<ord_numero>-<intento>` y `canal` según el principal.
-- [ ] **`CancelOrder`:** cancela el pago pendiente, pasa la orden a `CANCELADA` y devuelve el ítem a `PENDIENTE`. Idempotente. Una orden `PAGADA` no se cancela aquí:
+- [x] **`CancelOrder`:** cancela el pago pendiente, pasa la orden a `CANCELADA` y devuelve el ítem a `PENDIENTE`. Idempotente. Una orden `PAGADA` no se cancela aquí:
       se reembolsa con Refund.
-- [ ] Proceso de órdenes colgadas: las `CREADA` de más de 30 minutos se consultan en Payment; si se aprobó, se pagan, y si no, se cancelan.
-- [ ] `GetOrder`: incluye líneas y dueño. `ListOrders`. `Health`.
+- [x] Proceso de órdenes colgadas: las `CREADA` de más de 30 minutos se consultan en Payment; si se aprobó, se pagan, y si no, se cancelan.
+- [x] `GetOrder`: incluye líneas y dueño. `ListOrders`. `Health`.
 
 ### Fase 4 · Eventos
-- [ ] **`PagoAprobado`:** `PAGADA`, ítem `COMPRADO` en Cart y `OrdenPagada` en la misma transacción. La llamada a Cart se reintenta si falla;
+- [x] **`PagoAprobado`:** `PAGADA`, ítem `COMPRADO` en Cart y `OrdenPagada` en la misma transacción. La llamada a Cart se reintenta si falla;
       no revierte el pago.
-- [ ] **`PagoRechazado`:** `CANCELADA`, y el ítem vuelve a `PENDIENTE`.
-- [ ] **`ReembolsoEmitido`:** según la decisión 5.
-- [ ] Todos idempotentes: un evento repetido no cambia una orden que ya pasó de estado.
+- [x] **`PagoRechazado`:** `CANCELADA`, y el ítem vuelve a `PENDIENTE`.
+- [x] **`ReembolsoEmitido`:** según la decisión 5.
+- [x] Todos idempotentes: un evento repetido no cambia una orden que ya pasó de estado.
 
 ### Fase 5 · Integración
 - [ ] **ESB:** registrar las rutas `order.*`.

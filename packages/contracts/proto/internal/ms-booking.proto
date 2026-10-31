@@ -1,0 +1,196 @@
+// Contrato gRPC interno de ms_booking (microservicio 11). Plan: Plan/ms_booking/PLAN_IMPLEMENTACION.md
+// El ESB traduce las rutas REST del contrato v3 a estos RPC: los mensajes usan los mismos nombres de campo.
+syntax = "proto3";
+package descubre.booking;
+
+service BookingService {
+  rpc Health (Empty) returns (NodeHealthResponse);
+
+  // POST /atracciones/reservas. Idempotente por Idempotency-Key.
+  rpc CreateReservation (CreateReservationRequest) returns (ReservaConfirmadaResponseV2);
+  // GET /atracciones/reservas/{id}. UUID o PNR.
+  rpc GetReservation (GetReservationRequest) returns (ReservaConfirmadaResponseV2);
+  // POST /atracciones/reservas/{id}/cancel. Idempotente por Idempotency-Key.
+  rpc CancelReservation (CancelReservationRequest) returns (ReservaConfirmadaResponseV2);
+  // POST /atracciones/reservas/{id}/checkin. Idempotente por Idempotency-Key.
+  rpc CheckIn (CheckinRequest) returns (CheckinResponse);
+  // GET /atracciones/eventos.
+  rpc ListEvents (ListEventsRequest) returns (ListEventsResponse);
+  // Mis reservas (portal) y listado de administracion.
+  rpc ListReservations (ListReservationsRequest) returns (ReservationPage);
+}
+
+message Empty {}
+
+// Campos con los mismos nombres que NodeHealthResponse del contrato v3.
+message NodeHealthResponse {
+  string status = 1;
+  string node_id = 2;
+  string node_code = 3;
+  string version = 4;
+  bool database_connected = 5;
+  int32 latency_ms = 6;
+  double memory_usage_mb = 7;
+  int64 uptime_seconds = 8;
+  string timestamp = 9;
+}
+
+// CustomerContactDto del contrato v3. Acepta los alias que tambien usa Booking Prototipo.
+message CustomerContactDto {
+  string full_name = 1;
+  string nombre_completo = 2;
+  string name = 3;                // alias de GUIA_INTEGRACION_SOCIOS
+  string email = 4;
+  string correo = 5;
+  string phone = 6;
+  string telefono = 7;
+  string document_type = 8;       // CEDULA | PASAPORTE | RUC
+  string tipo_documento = 9;
+  string document_id = 10;
+  string numero_documento = 11;
+}
+
+message PaymentMethod {
+  string method = 1;              // CREDIT_CARD | DEBIT_CARD | PAYPAL | TRANSFER
+}
+
+message CreateReservationRequest {
+  string idempotency_key = 1;     // cabecera Idempotency-Key
+  string attraction_id = 2;
+  string atraccion_id = 3;
+  string slot_id = 4;
+  string date = 5;
+  string fecha = 6;
+  string time = 7;
+  string hora = 8;
+  string time_24h = 9;
+  int32 adult_count = 10;
+  int32 child_count = 11;
+  int32 senior_count = 12;
+  int32 infant_count = 13;
+  string special_requirements = 14;
+  CustomerContactDto customer = 15;
+  PaymentMethod payment_method = 16;
+  string booking_reservation_id = 17;   // se guarda en res_saga_id
+  int64 cart_item_id = 18;              // portal: item del carrito; 0 = compra directa
+  string coupon_code = 19;
+  CardData tarjeta = 20;                // solo portal; pasa a Payment y no se guarda en Booking
+}
+
+message CardData {
+  string marca = 1;
+  string ultimos4 = 2;
+  string titular = 3;
+  int32 mes = 4;
+  int32 anio = 5;
+  string pais = 6;
+}
+
+message Links {
+  string self = 1;
+  string checkin = 2;
+  string cancel = 3;
+}
+
+// Campos con los mismos nombres que ReservaConfirmadaResponseV2 del contrato v3.
+message ReservaConfirmadaResponseV2 {
+  string external_order_id = 1;
+  string reservation_id = 2;
+  string reservation_code = 3;
+  string status = 4;              // PENDING | CONFIRMED | CHECKED_IN | COMPLETED | CANCELLED | EXPIRED
+  string date = 5;
+  string time = 6;
+  int32 ticket_count = 7;
+  int32 adult_count = 8;
+  int32 child_count = 9;
+  int32 senior_count = 10;
+  int32 student_count = 11;
+  int32 infant_count = 12;
+  int32 cantidad_adultos = 13;
+  int32 cantidad_ninos = 14;
+  int32 cantidad_seniors = 15;
+  int32 cantidad_estudiantes = 16;
+  int32 cantidad_infantes = 17;
+  double total_price = 18;
+  string currency = 19;
+  string fecha = 20;
+  string hora = 21;
+  double precio_total = 22;
+  string moneda = 23;
+  string estado = 24;
+  CustomerContactDto customer = 25;
+  string guia_asignado = 26;
+  string punto_encuentro = 27;
+  string voucher_qr_payload = 28;
+  string reembolso_id = 29;
+  double monto_reembolsado = 30;
+  Links _links = 31;
+}
+
+message GetReservationRequest {
+  string id = 1;                  // UUID o PNR
+}
+
+message CancelReservationRequest {
+  string idempotency_key = 1;
+  string id = 2;
+  string reason = 3;
+  string solicitante = 4;         // CLIENTE | SAGA_ORCHESTRATOR | ADMIN
+}
+
+message CheckinRequest {
+  string idempotency_key = 1;
+  string id = 2;
+  string documento_identidad = 3;
+  string codigo_voucher_qr = 4;
+  string guia_codigo = 5;
+  string scanner_device_id = 6;
+}
+
+// Campos con los mismos nombres que CheckinResponse del contrato v3.
+message CheckinResponse {
+  string reserva_id = 1;
+  string reservation_code = 2;
+  string estado = 3;
+  string titular_nombre = 4;
+  string titular_documento = 5;
+  string guia_asignado = 6;
+  string punto_encuentro = 7;
+  string hora_checkin = 8;
+  string pase_abordar_qr = 9;
+}
+
+message ListEventsRequest {
+  int64 after = 1;                // cursor: evt_id
+  int32 limit = 2;
+  string type = 3;
+}
+
+// Campos con los mismos nombres que OutboxEventItem del contrato v3.
+message OutboxEventItem {
+  string specversion = 1;
+  string source = 2;
+  string event_id = 3;
+  int64 sequence_number = 4;
+  string event_type = 5;
+  string aggregate_id = 6;
+  string correlation_id = 7;
+  string timestamp = 8;
+  string payload_json = 9;        // el ESB lo expone como payload y data
+}
+
+message ListEventsResponse {
+  repeated OutboxEventItem events = 1;
+}
+
+message ListReservationsRequest {
+  bool todas = 1;                 // solo ADMIN
+  string estado = 2;
+  int32 page = 3;
+  int32 limit = 4;
+}
+
+message ReservationPage {
+  int32 total_results = 1;
+  repeated ReservaConfirmadaResponseV2 items = 2;
+}

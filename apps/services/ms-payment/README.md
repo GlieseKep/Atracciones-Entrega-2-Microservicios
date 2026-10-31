@@ -11,8 +11,8 @@ Registra el cobro de una orden, obtiene el resultado de una pasarela **simulada*
 - `POST /pagos` lo llama Order y es idempotente por `numero`.
 - **Canal `B2B`:** el pago queda `APROBADO` de inmediato, sin pasarela.
 - **Canal `WEB`:** queda `PENDIENTE` y la pasarela responde por webhook. Tarjeta sin datos responde `422`.
-- **Simulación:** aprueba siempre, salvo con `ultimos4 = 0000`. `PAYPAL` siempre se aprueba.
-- **Transferencias:** el cliente envía el comprobante y un `ADMIN` lo aprueba o rechaza.
+- **Simulación:** aprueba siempre, salvo con `ultimos4 = 0000` o un comprobante terminado en `0000`. `PAYPAL` siempre se aprueba.
+- **Transferencias:** el cliente envía el comprobante y la pasarela lo valida por el mismo webhook, a cualquier hora. Ninguna persona las aprueba.
 - **Cancelar:** un pago `PENDIENTE` pasa a `FALLIDO`. Uno `APROBADO` se devuelve con Refund.
 - Una orden tiene a lo sumo un pago aprobado. Un pago en estado final no cambia.
 - Nunca se guarda el número de la tarjeta ni el CVV: solo se leen los campos del contrato.

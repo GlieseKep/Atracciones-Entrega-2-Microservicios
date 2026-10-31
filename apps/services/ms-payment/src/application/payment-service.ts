@@ -16,11 +16,11 @@ export class PaymentService {
     return payment;
   }
 
-  /** La pasarela se llama después de confirmar la transacción. Las transferencias esperan el comprobante. */
+  /** La pasarela se llama después de confirmar la transacción. Una transferencia va a la pasarela al enviar el comprobante. */
   async register(input: PagoInput): Promise<{ payment: PagoDto; created: boolean }> {
     const result = await this.payments.create(input);
     if (result.created && input.canal === 'WEB' && input.metodo !== 'TRANSFER') {
-      this.gateway.charge({ numero: input.numero, monto: input.monto, moneda: input.moneda, metodo: input.metodo, ultimos4: input.tarjeta?.ultimos4 ?? null });
+      this.gateway.charge({ numero: input.numero, monto: input.monto, moneda: input.moneda, metodo: input.metodo, ultimos4: input.tarjeta?.ultimos4 ?? null, comprobante: null });
     }
     return result;
   }

@@ -4,13 +4,15 @@ import type { WebhookResult } from '../../contract';
 import type { ChargeRequest, PaymentGateway } from './gateway';
 
 const ATTEMPTS = 5;
-const REJECTED_CARD = '0000';
+/** Tarjeta o comprobante que simulan un rechazo. */
+const REJECTED_SUFFIX = '0000';
 
 /** Firma del webhook: HMAC-SHA256 del JSON canónico, en hexadecimal. */
 export const signWebhook = (body: unknown, secret: string) => createHmac('sha256', secret).update(canonicalJson(body)).digest('hex');
 
 export function simulatedResult(request: ChargeRequest): WebhookResult {
-  if (request.ultimos4 === REJECTED_CARD) return { numero: request.numero, resultado: 'RECHAZADO', motivo: 'Tarjeta rechazada por la pasarela simulada.' };
+  if (request.ultimos4 === REJECTED_SUFFIX) return { numero: request.numero, resultado: 'RECHAZADO', motivo: 'Tarjeta rechazada por la pasarela simulada.' };
+  if (request.comprobante?.endsWith(REJECTED_SUFFIX)) return { numero: request.numero, resultado: 'RECHAZADO', motivo: 'Comprobante rechazado por la pasarela simulada.' };
   return {
     numero: request.numero,
     resultado: 'APROBADO',
@@ -20,7 +22,7 @@ export function simulatedResult(request: ChargeRequest): WebhookResult {
 }
 
 /**
- * Única pasarela del sistema, sin conexión con ningún proveedor real. Aprueba siempre, salvo con `ultimos4 = 0000`, y
+ * Única pasarela del sistema, sin conexión con ningún proveedor real. Aprueba siempre, salvo con `ultimos4 = 0000` o un comprobante terminado en `0000`, y
  * entrega el resultado por el webhook firmado, reintentando si Payment responde `503`.
  */
 export class SimulatedGateway implements PaymentGateway {

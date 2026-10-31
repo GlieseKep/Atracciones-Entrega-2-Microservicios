@@ -5,7 +5,7 @@
 export interface PaymentRestRoute {
   protocol: 'rest';
   target: 'payment';
-  method: 'GET' | 'POST' | 'PUT';
+  method: 'GET' | 'POST';
   path: string;
   timeoutMs: number;
 }
@@ -30,7 +30,6 @@ export const MS_PAYMENT_ROUTES = {
   // Portal y administración.
   'payment.listPayments': route('GET', '/pagos'),
   'payment.submitTransfer': route('POST', '/pagos/:id/transferencia', 5000),
-  'payment.verifyTransfer': route('PUT', '/pagos/:id/verificacion'),
 } as const satisfies Record<string, PaymentRestRoute>;
 
 export type PaymentRouteKey = keyof typeof MS_PAYMENT_ROUTES;
