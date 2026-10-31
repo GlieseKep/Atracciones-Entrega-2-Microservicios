@@ -74,7 +74,8 @@ export class InMemoryEventBus implements EventBus {
     }
   }
 
-  async subscribe(queue: string, patterns: string[], handler: EventHandler): Promise<void> {
+  async subscribe(name: string, patterns: string[], handler: EventHandler): Promise<void> {
+    const queue = `${PREFIX}${name}`;
     this.subscriptions.push({ queue, matchers: patterns.map(topicMatcher), handler, chain: Promise.resolve() });
   }
 
@@ -88,8 +89,19 @@ export class InMemoryEventBus implements EventBus {
   }
 }
 
-export const EXCHANGE = 'atracciones.events';
-const DLX = 'atracciones.events.dlx';
+/**
+ * Exchange del bus. Con el broker central de la clase es `booking.events` (`RABBITMQ_EXCHANGE`), compartido con Booking
+ * Prototipo y los demás grupos.
+ */
+export const EXCHANGE = process.env.RABBITMQ_EXCHANGE || 'atracciones.events';
+
+/**
+ * Prefijo de nuestras claves de enrutamiento y colas en un broker compartido (`RABBITMQ_PREFIX`, p. ej. `tourgirls`):
+ * publicamos `tourgirls.order.OrdenPagada` y nuestras colas solo se enlazan a `tourgirls.*`, así que nunca recibimos
+ * eventos de otros grupos ni chocamos con sus colas. Vacío en local.
+ */
+const PREFIX = process.env.RABBITMQ_PREFIX ? `${process.env.RABBITMQ_PREFIX}.` : '';
+const DLX = `${PREFIX}atracciones.events.dlx`;
 
 /** RabbitMQ: exchange topic durable, una cola durable por consumidor y su DLQ (`<cola>.dlq`). */
 export class RabbitMqEventBus implements EventBus {
@@ -109,7 +121,7 @@ export class RabbitMqEventBus implements EventBus {
 
   async publish(routingKey: string, event: EventEnvelope): Promise<void> {
     await new Promise<void>((resolve, reject) => {
-      this.channel.publish(EXCHANGE, routingKey, Buffer.from(JSON.stringify(event)), {
+      this.channel.publish(EXCHANGE, `${PREFIX}${routingKey}`, Buffer.from(JSON.stringify(event)), {
         persistent: true,
         contentType: 'application/cloudevents+json',
         messageId: event.id,
@@ -122,7 +134,7 @@ export class RabbitMqEventBus implements EventBus {
     await this.channel.assertQueue(`${queue}.dlq`, { durable: true });
     await this.channel.bindQueue(`${queue}.dlq`, DLX, queue);
     await this.channel.assertQueue(queue, { durable: true, arguments: { 'x-dead-letter-exchange': DLX, 'x-dead-letter-routing-key': queue } });
-    for (const pattern of patterns) await this.channel.bindQueue(queue, EXCHANGE, pattern);
+    for (const pattern of patterns) await this.channel.bindQueue(queue, EXCHANGE, `${PREFIX}${pattern}`);
     await this.channel.prefetch(10);
     await this.channel.consume(queue, (message) => {
       if (!message) return;

@@ -21,7 +21,7 @@ read -rp 'BOOKING_API_KEY (Enter si aún no se generó): ' STOCK_KEY
 url() { echo "https://$P-$1-$S.azurewebsites.net"; }
 SERVICES="ms-identity ms-location ms-catalog ms-billing-profile ms-pricing ms-inventory ms-review ms-coupon ms-cart ms-payment ms-order ms-booking ms-refund ms-invoicing ms-support ms-audit"
 COMMON=("NODE_ENV=production" "SCM_DO_BUILD_DURING_DEPLOYMENT=false" "WEBSITES_CONTAINER_START_TIME_LIMIT=600"
-  "INTERNAL_TOKEN_SECRET=$INTERNAL" "SERVICE_TOKEN=$SVC" "ESB_URL=$(url esb)" "RABBITMQ_URL=$RABBIT")
+  "INTERNAL_TOKEN_SECRET=$INTERNAL" "SERVICE_TOKEN=$SVC" "ESB_URL=$(url esb)" "RABBITMQ_URL=$RABBIT" RABBITMQ_EXCHANGE=booking.events RABBITMQ_PREFIX=tourgirls)
 
 # Crea la app si falta, con HTTPS, TLS 1.2, Always On, comando de inicio y publicación básica (para GitHub Actions).
 prepare() {
