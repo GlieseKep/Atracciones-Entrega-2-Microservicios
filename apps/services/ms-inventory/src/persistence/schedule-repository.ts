@@ -1,7 +1,7 @@
 import { AppError, addDays, returnedRows } from '@atracciones/platform';
 import type { DataSource, EntityManager } from 'typeorm';
 import type { BlockedDate, Schedule, Slot } from '../contract';
-import { recordStock, type SlotStock } from './stock-outbox';
+import { recordNewSlotsStock, recordStock, type SlotStock } from './stock-outbox';
 
 const SCHEDULE_COLUMNS = `hor_id, atr_codigo, hor_hora::text AS hor_hora, hor_cupo, hor_activo`;
 
@@ -128,7 +128,8 @@ export class ScheduleRepository {
          FROM nuevos n JOIN horario h ON h.hor_id = n.hor_id`,
         [today, addDays(today, days), codigo],
       );
-      for (const row of rows) await recordStock(m, toStock(row), 'stream', row.dis_cupo_total);
+      // Un horario nuevo crea ~90 turnos: su stock va al outbox en una sola consulta.
+      await recordNewSlotsStock(m, rows.map((row) => ({ ...toStock(row), dis_cupo_total: row.dis_cupo_total })));
       return rows.length;
     });
   }
