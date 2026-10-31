@@ -51,7 +51,12 @@ const reservationAliases: RequestHandler = (req, _res, next) => {
     return next(AppError.unprocessable('ALIAS_CONFLICT', 'Un campo y su alias en español tienen valores distintos.',
       conflicts.map(([en, es]) => ({ name: es, reason: `Debe ser igual a ${en}.` }))));
   }
-  for (const [en, es] of RESERVATION_ALIASES) if (body[en] === undefined && body[es] !== undefined) body[en] = body[es];
+  const sent = (req as ContractRequest).sentBody;
+  for (const [en, es] of RESERVATION_ALIASES) {
+    if (body[en] !== undefined || body[es] === undefined) continue;
+    body[en] = body[es];
+    if (sent) sent[en] = body[es];
+  }
   next();
 };
 
