@@ -63,7 +63,7 @@ echo "OK gateway"
 prepare graphql apps/graphql/dist/main.js && settings graphql "${COMMON[@]}" && echo "OK graphql"
 
 prepare partner-api apps/partner-api/dist/main.js &&
-settings partner-api "${COMMON[@]}" "PUBLIC_BASE_URL=$(url gateway)/api/v3" HEALTH_UP_MS=600 HEALTH_DOWN_MS=2500 &&
+settings partner-api "${COMMON[@]}" "PUBLIC_BASE_URL=$(url gateway)/api/v3" HEALTH_TIMEOUT_MS=4000 HEALTH_UP_MS=1500 HEALTH_DOWN_MS=4500 HEALTH_CACHE_MS=10000 &&
 echo "OK partner-api"
 
 echo "=== TERMINADO ==="

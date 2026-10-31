@@ -32,6 +32,29 @@ function principalMiddleware(secret: string): RequestHandler {
   };
 }
 
+/** Campos de `CreateReservaRequestV3` que el contrato exige en inglés y que también llegan con su alias en español. */
+const RESERVATION_ALIASES = [
+  ['attraction_id', 'atraccion_id'],
+  ['date', 'fecha'],
+  ['time', 'hora'],
+] as const;
+
+/**
+ * Acepta `atraccion_id`, `fecha` y `hora` en lugar de su nombre en inglés: el validador del contrato exige el campo en
+ * inglés, así que se copia el alias antes de validar. Si llegan ambos con valores distintos, responde 422.
+ */
+const reservationAliases: RequestHandler = (req, _res, next) => {
+  const body = req.body as Record<string, unknown> | undefined;
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return next();
+  const conflicts = RESERVATION_ALIASES.filter(([en, es]) => body[en] !== undefined && body[es] !== undefined && body[en] !== body[es]);
+  if (conflicts.length > 0) {
+    return next(AppError.unprocessable('ALIAS_CONFLICT', 'Un campo y su alias en español tienen valores distintos.',
+      conflicts.map(([en, es]) => ({ name: es, reason: `Debe ser igual a ${en}.` }))));
+  }
+  for (const [en, es] of RESERVATION_ALIASES) if (body[en] === undefined && body[es] !== undefined) body[en] = body[es];
+  next();
+};
+
 export interface PartnerApi {
   app: Express;
   esb: EsbClient;
@@ -75,6 +98,7 @@ export function createPartnerApi(config: PartnerApiConfig): PartnerApi {
     if (Number.isInteger(limit) && limit > 200) Object.defineProperty(req, 'query', { value: { ...req.query, limit: '200' }, writable: true, configurable: true });
     next();
   });
+  app.post('/api/v3/atracciones/reservas', reservationAliases);
   app.use(
     OpenApiValidator.middleware({
       apiSpec: openApiContractPath(),
