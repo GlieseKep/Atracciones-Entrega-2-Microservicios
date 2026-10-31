@@ -18,6 +18,7 @@ export const MS_INVENTORY_ROUTES = {
   'inventory.reserveSeats': route('ReserveSeats'),
   'inventory.releaseSeats': route('ReleaseSeats'),
   'inventory.getSlotsByIds': route('GetSlotsByIds'),
+  'inventory.listScheduleTimes': route('ListScheduleTimes'),
 
   // Administración: consultan los permisos en Catalog, y generar turnos puede tardar.
   'inventory.listSchedules': route('ListSchedules', 5000),

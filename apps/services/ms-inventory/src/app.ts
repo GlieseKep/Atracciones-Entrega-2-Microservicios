@@ -117,6 +117,8 @@ export function createMsInventoryService(config: MsInventoryConfig, dataSource: 
 
     ReleaseSeats: rpc('ReleaseSeats', (request) => seats.release(parseKey(request.clave_idempotencia))),
 
+    ListScheduleTimes: rpc('ListScheduleTimes', async (request) => ({ items: await schedules.activeTimes(parseCodes(request.atraccion_ids ?? [])) })),
+
     GetSlotsByIds: rpc('GetSlotsByIds', async (request) => {
       const ids = Array.isArray(request.dis_ids) ? request.dis_ids.map(Number) : [];
       return { items: ids.length === 0 ? [] : await schedules.slotsByIds(ids) };

@@ -69,6 +69,16 @@ export class ScheduleRepository {
     return rows.map(toSchedule);
   }
 
+  /** Horas de los horarios activos de cada atracción. */
+  async activeTimes(codigos: string[]): Promise<{ atraccion_id: string; horas: string[] }[]> {
+    if (codigos.length === 0) return [];
+    const rows: { atr_codigo: string; horas: string[] }[] = await this.db.query(
+      `SELECT atr_codigo, array_agg(hor_hora::text ORDER BY hor_hora) AS horas FROM horario WHERE atr_codigo = ANY($1::varchar[]) AND hor_activo GROUP BY atr_codigo`,
+      [codigos],
+    );
+    return rows.map((row) => ({ atraccion_id: row.atr_codigo.trim(), horas: row.horas }));
+  }
+
   async findSchedule(id: number): Promise<Schedule> {
     const [row] = await this.db.query(`SELECT ${SCHEDULE_COLUMNS} FROM horario WHERE hor_id = $1`, [id]);
     if (!row) throw scheduleNotFound(id);

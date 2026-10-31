@@ -18,8 +18,8 @@ import { NodeHealth } from './health';
 import type { ContractRequest } from './request';
 import { registerRoutes } from './routes';
 
-/** Prefijos del contrato (`servers`): ambos atienden exactamente las mismas operaciones (plan §7.7). */
-export const BASE_PATHS = ['/api/v2', '/api/v1'] as const;
+/** Prefijo del contrato (`servers[0].url`). */
+export const BASE_PATHS = ['/api/v3'] as const;
 
 export type { ContractRequest } from './request';
 
@@ -40,12 +40,13 @@ export interface PartnerApi {
   invalidateOn(bus: EventBus): Promise<void>;
 }
 
-/** Partner API (plan C1): implementa `atracciones-openapi-v2.yaml` para Booking Prototipo. */
+/** Partner API: implementa `atracciones-openapi-v3.yaml` para Booking Prototipo. */
 export function createPartnerApi(config: PartnerApiConfig): PartnerApi {
   const logger = createLogger('partner-api');
   const esb = new EsbClient(config.esbUrl);
   const cache = createCache(config.redisUrl);
   const statuses = ContractStatuses.load();
+  const nodeHealth = new NodeHealth(esb, config);
   const app = express();
   app.disable('x-powered-by');
   app.set('query parser', 'extended');
@@ -56,14 +57,20 @@ export function createPartnerApi(config: PartnerApiConfig): PartnerApi {
     next();
   });
 
-  // Salud interna del proceso (orquestador de contenedores); la del contrato es GET /api/v2/atracciones/health.
+  // Salud interna del proceso (orquestador de contenedores); la del contrato es GET /api/v3/atracciones/health.
   app.get('/health', (_req, res) => {
     res.json({ status: 'UP', service: 'partner-api' });
   });
 
+  // La ficha de registro de Booking usa `/api/v3/health`, que no está en el contrato: responde lo mismo que la del nodo.
+  app.get('/api/v3/health', async (_req, res) => {
+    const report = await nodeHealth.report();
+    res.status(report.status === 'DOWN' ? 503 : 200).json(report);
+  });
+
   app.use(principalMiddleware(config.internalTokenSecret));
   // GET /eventos no documenta 400: un `limit` mayor que el máximo del contrato (200) se acota en vez de rechazarse.
-  app.use(/^\/api\/v[12]\/atracciones\/eventos$/, (req, _res, next) => {
+  app.use(/^\/api\/v3\/atracciones\/eventos$/, (req, _res, next) => {
     const limit = Number(req.query.limit);
     if (Number.isInteger(limit) && limit > 200) Object.defineProperty(req, 'query', { value: { ...req.query, limit: '200' }, writable: true, configurable: true });
     next();
@@ -86,7 +93,7 @@ export function createPartnerApi(config: PartnerApiConfig): PartnerApi {
   );
 
   const router = Router();
-  registerRoutes(router, { esb, cache, statuses, config, nodeHealth: new NodeHealth(esb, config), logger });
+  registerRoutes(router, { esb, cache, statuses, config, nodeHealth, logger });
   for (const base of BASE_PATHS) app.use(base, router);
 
   app.use((req, _res, next) => next(AppError.notFound(`No existe la ruta ${req.method} ${req.path} en el contrato.`)));
@@ -96,7 +103,7 @@ export function createPartnerApi(config: PartnerApiConfig): PartnerApi {
     esb,
     cache,
     invalidateOn: (bus) =>
-      bus.subscribe('partner-api.cache', ['catalog.*', 'inventory.TarifaActualizada'], async () => {
+      bus.subscribe('partner-api.cache', ['catalog.*', 'pricing.*', 'review.*'], async () => {
         await cache.deletePrefix('detalle:');
         await cache.deletePrefix('categorias');
       }),

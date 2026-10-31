@@ -1,26 +1,17 @@
 import CircuitBreaker from 'opossum';
-import {
-  AppError,
-  callUnary,
-  createHttpService,
-  createLogger,
-  httpJson,
-  insecureClient,
-  loadProto,
-  serviceConstructor,
-  type grpc,
-  type Logger,
-} from '@atracciones/platform';
+import { AppError, createHttpService, createLogger, httpJson, requireServiceToken, type Logger } from '@atracciones/platform';
 import type { Express } from 'express';
-import { ROUTES, type GrpcRoute, type RestRoute, type Route, type SoapRoute, type TargetName } from './routes';
+import { ROUTES, type RestRoute, type Route, type SoapRoute, type TargetName } from './routes';
 import { parseSoapResponse, soapEnvelope } from './soap';
 
 export interface EsbConfig {
   port: number;
   /** Se envía como `X-Service-Token` a las rutas internas de los servicios. */
   serviceToken: string;
-  /** URL base (REST) o `host:puerto` (gRPC) de cada servicio. */
+  /** URL base (REST) de cada servicio, o del endpoint SOAP. */
   targets: Partial<Record<TargetName, string>>;
+  /** Multiplica el plazo de cada ruta. En Azure la base está en otra región y las consultas tardan más. */
+  timeoutFactor: number;
   breaker: { errorThresholdPercentage: number; resetTimeoutMs: number; volumeThreshold: number };
   /** Envía el `correlation_id` en el SOAP Header (desactivable si el servicio externo lo rechaza). */
   soapCorrelationHeader?: boolean;
@@ -31,20 +22,27 @@ export function readEsbConfig(env: NodeJS.ProcessEnv = process.env): EsbConfig {
     port: Number(env.PORT ?? 3300),
     serviceToken: env.SERVICE_TOKEN ?? '',
     targets: {
-      identity: env.IDENTITY_URL ?? 'http://127.0.0.1:4001',
-      catalog: env.CATALOG_URL ?? 'http://127.0.0.1:4002',
-      inventory: env.INVENTORY_URL ?? env.INVENTORY_GRPC ?? '127.0.0.1:50061',
+      identity: env.IDENTITY_URL ?? 'http://127.0.0.1:4018',
+      location: env.LOCATION_URL ?? 'http://127.0.0.1:4014',
+      catalog: env.CATALOG_URL ?? 'http://127.0.0.1:4019',
+      billing: env.BILLING_URL ?? 'http://127.0.0.1:4013',
       pricing: env.PRICING_URL ?? 'http://127.0.0.1:4026',
-      cart: env.CART_URL ?? 'http://127.0.0.1:4004',
-      order: env.ORDER_URL ?? env.ORDER_GRPC ?? '127.0.0.1:50065',
-      booking: env.BOOKING_URL ?? env.BOOKING_GRPC ?? '127.0.0.1:50066',
-      payment: env.PAYMENT_URL ?? 'http://127.0.0.1:4007',
-      invoicing: env.INVOICING_URL ?? 'http://127.0.0.1:4008',
-      audit: env.AUDIT_URL ?? 'http://127.0.0.1:4009',
+      inventory: env.INVENTORY_URL ?? 'http://127.0.0.1:4025',
+      review: env.REVIEW_URL ?? 'http://127.0.0.1:4015',
+      coupon: env.COUPON_URL ?? 'http://127.0.0.1:4011',
+      cart: env.CART_URL ?? 'http://127.0.0.1:4012',
+      payment: env.PAYMENT_URL ?? 'http://127.0.0.1:4020',
+      order: env.ORDER_URL ?? 'http://127.0.0.1:4024',
+      booking: env.BOOKING_URL ?? 'http://127.0.0.1:4023',
+      refund: env.REFUND_URL ?? 'http://127.0.0.1:4016',
+      invoicing: env.INVOICING_URL ?? 'http://127.0.0.1:4021',
+      support: env.SUPPORT_URL ?? 'http://127.0.0.1:4017',
+      audit: env.AUDIT_URL ?? 'http://127.0.0.1:4022',
       // Ambiente de pruebas del SRI: https://celcer.sri.gob.ec/comprobantes-electronicos-ws/...; en local, el mock (apps/sri-mock).
       sri_recepcion: env.SRI_RECEPCION_URL ?? 'http://127.0.0.1:4091/comprobantes-electronicos-ws/RecepcionComprobantesOffline',
       sri_autorizacion: env.SRI_AUTORIZACION_URL ?? 'http://127.0.0.1:4091/comprobantes-electronicos-ws/AutorizacionComprobantesOffline',
     },
+    timeoutFactor: Math.max(Number(env.ESB_TIMEOUT_FACTOR) || 1, 1),
     soapCorrelationHeader: (env.SOAP_CORRELATION_HEADER ?? 'true') === 'true',
     breaker: {
       errorThresholdPercentage: Number(env.BREAKER_ERROR_PERCENT ?? 50),
@@ -81,7 +79,6 @@ function queryString(input: Input): string {
 /** Enrutador del ESB: un invocador por ruta, cada uno con su circuit breaker. */
 export class EsbRouter {
   private readonly breakers = new Map<string, CircuitBreaker<[Input], unknown>>();
-  private readonly grpcClients = new Map<string, grpc.Client>();
 
   constructor(
     private readonly config: EsbConfig,
@@ -104,14 +101,13 @@ export class EsbRouter {
 
   close(): void {
     for (const breaker of this.breakers.values()) breaker.shutdown();
-    for (const client of this.grpcClients.values()) client.close();
   }
 
   private breakerFor(key: string, route: Route): CircuitBreaker<[Input], unknown> {
     let breaker = this.breakers.get(key);
     if (!breaker) {
       const invoke = (input: Input) =>
-        route.protocol === 'rest' ? this.rest(route, input) : route.protocol === 'grpc' ? this.grpc(route, input) : this.soap(route, input);
+        route.protocol === 'rest' ? this.rest(route, input) : this.soap(route, input);
       breaker = new CircuitBreaker(invoke, {
         timeout: false, // cada adaptador aplica el plazo de la ruta
         errorThresholdPercentage: this.config.breaker.errorThresholdPercentage,
@@ -140,7 +136,7 @@ export class EsbRouter {
       method: route.method,
       body: withQuery ? undefined : rest,
       headers: { 'x-service-token': this.config.serviceToken },
-      timeoutMs: route.timeoutMs ?? 5000,
+      timeoutMs: (route.timeoutMs ?? 5000) * this.config.timeoutFactor,
     });
     return body ?? null;
   }
@@ -153,7 +149,7 @@ export class EsbRouter {
         method: 'POST',
         headers: { 'content-type': 'text/xml; charset=utf-8', soapaction: '""' },
         body: soapEnvelope(route.namespace, route.operation, input, route.correlationHeader ?? this.config.soapCorrelationHeader ?? true),
-        signal: AbortSignal.timeout(route.timeoutMs ?? 15_000),
+        signal: AbortSignal.timeout((route.timeoutMs ?? 15_000) * this.config.timeoutFactor),
       });
     } catch {
       throw AppError.unavailable(`El servicio SOAP '${route.target}' no responde.`);
@@ -163,16 +159,6 @@ export class EsbRouter {
     return parseSoapResponse(xml, route.operation);
   }
 
-  private async grpc(route: GrpcRoute, input: Input): Promise<unknown> {
-    const address = this.target(route);
-    const clientKey = `${route.service}@${address}`;
-    let client = this.grpcClients.get(clientKey);
-    if (!client) {
-      client = insecureClient(serviceConstructor(loadProto(route.proto), route.service), address);
-      this.grpcClients.set(clientKey, client);
-    }
-    return callUnary(client, route.method, input, { deadlineMs: route.timeoutMs ?? 2000 });
-  }
 }
 
 export interface Esb {
@@ -198,6 +184,8 @@ export function createEsb(config: EsbConfig): Esb {
       timestamp: new Date().toISOString(),
     }),
     routes: (a) => {
+      // En App Service el ESB está en internet: solo lo usan los componentes que tienen el SERVICE_TOKEN.
+      a.use('/esb', requireServiceToken(config.serviceToken));
       a.get('/esb/routes', (_req, res) => {
         res.json(Object.entries(ROUTES).map(([key, r]) => ({ ruta: key, protocolo: r.protocol, servicio: r.target })));
       });

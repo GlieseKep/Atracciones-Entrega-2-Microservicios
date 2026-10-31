@@ -30,14 +30,14 @@ export function readPartnerApiConfig(env: NodeJS.ProcessEnv = process.env): Part
     node: {
       id: env.NODE_ID ?? 'node-atracciones-01',
       code: env.NODE_CODE ?? 'TOURGIRLS_ATRACCIONES',
-      publicBaseUrl: env.PUBLIC_BASE_URL ?? 'http://localhost:3000/api/v2',
-      version: '2.0.0',
+      publicBaseUrl: env.PUBLIC_BASE_URL ?? 'http://localhost:3000/api/v3',
+      version: '3.0.0',
     },
     health: {
-      critical: list(env.HEALTH_CRITICAL_SERVICES, ['catalog', 'inventory', 'order', 'booking']),
-      optional: list(env.HEALTH_OPTIONAL_SERVICES, ['payment', 'audit']),
+      critical: list(env.HEALTH_CRITICAL_SERVICES, ['catalog', 'pricing', 'inventory', 'order', 'booking', 'payment']),
+      optional: list(env.HEALTH_OPTIONAL_SERVICES, ['refund', 'invoicing', 'audit']),
       cacheMs: Number(env.HEALTH_CACHE_MS ?? 2000),
-      timeoutMs: Number(env.HEALTH_TIMEOUT_MS ?? 500),
+      timeoutMs: Number(env.HEALTH_TIMEOUT_MS ?? 1500),
     },
   };
 }

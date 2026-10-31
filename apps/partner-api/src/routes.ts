@@ -22,7 +22,7 @@ export interface RouteDeps {
  */
 export function registerRoutes(router: Router, deps: RouteDeps): void {
   const catalog = catalogHandlers(deps);
-  const reservations = reservationHandlers({ esb: deps.esb, statuses: deps.statuses, timeZone: deps.config.timeZone });
+  const reservations = reservationHandlers(deps.esb);
 
   router.get('/atracciones/health', async (_req, res) => {
     const report = await deps.nodeHealth.report();

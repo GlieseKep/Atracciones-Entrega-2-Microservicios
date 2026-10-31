@@ -20,8 +20,11 @@ import { createProxyMiddleware } from 'http-proxy-middleware';
 import { Authenticator } from './authentication';
 import type { GatewayConfig } from './config';
 
-/** Rutas del contrato con Booking: se autentican y nunca responden 429 (plan §3.10). */
-const isContractPath = (path: string) => /^\/api\/v[12](\/|$)/.test(path);
+/** Cuentas y sesiones de ms-identity: las valida el propio Identity y tienen límite de solicitudes. */
+const isAuthPath = (path: string) => /^\/api\/v3\/auth(\/|$)/.test(path);
+
+/** Rutas del contrato con Booking (Partner API): se autentican y nunca responden 429. */
+const isContractPath = (path: string) => /^\/api\/v3(\/|$)/.test(path) && !isAuthPath(path);
 
 @Controller()
 class HealthController {
@@ -141,9 +144,8 @@ export async function createGateway(config: GatewayConfig): Promise<INestApplica
   app.use(keepContext);
   app.use(rateLimit(config.rateLimitPerMinute));
   app.use(authentication(config, authenticator));
+  app.use(proxy(config.upstreams.identity, isAuthPath, logger));
   app.use(proxy(config.upstreams.partnerApi, isContractPath, logger));
-  app.use(proxy(config.upstreams.identity, (p) => p.startsWith('/auth/') || p.startsWith('/.well-known/'), logger));
-  if (config.upstreams.monolith) app.use(proxy(config.upstreams.monolith, (p) => p.startsWith('/internal/web/'), logger));
   if (config.upstreams.graphql) app.use(proxy(config.upstreams.graphql, (p) => p === '/graphql', logger));
   app.useGlobalFilters(new ProblemFilter());
   // Si el cliente cierra la conexión, el error del proxy no debe tumbar el proceso.

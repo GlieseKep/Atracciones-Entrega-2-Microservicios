@@ -16,6 +16,8 @@ service InventoryService {
   rpc ReleaseSeats (ReleaseSeatsRequest) returns (ReleaseSeatsResponse);
   // Booking lee la fecha, la hora y el slot_id de sus reservas.
   rpc GetSlotsByIds (GetSlotsByIdsRequest) returns (SlotList);
+  // Horas de los horarios activos de varias atracciones (listado simple para Booking). Público.
+  rpc ListScheduleTimes (ListScheduleTimesRequest) returns (ScheduleTimesList);
 
   // Administracion (rol ADMIN, u OPERADOR de la atraccion).
   rpc ListSchedules (ListSchedulesRequest) returns (ScheduleList);
@@ -144,6 +146,19 @@ message Slot {
   int32 cupo_total = 6;
   int32 cupo_reservado = 7;
   bool cerrada = 8;
+}
+
+message ListScheduleTimesRequest {
+  repeated string atraccion_ids = 1;
+}
+
+message ScheduleTimes {
+  string atraccion_id = 1;
+  repeated string horas = 2;      // HH:mm:ss, en orden
+}
+
+message ScheduleTimesList {
+  repeated ScheduleTimes items = 1;
 }
 
 message GetSlotsByIdsRequest {

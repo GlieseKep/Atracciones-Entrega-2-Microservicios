@@ -12,34 +12,29 @@ import {
   type EventBus,
 } from '@atracciones/platform';
 import type { GraphqlConfig } from './config';
-import { CACHE_KEYS, createContext, type GraphqlContext } from './context';
+import { CACHE_PREFIX, createContext, type GraphqlContext } from './context';
 import { formatError } from './errors';
 import { complexityLimit, depthLimit } from './limits';
-import { accountResolvers } from './resolvers/account';
-import { adminResolvers } from './resolvers/admin';
-import { cartResolvers } from './resolvers/cart';
-import { catalogResolvers } from './resolvers/catalog';
-import { ordersResolvers } from './resolvers/orders';
-import { scalars } from './resolvers/scalars';
+import { resolvers } from './resolvers';
 import { typeDefs } from './schema';
 
 export interface GraphqlServer {
   app: Express;
   esb: EsbClient;
   cache: Cache;
-  /** Invalida los read models: el catálogo con los eventos de Catalog y de tarifas, las órdenes con los de Order. */
+  /** Borra la caché de lecturas públicas cuando cambian atracciones, tarifas o reseñas. */
   invalidateOn(bus: EventBus): Promise<void>;
   close(): Promise<void>;
 }
 
-/** GraphQL del portal (plan §3.10): Apollo Server sobre Express, detrás del Gateway (que autentica y firma el principal). */
+/** GraphQL del portal: Apollo Server sobre Express, detrás del Gateway (que autentica y firma el principal). */
 export async function createGraphqlServer(config: GraphqlConfig): Promise<GraphqlServer> {
   const logger = createLogger('graphql');
   const esb = new EsbClient(config.esbUrl);
   const cache: Cache = config.redisUrl ? new RedisCache(config.redisUrl, 'atracciones:graphql:') : new MemoryCache();
   const apollo = new ApolloServer<GraphqlContext>({
     typeDefs,
-    resolvers: [scalars, catalogResolvers, accountResolvers, ordersResolvers, cartResolvers, adminResolvers],
+    resolvers,
     introspection: config.introspection,
     validationRules: [depthLimit(config.limits.maxDepth)],
     plugins: [complexityLimit(config.limits.maxComplexity)],
@@ -69,8 +64,7 @@ export async function createGraphqlServer(config: GraphqlConfig): Promise<Graphq
     esb,
     cache,
     invalidateOn: async (bus) => {
-      await bus.subscribe('graphql.catalogo', ['catalog.*', 'inventory.TarifaActualizada'], () => cache.deletePrefix(CACHE_KEYS.catalog));
-      await bus.subscribe('graphql.ordenes', ['order.*'], () => cache.deletePrefix(CACHE_KEYS.allOrders));
+      await bus.subscribe('graphql.lecturas', ['catalog.*', 'pricing.*', 'review.*'], () => cache.deletePrefix(CACHE_PREFIX));
     },
     close: async () => {
       await apollo.stop();

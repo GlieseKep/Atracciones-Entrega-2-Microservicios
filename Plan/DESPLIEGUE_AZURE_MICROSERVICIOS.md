@@ -57,12 +57,12 @@ flowchart LR
 
 | # | Pendiente | Quién | Por qué bloquea |
 |---|-----------|-------|-----------------|
-| 1 | Reprogramar **Refund** y **Support**, y programar **ms-invoicing** y **ms-audit** | 🤖 | Aún no existen según su plan |
-| 2 | Conectar **ESB, Gateway, Partner API y GraphQL** a los servicios nuevos: rutas `*.*`, `X-Service-Token`, `payload_json`, y principal con el `usu_id` numérico y los roles en `scopes` | 🤖 | Hoy apuntan a los servicios viejos, y por eso nada funciona de punta a punta |
-| 3 | Registrar en el ESB las rutas `*.*` de Booking, Order, Inventory y Pricing (`POST /internal/rpc/<Método>`) | 🤖 | El ESB aún tiene las rutas de los servicios viejos |
+| 1 | ~~Programar los 16 microservicios~~ | 🤖 | Hecho |
+| 2 | ~~Conectar ESB, Gateway, Partner API y GraphQL a los servicios nuevos~~ | 🤖 | Hecho (`Plan/PLAN_INTEGRACION.md`, fases 1 a 5) |
+| 3 | ~~Registrar en el ESB las rutas de Booking, Order, Inventory y Pricing~~ | 🤖 | Hecho |
 | 4 | Ejecutar todas las migraciones y una compra completa contra una base real | 🤖 + 🧑 | Hasta ahora el código solo se compiló |
-| 5 | Hacer configurable el tamaño del pool de conexiones (`DB_POOL_MAX`) | 🤖 | Hoy es 10 fijo por proceso. Con 20 procesos serían 200 conexiones, muy por encima de lo que admite B1ms |
-| 6 | Extender `tools/package-backend.mjs` y crear los workflows nuevos | 🤖 | Hoy solo empaqueta `api` y `auth` |
+| 5 | ~~`DB_POOL_MAX`~~ | 🤖 | Hecho. Se usa 2 por servicio: 16 × 2 = 32 conexiones. B1ms admite unas 50, así que el backend anterior (hasta 20 más) debe estar detenido |
+| 6 | ~~Empaquetado y workflow~~ | 🤖 | Hecho: `tools/package-microservices.mjs` y `.github/workflows/deploy-microservices.yml` |
 | 7 | Adaptar `AtraccionesService-web` a las rutas y respuestas v3 | 🤖 | Hoy llama a `/api/v1`, y los servicios nuevos usan `/api/v3` |
 | 8 | Cambiar de repositorio y borrar los workflows viejos | 🧑 | Comandos en la sección 3 |
 | 9 | Confirmar con Booking la URL del stock: una guía dice `booking-puce.brazilsouth…` y otra `booking-puce.eastus…` | 🧑 | Va en `BOOKING_REST_STOCK_URL` |
@@ -348,22 +348,18 @@ Si dejas vacía `BOOKING_REST_STOCK_URL`, Inventory no envía el stock y lo guar
 
 ## 4. Despliegue (🤖 + 🧑)
 
-1. 🤖 Subo a `main` un workflow que compila, arma un paquete por app y lo publica en su App Service.
-2. 🧑 Para que GitHub pueda desplegar:
-   - en cada App Service → **Información general** → **Descargar perfil de publicación**;
-   - en GitHub → **Settings** → **Secrets and variables** → **Actions** → **New repository secret**, con un secreto por app.
-   - Si el botón aparece deshabilitado: **Configuración** → **Configuración general** → activar **Autenticación básica de publicación
-     SCM** → Guardar.
-3. Cada `push` a `main` despliega las apps. El avance se ve en la pestaña **Actions**.
-4. 🧑 Con el Gateway desplegado y el frontend ya en v3 (pendiente 7 de la sección 2), apunta el portal al Gateway. En
-   `AtraccionesService-web/.env.production`, usa la URL de `descubre-gateway`, sin prefijo ni `/` final:
+El workflow `deploy-microservices.yml` compila, arma un solo paquete con las 20 apps (`tools/package-microservices.mjs`) y lo
+publica en todas. Cada app arranca su propio `main.js` con el comando de inicio de Azure.
 
-   ```ini
-   VITE_API_URL=https://<descubre-gateway>.azurewebsites.net
-   VITE_AUTH_URL=https://<descubre-gateway>.azurewebsites.net
-   ```
-
-   Haz commit y push: el workflow de la Static Web App recompila y publica solo.
+1. 🧑 **Configurar las 20 apps.** Pega `tools/azure-configurar-apps.sh` en Cloud Shell (Bash). Crea las apps que falten y define
+   comando de inicio, variables, HTTPS, TLS 1.2, Always On y la publicación básica que usa GitHub. Se puede repetir.
+2. 🧑 **Dar acceso a GitHub.** En el repositorio → **Settings → Secrets and variables → Actions**:
+   - variables `AZURE_APP_PREFIX` y `AZURE_APP_SUFFIX` (la app es `<prefijo>-<app>-<sufijo>`);
+   - un secreto `AZURE_PUBLISH_<APP>` por app con su perfil de publicación (`AZURE_PUBLISH_MS_IDENTITY`, `AZURE_PUBLISH_ESB`…).
+3. 🧑 **Subir el código** a `main`. El avance se ve en **Actions → Desplegar microservicios en Azure**; también se puede lanzar a mano
+   con **Run workflow**.
+4. 🧑 Con el Gateway desplegado y el portal ya en v3 (pendiente 7), en `AtraccionesService-web/.env.production` usa la URL del
+   Gateway en `VITE_API_URL` y `VITE_AUTH_URL`, sin prefijo ni `/` final.
 
 ---
 

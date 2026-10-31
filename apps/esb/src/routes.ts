@@ -1,24 +1,33 @@
 /**
- * Tabla de rutas del ESB: `servicio.operación` → protocolo y destino (plan §3.10). El ESB no tiene lógica de negocio:
- * solo traduce la entrada JSON al protocolo del servicio y devuelve su respuesta.
+ * Tabla de rutas del ESB: `servicio.operación` → protocolo y destino. El ESB no tiene lógica de negocio: solo traduce la
+ * entrada JSON al protocolo del servicio y devuelve su respuesta.
  *
+ * Cada microservicio publica sus rutas en `src/integration/esb-routes.ts` (`MS_*_ROUTES`) y aquí solo se juntan.
  * REST: los `:parametros` de la ruta se toman de la entrada; el resto va en la query (GET/DELETE) o en el cuerpo.
- * gRPC: la entrada es el mensaje del RPC.
+ * Booking, Order, Inventory y Pricing usan `POST /internal/rpc/<Método>`, con el mensaje del `.proto` como cuerpo.
  */
+import { MS_AUDIT_ROUTES } from '@atracciones/ms-audit-service/dist/integration/esb-routes';
+import { MS_BILLING_ROUTES } from '@atracciones/ms-billing-profile-service/dist/integration/esb-routes';
+import { MS_BOOKING_ROUTES } from '@atracciones/ms-booking-service/dist/integration/esb-routes';
+import { MS_CART_ROUTES } from '@atracciones/ms-cart-service/dist/integration/esb-routes';
+import { MS_CATALOG_ROUTES } from '@atracciones/ms-catalog-service/dist/integration/esb-routes';
+import { MS_COUPON_ROUTES } from '@atracciones/ms-coupon-service/dist/integration/esb-routes';
+import { MS_IDENTITY_ROUTES } from '@atracciones/ms-identity-service/dist/integration/esb-routes';
+import { MS_INVENTORY_ROUTES } from '@atracciones/ms-inventory-service/dist/integration/esb-routes';
+import { MS_INVOICING_ROUTES } from '@atracciones/ms-invoicing-service/dist/integration/esb-routes';
+import { MS_LOCATION_ROUTES } from '@atracciones/ms-location-service/dist/integration/esb-routes';
+import { MS_ORDER_ROUTES } from '@atracciones/ms-order-service/dist/integration/esb-routes';
+import { MS_PAYMENT_ROUTES } from '@atracciones/ms-payment-service/dist/integration/esb-routes';
+import { MS_PRICING_ROUTES } from '@atracciones/ms-pricing-service/dist/integration/esb-routes';
+import { MS_REFUND_ROUTES } from '@atracciones/ms-refund-service/dist/integration/esb-routes';
+import { MS_REVIEW_ROUTES } from '@atracciones/ms-review-service/dist/integration/esb-routes';
+import { MS_SUPPORT_ROUTES } from '@atracciones/ms-support-service/dist/integration/esb-routes';
+
 export interface RestRoute {
   protocol: 'rest';
   target: TargetName;
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   path: string;
-  timeoutMs?: number;
-}
-
-export interface GrpcRoute {
-  protocol: 'grpc';
-  target: TargetName;
-  proto: string;
-  service: string;
-  method: string;
   timeoutMs?: number;
 }
 
@@ -33,117 +42,30 @@ export interface SoapRoute {
   correlationHeader?: boolean;
 }
 
-export type Route = RestRoute | GrpcRoute | SoapRoute;
+export type Route = RestRoute | SoapRoute;
 
-/** Destinos: URL base para REST, `host:puerto` para gRPC, URL del endpoint para SOAP. */
-export type TargetName = 'identity' | 'catalog' | 'inventory' | 'pricing' | 'cart' | 'order' | 'booking' | 'payment' | 'invoicing' | 'audit' | 'sri_recepcion' | 'sri_autorizacion';
-
-const inventory = (method: string, timeoutMs = 2000): GrpcRoute => ({ protocol: 'grpc', target: 'inventory', proto: 'internal/inventory.proto', service: 'atracciones.inventory.InventoryService', method, timeoutMs });
-const order = (method: string, timeoutMs = 9000): GrpcRoute => ({ protocol: 'grpc', target: 'order', proto: 'internal/order.proto', service: 'atracciones.order.OrderService', method, timeoutMs });
-const booking = (method: string, timeoutMs = 2000): GrpcRoute => ({ protocol: 'grpc', target: 'booking', proto: 'internal/booking.proto', service: 'atracciones.booking.BookingService', method, timeoutMs });
-
-const health = (target: TargetName): RestRoute => ({ protocol: 'rest', target, method: 'GET', path: '/health', timeoutMs: 1000 });
-const rest = (target: TargetName, method: RestRoute['method'], path: string, timeoutMs = 3000): RestRoute => ({ protocol: 'rest', target, method, path, timeoutMs });
+/** Destinos: URL base para REST y URL del endpoint para SOAP. */
+export type TargetName =
+  | 'identity' | 'location' | 'catalog' | 'billing' | 'pricing' | 'inventory' | 'review' | 'coupon' | 'cart' | 'payment'
+  | 'order' | 'booking' | 'refund' | 'invoicing' | 'support' | 'audit' | 'sri_recepcion' | 'sri_autorizacion';
 
 export const ROUTES: Record<string, Route> = {
-  // Salud de cada servicio (la agrega la Partner API en GET /atracciones/health).
-  'identity.health': health('identity'),
-  'catalog.health': health('catalog'),
-  'payment.health': health('payment'),
-  'audit.health': health('audit'),
-  'cart.health': health('cart'),
-  'invoicing.health': health('invoicing'),
-  'inventory.health': inventory('Health', 1000),
-  'order.health': order('Health', 1000),
-  'booking.health': booking('Health', 1000),
-
-  // Identity (REST)
-  'identity.verifyApiKey': { protocol: 'rest', target: 'identity', method: 'POST', path: '/internal/api-keys/verify', timeoutMs: 2000 },
-  'identity.getProfile': rest('identity', 'GET', '/usuarios/me'),
-  'identity.updateProfile': rest('identity', 'PUT', '/usuarios/me'),
-  'identity.getBilling': rest('identity', 'GET', '/usuarios/me/facturacion'),
-  'identity.saveBilling': rest('identity', 'PUT', '/usuarios/me/facturacion'),
-  'identity.listUsers': rest('identity', 'GET', '/usuarios'),
-  'identity.getUsers': rest('identity', 'POST', '/usuarios/lote'),
-  'identity.userStats': rest('identity', 'GET', '/usuarios/estadisticas'),
-  'identity.setUserStatus': rest('identity', 'PUT', '/usuarios/:id/estado'),
-  'identity.grantRole': rest('identity', 'POST', '/usuarios/:id/roles'),
-  'identity.revokeRole': rest('identity', 'DELETE', '/usuarios/:id/roles/:rol'),
-  'identity.listRoles': rest('identity', 'GET', '/roles'),
-
-  // Catalog (REST)
-  'catalog.getCategoryTree': { protocol: 'rest', target: 'catalog', method: 'GET', path: '/categorias/arbol' },
-  'catalog.listCategories': { protocol: 'rest', target: 'catalog', method: 'GET', path: '/categorias' },
-  'catalog.searchAttractions': { protocol: 'rest', target: 'catalog', method: 'POST', path: '/atracciones/busqueda' },
-  'catalog.getAttraction': { protocol: 'rest', target: 'catalog', method: 'GET', path: '/atracciones/:id' },
-  'catalog.getPromotionAgreement': { protocol: 'rest', target: 'catalog', method: 'GET', path: '/promociones/contrato' },
-  'catalog.updatePromotionAgreement': { protocol: 'rest', target: 'catalog', method: 'PUT', path: '/promociones/contrato' },
-  'catalog.getReferences': rest('catalog', 'GET', '/referencias'),
-  'catalog.adminListAttractions': rest('catalog', 'GET', '/admin/atracciones'),
-  'catalog.adminGetAttraction': rest('catalog', 'GET', '/admin/atracciones/:codigo'),
-  'catalog.adminCreateAttraction': rest('catalog', 'POST', '/admin/atracciones'),
-  'catalog.adminUpdateAttraction': rest('catalog', 'PUT', '/admin/atracciones/:codigo'),
-  'catalog.adminSetAttractionActive': rest('catalog', 'PUT', '/admin/atracciones/:codigo/estado'),
-
-  // Inventory (gRPC)
-  'inventory.getAvailability': inventory('GetAvailability'),
-  'inventory.getTariff': inventory('GetTariff'),
-  'inventory.getTariffs': inventory('GetTariffs'),
-  'inventory.getGuide': inventory('GetGuide'),
-  'inventory.hasAvailability': inventory('HasAvailability'),
-  'inventory.reserveSeats': inventory('ReserveSeats'),
-  'inventory.releaseSeats': inventory('ReleaseSeats'),
-  'inventory.listSlots': inventory('ListSlots'),
-  'inventory.upsertSlots': inventory('UpsertSlots', 10_000),
-  'inventory.setSlotCapacity': inventory('SetSlotCapacity'),
-  'inventory.setSlotClosed': inventory('SetSlotClosed'),
-  'inventory.setTariff': inventory('SetTariff'),
-  'inventory.capacitySummary': inventory('CapacitySummary'),
-
-  // Cart (REST)
-  'cart.getCart': rest('cart', 'GET', '/carrito'),
-  'cart.addItem': rest('cart', 'POST', '/carrito/items'),
-  'cart.updateItem': rest('cart', 'PUT', '/carrito/items/:id'),
-  'cart.removeItem': rest('cart', 'DELETE', '/carrito/items/:id'),
-  'cart.markPurchased': rest('cart', 'POST', '/carrito/comprados'),
-  'cart.clear': rest('cart', 'DELETE', '/carrito'),
-  'cart.listFavorites': rest('cart', 'GET', '/favoritos'),
-  'cart.addFavorite': rest('cart', 'PUT', '/favoritos/:codigo'),
-  'cart.removeFavorite': rest('cart', 'DELETE', '/favoritos/:codigo'),
-
-  // Order (gRPC) — orquesta las sagas: plazo mayor que el de cada paso.
-  'order.createOrder': order('CreateOrder'),
-  'order.cancelReservation': order('CancelReservation'),
-  'order.getOrder': order('GetOrder', 5000),
-  'order.listOrders': order('ListOrders', 3000),
-  'order.salesReport': order('SalesReport', 5000),
-
-  // Booking (gRPC)
-  'booking.createReservation': booking('CreateReservation'),
-  'booking.getReservation': booking('GetReservation'),
-  'booking.cancelReservation': booking('CancelReservation'),
-  'booking.checkIn': booking('CheckIn'),
-  'booking.listReservations': booking('ListReservations', 3000),
-  'booking.reservationStats': booking('ReservationStats', 3000),
-
-  // Payment (REST)
-  'payment.registerPayment': { protocol: 'rest', target: 'payment', method: 'POST', path: '/pagos', timeoutMs: 3000 },
-  'payment.voidPayment': { protocol: 'rest', target: 'payment', method: 'POST', path: '/pagos/anulacion', timeoutMs: 3000 },
-  'payment.refund': { protocol: 'rest', target: 'payment', method: 'POST', path: '/reembolsos', timeoutMs: 3000 },
-  'payment.getPaymentByKey': rest('payment', 'GET', '/pagos/clave/:clave', 2000),
-  'payment.listOrderPayments': rest('payment', 'GET', '/pagos/orden/:orden_id'),
-  'payment.listPayments': rest('payment', 'GET', '/pagos'),
-
-  // Invoicing (REST de consulta; la emisión es por eventos y SOAP con el SRI)
-  'invoicing.listInvoices': rest('invoicing', 'GET', '/facturas'),
-
-  // Audit (REST)
-  'audit.listIntegrationEvents': { protocol: 'rest', target: 'audit', method: 'GET', path: '/eventos' },
-  'audit.sendContactMessage': rest('audit', 'POST', '/mensajes-contacto'),
-  'audit.listContactMessages': rest('audit', 'GET', '/mensajes-contacto'),
-  'audit.setContactMessageStatus': rest('audit', 'PUT', '/mensajes-contacto/:id/estado'),
-  'audit.listAuditLog': rest('audit', 'GET', '/bitacora'),
-  'audit.listEventTypes': rest('audit', 'GET', '/bitacora/tipos'),
+  ...MS_IDENTITY_ROUTES,
+  ...MS_LOCATION_ROUTES,
+  ...MS_CATALOG_ROUTES,
+  ...MS_BILLING_ROUTES,
+  ...MS_PRICING_ROUTES,
+  ...MS_INVENTORY_ROUTES,
+  ...MS_REVIEW_ROUTES,
+  ...MS_COUPON_ROUTES,
+  ...MS_CART_ROUTES,
+  ...MS_PAYMENT_ROUTES,
+  ...MS_ORDER_ROUTES,
+  ...MS_BOOKING_ROUTES,
+  ...MS_REFUND_ROUTES,
+  ...MS_INVOICING_ROUTES,
+  ...MS_SUPPORT_ROUTES,
+  ...MS_AUDIT_ROUTES,
 
   // SRI del Ecuador (SOAP, comprobantes electrónicos offline): Invoicing los llama a través del ESB.
   'sri.validarComprobante': { protocol: 'soap', target: 'sri_recepcion', namespace: 'http://ec.gob.sri.ws.recepcion', operation: 'validarComprobante', timeoutMs: 15_000 },

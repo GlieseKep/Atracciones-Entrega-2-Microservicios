@@ -32,8 +32,14 @@ export function serviceDataSourceOptions(settings: DatabaseSettings, persistence
     migrationsRun: settings.migrationsRun ?? false,
     synchronize: false,
     logging: settings.silent ? false : settings.logging ? ['error', 'warn', 'migration'] : ['error', 'migration'],
-    extra: { max: 10 },
+    extra: { max: poolMax() },
   };
+}
+
+/** `DB_POOL_MAX` (por defecto 10). En Azure B1ms hay pocas conexiones para todas las apps: se baja a 3. */
+function poolMax(): number {
+  const value = Number(process.env.DB_POOL_MAX);
+  return Number.isInteger(value) && value > 0 ? value : 10;
 }
 
 export function createServiceDataSource(settings: DatabaseSettings, persistence: ServicePersistence): DataSource {

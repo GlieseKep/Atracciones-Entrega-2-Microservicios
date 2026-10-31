@@ -5,29 +5,27 @@ import { callUnary, grpc, insecureClient, loadProto, serviceConstructor } from '
 import { openApiContractPath, protoPath } from './contract-files';
 import { startBookingMock } from '../../../apps/booking-mock/src';
 
-/** SHA-256 del contrato oficial v2.0.0 recibido. Si cambia, hay que revisar el plan y regenerar los tipos. */
-const CONTRACT_SHA256 = 'B5B02C0EFE6FC9B6564C6E254C43B9EA580A475D6C2D830AC87A381C5EB24650';
+/**
+ * SHA-256 de la copia del contrato v3 (`Plan/PlanBooking/atracciones-openapi-v3(1).yaml`), con un solo cambio: la
+ * respuesta 200 de `GET /atracciones` es el listado simple de la guía de socios. Si cambia, hay que revisar la Partner API.
+ */
+const CONTRACT_SHA256 = '85A507EAEB65F5D274D39B4BF2506A38BED60EE1118CC837C184467DB6F3CD82';
 const sha256 = (file: string) => createHash('sha256').update(readFileSync(file)).digest('hex').toUpperCase();
 
 describe('contrato congelado', () => {
   it('la copia del contrato no se modificó', () => {
     expect(sha256(openApiContractPath())).toBe(CONTRACT_SHA256);
-    const original = join(__dirname, '..', '..', '..', 'atracciones-openapi-v2.yaml');
-    if (existsSync(original)) expect(sha256(original)).toBe(CONTRACT_SHA256);
   });
 
-  it('el proto oficial es idéntico al bloque protobuf del contrato', () => {
-    const lines = readFileSync(openApiContractPath(), 'utf8').split(/\r?\n/);
-    const start = lines.findIndex((l) => l.trim() === '```protobuf');
-    const end = lines.findIndex((l, i) => i > start && l.trim() === '```');
-    const indent = lines[start].indexOf('```');
-    const block = `${lines.slice(start + 1, end).map((l) => l.slice(indent)).join('\n')}\n`;
-    expect(readFileSync(protoPath('booking/inventory.proto'), 'utf8')).toBe(block);
+  it('el proto es la copia del oficial de Booking (más nuevo que el bloque protobuf del contrato)', () => {
+    const official = join(__dirname, '..', '..', '..', 'Plan', 'PlanBooking', 'inventory.proto');
+    const text = (file: string) => readFileSync(file, 'utf8').replace(/\r\n/g, '\n');
+    if (existsSync(official)) expect(text(protoPath('booking/inventory.proto'))).toBe(text(official));
   });
 
-  it('el proto oficial define InventoryStockService con sus dos RPC', () => {
+  it('el proto oficial define InventoryStockService con sus tres RPC', () => {
     const service = serviceConstructor(loadProto('booking/inventory.proto'), 'inventory.InventoryStockService');
-    expect(Object.keys(service.service).sort()).toEqual(['PushStockUpdate', 'StreamInventoryChanges']);
+    expect(Object.keys(service.service).sort()).toEqual(['GetSlotAvailability', 'PushStockUpdate', 'StreamInventoryChanges']);
   });
 });
 
@@ -39,7 +37,8 @@ describe('mock de Booking Prototipo', () => {
       const message = { service_id: 'atracciones-dilan', item_id: 'PRhu4UBTWPBC', date: '2026-10-25', time_slot: '10:30 a.m.', available_units: 8, timestamp: 1793000000000 };
       const ack = await callUnary<typeof message, { success: boolean; processed_at: number }>(client, 'PushStockUpdate', message);
       expect(ack.success).toBe(true);
-      expect(mock.received.pushes).toEqual([message]);
+      // El proto oficial agregó `slot_id`; sin enviarlo llega vacío.
+      expect(mock.received.pushes).toEqual([{ ...message, slot_id: '' }]);
 
       const summary = await new Promise<{ total_events_processed: number; is_synchronized: boolean }>((resolve, reject) => {
         const call = (client as unknown as { StreamInventoryChanges: Function }).StreamInventoryChanges(

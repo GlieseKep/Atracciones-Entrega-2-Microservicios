@@ -2,7 +2,7 @@
   "name": "@atracciones/graphql",
   "version": "1.0.0",
   "private": true,
-  "description": "GraphQL del portal (:3200): consultas desde read models y servicios, mutaciones por el ESB; DataLoader y límites de profundidad y complejidad.",
+  "description": "GraphQL del portal (:3200): cada operación del portal en el ESB como un campo, con caché de lecturas públicas y límites de profundidad y complejidad.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -12,7 +12,6 @@
     "@apollo/server": "5.5.1",
     "@as-integrations/express5": "1.1.2",
     "@atracciones/platform": "1.0.0",
-    "dataloader": "2.2.3",
     "express": "^5.2.1",
     "graphql": "16.14.2",
     "graphql-query-complexity": "1.1.1"

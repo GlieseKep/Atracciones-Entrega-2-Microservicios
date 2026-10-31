@@ -5,6 +5,60 @@
     "outDir": "dist",
     "tsBuildInfoFile": "dist/.tsbuildinfo"
   },
-  "include": ["src"],
-  "references": [{ "path": "../../packages/platform" }]
+  "include": [
+    "src"
+  ],
+  "references": [
+    {
+      "path": "../../packages/platform"
+    },
+    {
+      "path": "../services/ms-audit"
+    },
+    {
+      "path": "../services/ms-billing-profile"
+    },
+    {
+      "path": "../services/ms-booking"
+    },
+    {
+      "path": "../services/ms-cart"
+    },
+    {
+      "path": "../services/ms-catalog"
+    },
+    {
+      "path": "../services/ms-coupon"
+    },
+    {
+      "path": "../services/ms-identity"
+    },
+    {
+      "path": "../services/ms-inventory"
+    },
+    {
+      "path": "../services/ms-invoicing"
+    },
+    {
+      "path": "../services/ms-location"
+    },
+    {
+      "path": "../services/ms-order"
+    },
+    {
+      "path": "../services/ms-payment"
+    },
+    {
+      "path": "../services/ms-pricing"
+    },
+    {
+      "path": "../services/ms-refund"
+    },
+    {
+      "path": "../services/ms-review"
+    },
+    {
+      "path": "../services/ms-support"
+    }
+  ]
 }

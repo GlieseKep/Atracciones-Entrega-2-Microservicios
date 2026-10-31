@@ -1,12 +1,27 @@
 import { memoryUsageMb, uptimeSeconds, type EsbClient, type ServiceHealth } from '@atracciones/platform';
-import type { ContractV2Schema } from '@atracciones/contracts';
 import type { PartnerApiConfig } from './config';
 
-type NodeHealthResponse = ContractV2Schema<'NodeHealthResponse'>;
+/** `NodeHealthResponse` del contrato v3, con `service` como pide la guía de socios de Booking. */
+interface NodeHealthResponse {
+  status: 'UP' | 'DEGRADED' | 'DOWN';
+  service: string;
+  node_id: string;
+  node_code: string;
+  url_base: string;
+  version: string;
+  database_connected: boolean;
+  latency_ms: number;
+  memory_usage_mb: number;
+  uptime_seconds: number;
+  timestamp: string;
+}
 
-/** Umbrales del semáforo de Booking (contrato, `GET /atracciones/health`). */
-const UP_LATENCY_MS = 200;
-const DOWN_LATENCY_MS = 800;
+/**
+ * Umbrales del semáforo de Booking (contrato, `GET /atracciones/health`). En Azure la base está en otra región que los
+ * servicios, así que se pueden subir con `HEALTH_UP_MS` y `HEALTH_DOWN_MS`.
+ */
+const UP_LATENCY_MS = Number(process.env.HEALTH_UP_MS ?? 200);
+const DOWN_LATENCY_MS = Number(process.env.HEALTH_DOWN_MS ?? 800);
 const HIGH_MEMORY_MB = 1024;
 
 /**
@@ -47,6 +62,7 @@ export class NodeHealth {
       : 'UP';
     const report: NodeHealthResponse = {
       status,
+      service: 'Atracciones',
       node_id: this.config.node.id,
       node_code: this.config.node.code,
       url_base: this.config.node.publicBaseUrl,
