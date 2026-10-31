@@ -157,7 +157,16 @@ async function main() {
   });
   console.log(operator.error ? `Operador: ${operator.error.extensions?.reason ?? operator.error.message}` : `Operador creado: ${OPERATOR}`);
 
-  const existing = new Map(itemsOf((await call('catalogAdminListAttractions', { limit: 100 })).data).map((a) => [a.nombre ?? a.name, a]));
+  // Lo que ya existe se omite. Si esta consulta falla, se detiene: seguir crearía duplicados. Catalog admite hasta 50 por página.
+  const existing = new Map();
+  for (let page = 1; ; page++) {
+    const list = await call('catalogAdminListAttractions', { page, limit: 50 });
+    if (list.error) throw new Error(`no se pudo leer el catálogo actual: ${list.error.message}`);
+    const items = itemsOf(list.data);
+    for (const a of items) existing.set(a.nombre ?? a.name, a);
+    if (items.length < 50) break;
+  }
+  console.log(`Atracciones ya existentes: ${existing.size}`);
   let ok = 0;
   for (const [nombre, ciudad, lat, lon, tipo, horas, categorias, [comida, transporte, guia], [adulto, nino, senior], salidas, cupo, encuentro, descripcion] of ATTRACTIONS) {
     try {
