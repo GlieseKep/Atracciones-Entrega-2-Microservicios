@@ -3,13 +3,13 @@
 | | |
 |---|---|
 | Microservicio | 6 · Pricing Service |
-| Protocolo | gRPC sobre HTTP/2 (detrás del ESB) |
+| Protocolo | HTTP con JSON detrás del ESB: `POST /internal/rpc/<Método>` con `X-Service-Token`. El `.proto` sigue siendo el contrato (cambio del 2026-10-31: las tiendas van solo en App Service) |
 | Clasificación (arquitectura_esb_v3) | Síncrono: ESB → GraphQL directo. Publica `TARIFA_ACTUALIZADA`. |
 | Contrato | [pricing.proto](pricing.proto) |
 | Base de datos | [ms_pricing.sql](ms_pricing.sql) → base `ms_pricing` |
 | Ref. externas | `atr_codigo` (Catalog) |
 | Eventos | Publica `TARIFA_ACTUALIZADA` |
-| Puerto local propuesto | `GRPC_PORT=50062` |
+| Puerto local propuesto | `PORT=4026` |
 
 ## 1. Objetivo
 

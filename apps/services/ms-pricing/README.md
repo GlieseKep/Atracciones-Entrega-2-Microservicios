@@ -1,4 +1,4 @@
-# ms-pricing · Pricing Service (gRPC)
+# ms-pricing · Pricing Service (HTTP interno)
 
 Tarifas versionadas por atracción y tipo de boleto. Las tarifas incluyen IVA.
 
@@ -36,5 +36,5 @@ Publica `pricing.TARIFA_ACTUALIZADA` por el outbox, con `attraction_id` y `curre
 ```
 npm run build
 npm run db:migrate -- ms-pricing
-INTERNAL_TOKEN_SECRET=... ESB_URL=... RABBITMQ_URL=... node apps/services/ms-pricing/dist/main.js
+INTERNAL_TOKEN_SECRET=... SERVICE_TOKEN=... ESB_URL=... RABBITMQ_URL=... node apps/services/ms-pricing/dist/main.js
 ```

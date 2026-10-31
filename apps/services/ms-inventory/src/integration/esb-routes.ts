@@ -1,15 +1,14 @@
-/** Rutas del ESB hacia Inventory (`servicio.operación` → método gRPC), con la misma forma que `GrpcRoute` de `apps/esb/src/routes.ts`. */
-export interface InventoryGrpcRoute {
-  protocol: 'grpc';
+/** Rutas del ESB hacia Inventory (`servicio.operación` → `POST /internal/rpc/<Método>`), con la misma forma que `RestRoute` de `apps/esb/src/routes.ts`. */
+export interface InventoryRestRoute {
+  protocol: 'rest';
   target: 'inventory';
-  proto: 'internal/ms-inventory.proto';
-  service: 'descubre.inventory.InventoryService';
-  method: string;
+  method: 'POST';
+  path: string;
   timeoutMs: number;
 }
 
-const route = (method: string, timeoutMs = 2000): InventoryGrpcRoute => ({
-  protocol: 'grpc', target: 'inventory', proto: 'internal/ms-inventory.proto', service: 'descubre.inventory.InventoryService', method, timeoutMs,
+const route = (method: string, timeoutMs = 2000): InventoryRestRoute => ({
+  protocol: 'rest', target: 'inventory', method: 'POST', path: `/internal/rpc/${method}`, timeoutMs,
 });
 
 export const MS_INVENTORY_ROUTES = {
@@ -30,7 +29,7 @@ export const MS_INVENTORY_ROUTES = {
   'inventory.listBlockedDates': route('ListBlockedDates', 5000),
   'inventory.blockDate': route('BlockDate', 5000),
   'inventory.unblockDate': route('UnblockDate', 10000),
-} as const satisfies Record<string, InventoryGrpcRoute>;
+} as const satisfies Record<string, InventoryRestRoute>;
 
 export type InventoryRouteKey = keyof typeof MS_INVENTORY_ROUTES;
 

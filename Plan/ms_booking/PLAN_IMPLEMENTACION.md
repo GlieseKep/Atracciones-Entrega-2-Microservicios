@@ -3,13 +3,13 @@
 | | |
 |---|---|
 | Microservicio | 11 · Booking Service |
-| Protocolo | gRPC sobre HTTP/2; el ESB traduce las rutas REST del contrato |
+| Protocolo | HTTP con JSON detrás del ESB: `POST /internal/rpc/<Método>` con `X-Service-Token`. El `.proto` sigue siendo el contrato (cambio del 2026-10-31: las tiendas van solo en App Service) |
 | Clasificación (arquitectura_esb_v3) | Asíncrono, con Outbox: `RESERVA_CREADA`, `RESERVA_CONFIRMADA`, `RESERVA_CANCELADA`, `STOCK_ACTUALIZADO` |
 | Contrato | [booking.proto](booking.proto) |
 | Contrato externo de referencia | `Plan/PlanBooking/atracciones-openapi-v3(1).yaml` y `GUIA_INTEGRACION_SOCIOS(1).md` |
 | Base de datos | [ms_booking.sql](ms_booking.sql) → base `ms_booking` |
 | Ref. externas | `det_id`, `ord_numero` (Order); `dis_id` (Inventory); `gui_id` (Catalog); `idem_sujeto` (Identity) |
-| Puerto local propuesto | `GRPC_PORT=50069` |
+| Puerto local propuesto | `PORT=4023` |
 
 ## 1. Objetivo
 

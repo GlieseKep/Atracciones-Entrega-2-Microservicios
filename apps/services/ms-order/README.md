@@ -1,4 +1,4 @@
-# ms-order · Order Management Service (gRPC)
+# ms-order · Order Management Service (HTTP interno)
 
 Crea la orden con el precio de Pricing, aplica el cupón, inicia el pago y sigue su resultado hasta dejarla pagada, cancelada o reembolsada.
 
@@ -42,5 +42,5 @@ Crea la orden con el precio de Pricing, aplica el cupón, inicia el pago y sigue
 ```
 npm run build
 npm run db:migrate -- ms-order
-INTERNAL_TOKEN_SECRET=... ESB_URL=... RABBITMQ_URL=... node apps/services/ms-order/dist/main.js
+INTERNAL_TOKEN_SECRET=... SERVICE_TOKEN=... ESB_URL=... RABBITMQ_URL=... node apps/services/ms-order/dist/main.js
 ```

@@ -1,4 +1,4 @@
-import { createEventBus, createLogger, OutboxRelay, startGrpcServer } from '@atracciones/platform';
+import { createEventBus, createLogger, createRpcHttpService, listen, OutboxRelay } from '@atracciones/platform';
 import { createMsInventoryService, readMsInventoryConfig } from './app';
 import { BookingStockSync } from './application/booking-stock-sync';
 import { STOCK_EVENT } from './contract';
@@ -8,7 +8,9 @@ import { createDataSource } from './persistence/data-source';
 async function main() {
   const logger = createLogger('ms-inventory');
   const config = readMsInventoryConfig();
-  if (config.internalTokenSecret.length < 32) throw new Error('INTERNAL_TOKEN_SECRET debe tener al menos 32 caracteres.');
+  for (const [name, value] of [['INTERNAL_TOKEN_SECRET', config.internalTokenSecret], ['SERVICE_TOKEN', config.serviceToken]]) {
+    if (value.length < 32) throw new Error(`${name} debe tener al menos 32 caracteres.`);
+  }
   const dataSource = createDataSource({ ...config.database, migrationsRun: true });
   await dataSource.initialize();
   const inventory = createMsInventoryService(config, dataSource, { logger });
@@ -18,8 +20,9 @@ async function main() {
   if (config.bookingSyncEnabled) new BookingStockSync(dataSource, new BookingStockClient(config.booking), logger).start();
   await inventory.generator.start();
 
-  const server = await startGrpcServer([{ definition: inventory.definition, implementation: inventory.implementation }], config.grpcPort);
-  logger.info('Inventory (ms_inventory) listo', { grpc_port: server.port, booking: config.bookingSyncEnabled ? config.booking.address : 'desactivado' });
+  const app = createRpcHttpService({ service: 'ms-inventory', definition: inventory.definition, implementation: inventory.implementation, serviceToken: config.serviceToken, dataSource, logger });
+  const server = await listen(app, config.port);
+  logger.info('Inventory (ms_inventory) listo', { port: server.port, booking: config.bookingSyncEnabled ? config.booking.url : 'desactivado' });
 }
 
 main().catch((error) => {

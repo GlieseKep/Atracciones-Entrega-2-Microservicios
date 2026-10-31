@@ -1,15 +1,14 @@
-/** Rutas del ESB hacia Order (`servicio.operación` → método gRPC), con la misma forma que `GrpcRoute` de `apps/esb/src/routes.ts`. */
-export interface OrderGrpcRoute {
-  protocol: 'grpc';
+/** Rutas del ESB hacia Order (`servicio.operación` → `POST /internal/rpc/<Método>`), con la misma forma que `RestRoute` de `apps/esb/src/routes.ts`. */
+export interface OrderRestRoute {
+  protocol: 'rest';
   target: 'order';
-  proto: 'internal/ms-order.proto';
-  service: 'descubre.order.OrderService';
-  method: string;
+  method: 'POST';
+  path: string;
   timeoutMs: number;
 }
 
-const route = (method: string, timeoutMs = 3000): OrderGrpcRoute => ({
-  protocol: 'grpc', target: 'order', proto: 'internal/ms-order.proto', service: 'descubre.order.OrderService', method, timeoutMs,
+const route = (method: string, timeoutMs = 3000): OrderRestRoute => ({
+  protocol: 'rest', target: 'order', method: 'POST', path: `/internal/rpc/${method}`, timeoutMs,
 });
 
 export const MS_ORDER_ROUTES = {
@@ -20,7 +19,7 @@ export const MS_ORDER_ROUTES = {
   'order.cancelOrder': route('CancelOrder', 9000),
   'order.getOrder': route('GetOrder'),
   'order.listOrders': route('ListOrders'),
-} as const satisfies Record<string, OrderGrpcRoute>;
+} as const satisfies Record<string, OrderRestRoute>;
 
 export type OrderRouteKey = keyof typeof MS_ORDER_ROUTES;
 

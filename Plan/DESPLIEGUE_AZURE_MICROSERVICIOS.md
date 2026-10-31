@@ -1,10 +1,10 @@
 # DESPLIEGUE_AZURE_MICROSERVICIOS — Subir Descubre EC a Azure paso a paso
 
-Guía para publicar la arquitectura de microservicios en Azure, con **Booking en una VM** (puerto TCP 50051 para gRPC) y **RabbitMQ en
+Guía para publicar la arquitectura de microservicios en Azure, con **todos los servicios en App Service** y **RabbitMQ en
 CloudAMQP** (plan gratuito Little Lemur). Hay pasos que haces tú en los portales (🧑) y cambios de código que hago yo antes de
 desplegar (🤖).
 
-> **Todavía no se puede desplegar completo.** La sección 2 lista lo que falta. Crea los recursos de pago (pasos 3, 4 y 6) cuando esa
+> **Todavía no se puede desplegar completo.** La sección 2 lista lo que falta. Crea los recursos de pago (pasos 3, 4 y 7) cuando esa
 > lista esté cerrada, porque cobran desde que existen.
 
 ---
@@ -21,45 +21,35 @@ flowchart LR
   GQL --> ESB["ESB<br/>App Service"]
   PAPI --> ESB
   ESB --> REST["Servicios REST<br/>App Service"]
-  ESB -- "gRPC" --> VM["VM de Azure<br/>Booking :50051 · Order · Inventory · Pricing"]
+  ESB -- "HTTP + X-Service-Token" --> CORE["Booking · Order · Inventory · Pricing<br/>App Service"]
+  CORE -- "REST + X-API-Key (stock)" --> BP
   REST --> DB[("PostgreSQL<br/>Flexible Server")]
-  VM --> DB
+  CORE --> DB
   REST <--> MQ["RabbitMQ<br/>CloudAMQP Little Lemur"]
-  VM <--> MQ
+  CORE <--> MQ
   GH[GitHub] -- "GitHub Actions" --> SWA & GW & REST
 ```
 
 | Parte | Servicio | Plan recomendado | Por qué |
 |-------|----------|------------------|---------|
 | Portal web | **Azure Static Web Apps** | Free | Archivos estáticos con HTTPS incluido |
-| Gateway, GraphQL, Partner API, ESB y servicios REST | **Azure App Service** (Linux, Node 22), un solo plan | **B2** | Son 16 procesos Node. En B1 (1.75 GB) no caben con margen; varias apps comparten el plan sin costo extra |
-| Booking, Order, Inventory, Pricing | **VM Linux** | **Standard_B2s** (2 vCPU, 4 GB), en Denmark East | Booking necesita abrir TCP 50051. App Service no es adecuado para gRPC, y los otros tres también lo usan |
+| Gateway, GraphQL, Partner API, ESB y servicios REST | **Azure App Service** (Linux, Node 22), un solo plan | **B2** | Son 20 procesos Node. En B1 (1.75 GB) no caben con margen; varias apps comparten el plan sin costo extra |
 | RabbitMQ | **CloudAMQP** | Little Lemur (US$0/mes) | No consume RAM de nuestros servidores |
 | Bases de datos | **Azure Database for PostgreSQL – Flexible Server** | Burstable **B1ms**, 32 GB | Un servidor con una base por microservicio |
 | Redis | Sin Redis al inicio | — | `REDIS_URL` es opcional: sin ella, cada proceso usa caché en memoria |
-
-**Dónde va cada servicio**
-
-| App Service | VM |
-|-------------|-----|
-| `gateway`, `graphql`, `partner-api`, `esb` | `ms-booking` (TCP 50051) |
-| `ms-identity`, `ms-location`, `ms-billing-profile`, `ms-catalog` | `ms-order` (TCP 50068) |
-| `ms-review`, `ms-cart`, `ms-coupon`, `ms-payment` | `ms-inventory` (TCP 50067) |
-| `ms-refund`, `ms-invoicing`, `ms-support`, `ms-audit` | `ms-pricing` (TCP 50062) |
 
 **Costo aproximado.** Son valores de referencia: confírmalos en la calculadora de Azure antes de crear nada.
 
 | Servicio | Costo |
 |----------|-------|
 | App Service B2 | ~US$26/mes |
-| VM Standard_B2s | ~US$35/mes, más ~US$14 de disco SSD estándar e IP |
 | PostgreSQL B1ms, 32 GB | ~US$33/mes. El portal ofrece 750 horas y 32 GB gratis: si se aplican, US$0 |
 | CloudAMQP Little Lemur | US$0 |
 | Static Web Apps Free | US$0 |
-| **Total** | **~US$108/mes**, o ~US$75/mes con PostgreSQL gratis |
+| **Total** | **~US$59/mes**, o ~US$26/mes con PostgreSQL gratis, más el backend anterior mientras exista |
 
-> **Ahorro:** Azure for Students da **US$100 de crédito**, entre 4 y 6 semanas con todo encendido. Detén la VM (**Detener**, no solo apagar
-> desde Linux) y el servidor de PostgreSQL cuando no los uses. El plan B2 se puede bajar de nivel después de la evaluación.
+> **Ahorro:** Azure for Students da **US$100 de crédito**. El plan B2 se puede bajar de nivel después de la evaluación. Crea un
+> presupuesto en **Administración de costos** para recibir un aviso antes de agotarlo.
 
 ---
 
@@ -69,13 +59,13 @@ flowchart LR
 |---|-----------|-------|-----------------|
 | 1 | Reprogramar **Refund** y **Support**, y programar **ms-invoicing** y **ms-audit** | 🤖 | Aún no existen según su plan |
 | 2 | Conectar **ESB, Gateway, Partner API y GraphQL** a los servicios nuevos: rutas `*.*`, `X-Service-Token`, `payload_json`, y principal con el `usu_id` numérico y los roles en `scopes` | 🤖 | Hoy apuntan a los servicios viejos, y por eso nada funciona de punta a punta |
-| 3 | Agregar la dirección de Pricing al ESB (`PRICING_GRPC`) | 🤖 | El ESB no conoce ese servicio |
+| 3 | Registrar en el ESB las rutas `*.*` de Booking, Order, Inventory y Pricing (`POST /internal/rpc/<Método>`) | 🤖 | El ESB aún tiene las rutas de los servicios viejos |
 | 4 | Ejecutar todas las migraciones y una compra completa contra una base real | 🤖 + 🧑 | Hasta ahora el código solo se compiló |
 | 5 | Hacer configurable el tamaño del pool de conexiones (`DB_POOL_MAX`) | 🤖 | Hoy es 10 fijo por proceso. Con 20 procesos serían 200 conexiones, muy por encima de lo que admite B1ms |
 | 6 | Extender `tools/package-backend.mjs` y crear los workflows nuevos | 🤖 | Hoy solo empaqueta `api` y `auth` |
-| 7 | Recuperar `AtraccionesService-web` | 🧑 | La carpeta está vacía y 144 archivos figuran como borrados. Sin ella no hay portal |
+| 7 | Adaptar `AtraccionesService-web` a las rutas y respuestas v3 | 🤖 | Hoy llama a `/api/v1`, y los servicios nuevos usan `/api/v3` |
 | 8 | Cambiar de repositorio y borrar los workflows viejos | 🧑 | Comandos en la sección 3 |
-| 9 | Confirmar a quién apunta el puerto 50051 | 🧑 | Ver el aviso del paso 6 |
+| 9 | Confirmar con Booking la URL del stock: una guía dice `booking-puce.brazilsouth…` y otra `booking-puce.eastus…` | 🧑 | Va en `BOOKING_REST_STOCK_URL` |
 
 ---
 
@@ -104,7 +94,7 @@ git push -u origin main
 ### Paso 1 — Cuenta y región
 
 1. Entra a **https://portal.azure.com** con tu cuenta de Azure for Students.
-2. Regiones de esta suscripción de Azure for Students: **App Service en West US 3**, **PostgreSQL en Brazil South** y **la VM en Denmark East**. Son las opciones con cuota y costo aceptable. Las consultas entre regiones tienen bastante latencia, sobre todo desde la VM.
+2. Regiones de esta suscripción de Azure for Students: **App Service en West US 3**, y **PostgreSQL en Brazil South**. Son las opciones con cuota y costo aceptable. Las consultas entre regiones tienen bastante latencia, sobre todo desde la VM.
    En Brazil South, East US 2 y Central US, los planes B1, B2 y B3 tienen cuota 0.
 3. **Con otra suscripción, confirma la cuota antes de crear nada de pago.** Puede ser distinta.
    Crea el grupo del paso 2 y, en Cloud Shell, prueba un plan B2 en West US 3 y bórralo enseguida:
@@ -184,43 +174,10 @@ node tools/create-admin.mjs
 
 En las URL, codifica los caracteres especiales de la contraseña (por ejemplo, `@` como `%40`).
 
-### Paso 6 — VM de Booking
+### Paso 6 — Sin máquina virtual
 
-1. Buscador → **Máquinas virtuales** → **+ Crear** → **Máquina virtual de Azure**.
-
-   | Campo | Valor |
-   |-------|-------|
-   | Grupo de recursos | `rg-descubre-ec` |
-   | Nombre | `vm-booking` |
-   | Región | **Denmark East** |
-   | Imagen | **Ubuntu Server 22.04 LTS – x64 Gen2** (los tamaños `_v2` no admiten Gen1) |
-   | Tamaño | `Standard_B2s` |
-   | Autenticación | **Clave pública SSH**, usuario `azureuser` |
-   | Puertos de entrada públicos | **SSH (22)** |
-
-2. **Revisar y crear** → **Crear**, y descarga la clave privada.
-3. En la VM → **Información general**, anota la **IP pública**. En **Configuración de red**, asegúrate de que sea **Estática**.
-4. **Configuración de red** → regla **SSH (22)** que Azure ya creó: cambia **Origen** a **Mi dirección IP**. Si tu IP cambia, actualízala
-   aquí. Las reglas de gRPC se crean en el paso 7.5, cuando ya existen las IP del App Service.
-
-> ⚠️ **Confirmar antes de desplegar (el puerto 50051).** En el contrato, ese puerto es la entrada de stock de **Booking Prototipo**
-> (`inventory.InventoryStockService`). Nuestro `ms-booking` expone otro servicio (`BookingService`), así que **no recibe el stock**:
-> `BOOKING_STOCK_GRPC` de Inventory debe seguir apuntando al host de Booking Prototipo, no a esta VM. Si en realidad la VM va a alojar
-> Booking Prototipo, hay que revisar este diseño.
-
-5. Conéctate e instala lo necesario:
-
-   ```bash
-   ssh -i <clave.pem> azureuser@<ip-publica>
-   sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile
-   echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab   # conserva el swap al detener la VM
-   curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
-   sudo apt-get install -y nodejs git
-   git clone https://github.com/USUARIO/REPOSITORIO.git app
-   cd app && npm ci && npx tsc -b apps/services
-   ```
-
-   Si el repositorio es privado, usa una **deploy key** de GitHub o un token de solo lectura.
+Las tiendas no necesitan VM: la VM con el puerto 50051 es la del Booking Prototipo, que administra su propio equipo. Booking, Order,
+Inventory y Pricing van en App Service (paso 11). Las llamadas internas usan HTTP con TLS y `X-Service-Token`.
 
 ### Paso 7 — Plan de App Service y las apps
 
@@ -246,7 +203,7 @@ En las URL, codifica los caracteres especiales de la contraseña (por ejemplo, `
    ```bash
    RG=<grupo-de-recursos>; PLAN=asp-descubre-ec; SUF=<sufijo>
    az appservice plan create -g $RG -n $PLAN --is-linux --sku B2 --location westus3
-   for app in gateway graphql partner-api esb ms-identity ms-location ms-billing-profile ms-catalog ms-review ms-cart ms-coupon ms-payment ms-refund ms-invoicing ms-support ms-audit; do
+   for app in gateway graphql partner-api esb ms-identity ms-location ms-billing-profile ms-catalog ms-review ms-cart ms-coupon ms-payment ms-refund ms-invoicing ms-support ms-audit ms-booking ms-order ms-inventory ms-pricing; do
      az webapp create -g $RG -p $PLAN -n descubre-$app-$SUF --runtime "NODE:22-lts" --output none && \
      az webapp config set -g $RG -n descubre-$app-$SUF --always-on true --output none && \
      echo "OK $app"
@@ -254,16 +211,6 @@ En las URL, codifica los caracteres especiales de la contraseña (por ejemplo, `
    ```
 
 3. Anota el **Dominio predeterminado** exacto de cada una. En Cloud Shell: `az webapp list -g $RG --query "[].{app:name, dominio:defaultHostName}" -o table`.
-4. En `descubre-esb` → **Propiedades** → **Direcciones IP de salida**, copia la lista. Todas las apps del mismo plan comparten esas IP.
-5. Vuelve a la VM → **Configuración de red** → **Crear regla de puerto** → **Regla de puerto de entrada**. Crea estas reglas con
-   **Origen: IP Addresses** y pega las IP separadas por comas:
-
-   | Regla | Origen | Puerto | Protocolo | Motivo |
-   |-------|--------|--------|-----------|--------|
-   | `Allow-Booking-gRPC` | las IP de salida del App Service, y las de los socios | **50051** | TCP | gRPC de Booking |
-   | `Allow-gRPC-interno` | las IP de salida del App Service | **50062, 50067, 50068** | TCP | Pricing, Inventory y Order |
-
-> El tráfico gRPC va **sin TLS**: nunca abras estos puertos con Origen `Any`.
 
 ### Paso 8 — Generar los secretos
 
@@ -281,7 +228,7 @@ node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
 | `WEBHOOK_SECRET` | Solo `ms-payment` |
 | `VOUCHER_SECRET` | Solo `ms-booking` |
 
-Van **solo** en la configuración de Azure y de la VM, nunca en el repositorio.
+Van **solo** en la configuración de Azure, nunca en el repositorio.
 
 ### Paso 9 — Static Web App
 
@@ -296,11 +243,13 @@ Van **solo** en la configuración de Azure y de la VM, nunca en el repositorio.
    | Ubicación de la salida | **`dist`** |
 
 2. Azure crea su workflow en el repositorio. Anota la **URL**.
-3. La web debe apuntar a la URL de `descubre-gateway`. Esa variable se define al compilar, en el workflow.
 
 ### Paso 10 — Variables de entorno de cada app
 
-En cada App Service: **Configuración** → **Variables de entorno** → **+ Agregar** → **Aplicar**.
+En cada App Service: **Configuración** → **Variables de entorno** → **+ Agregar** → **Aplicar**. Para no hacerlo app por app, usa un script
+en Cloud Shell con `az webapp config appsettings set`, que pida los secretos con `read -rs` para no dejarlos escritos.
+
+**Se puede hacer mediante un comando**
 
 **Todas las apps de servicios:**
 
@@ -324,10 +273,7 @@ En cada App Service: **Configuración** → **Variables de entorno** → **+ Agr
 | `ms-payment` | `WEBHOOK_SECRET` | el del paso 8 |
 | `ms-payment` | `PAYMENT_WEBHOOK_URL` | `https://<descubre-ms-payment>.azurewebsites.net/api/v3/webhooks/simulada` |
 | `esb` | `IDENTITY_URL`, `CATALOG_URL`, `CART_URL`, `PAYMENT_URL`, `INVOICING_URL`, `AUDIT_URL` y los demás REST | la URL de cada app |
-| `esb` | `BOOKING_GRPC` | `<ip-de-la-vm>:50051` |
-| `esb` | `ORDER_GRPC` | `<ip-de-la-vm>:50068` |
-| `esb` | `INVENTORY_GRPC` | `<ip-de-la-vm>:50067` |
-| `esb` | `PRICING_GRPC` | `<ip-de-la-vm>:50062` (pendiente 3 de la sección 2) |
+| `esb` | `BOOKING_URL`, `ORDER_URL`, `INVENTORY_URL`, `PRICING_URL` | la URL de cada app (paso 11) |
 | `gateway` | `CORS_ORIGINS` | la URL de la Static Web App, sin `/` al final |
 | `gateway` | `ESB_URL`, `GRAPHQL_URL`, `PARTNER_API_URL`, `IDENTITY_URL` | la URL de cada app |
 | `partner-api` | `PUBLIC_BASE_URL` | `https://<descubre-gateway>.azurewebsites.net/api/v3` |
@@ -337,66 +283,66 @@ Partner API y ESB. Activa **Siempre activo (Always On)** en todas.
 
 > **No hace falta definir `PORT`:** App Service lo define y los servicios lo leen.
 
-### Paso 11 — Configurar y arrancar los servicios de la VM
+### Paso 11 — Crear y configurar Booking, Order, Inventory y Pricing
 
-Conéctate a la VM con SSH, como en el paso 6.5.
+Estos cuatro servicios van en App Service como los demás. Exponen cada operación del `.proto` en `POST /internal/rpc/<Método>`, con
+`X-Service-Token`, y solo el ESB los llama.
 
-1. Crea las variables comunes en `/etc/descubre/comun.env` (`sudo mkdir -p /etc/descubre`, y luego `sudo chmod 600` al archivo). `ESB_URL`
-   es el **Dominio predeterminado** de `descubre-esb`, con `https://` delante y sin `/` al final:
+> **¿Es general?** No. Este script es **específico de este despliegue**. Para usarlo en otro, cambia `RG`, `P`, `S`, `PLAN`, `ADMIN` y
+> `DB_HOST` en las primeras líneas. Los secretos no están escritos: los pide al ejecutarlo.
 
-   ```ini
-   DATABASE_SSL=true
-   RABBITMQ_URL=amqps://...
-   INTERNAL_TOKEN_SECRET=...
-   SERVICE_TOKEN=...
-   ESB_URL=https://descubre-esb-<sufijo>.azurewebsites.net
-   ```
+Pégalo completo en **Cloud Shell (Bash)**. Se puede repetir sin problema:
 
-2. Crea un archivo por servicio en `/etc/descubre/<servicio>.env`:
+```bash
+cat > ~/paso11.sh <<'EOF'
+RG=rg-tourgirls; P=tourgirls; S=mm; PLAN=asp-tourgirls-michael
+ADMIN=touradmin; DB_HOST=tourgirls-db-mms.postgres.database.azure.com
 
-   | Archivo | Contenido |
-   |---------|-----------|
-   | `ms-booking.env` | `GRPC_PORT=50051`, `DATABASE_URL=.../ms_booking`, `VOUCHER_SECRET=...` |
-   | `ms-order.env` | `GRPC_PORT=50068`, `DATABASE_URL=.../ms_order` |
-   | `ms-inventory.env` | `GRPC_PORT=50067`, `DATABASE_URL=.../ms_inventory`, `BOOKING_STOCK_GRPC=<host-de-booking-prototipo>:50051`, `BOOKING_SERVICE_ID=NODE_ATR_DILAN` |
-   | `ms-pricing.env` | `GRPC_PORT=50062`, `DATABASE_URL=.../ms_pricing` |
+read -rp "Contraseña de $ADMIN (como en la URL): " DBPASS
+read -rp 'RABBITMQ_URL: ' RABBIT
+read -rp 'INTERNAL_TOKEN_SECRET: ' INTERNAL
+read -rp 'SERVICE_TOKEN: ' SVC
+read -rp 'VOUCHER_SECRET: ' VOUCHER
+read -rp 'BOOKING_REST_STOCK_URL (Enter si aún no se conoce): ' STOCK_URL
+read -rp 'BOOKING_API_KEY (Enter si aún no se generó): ' STOCK_KEY
 
-3. Crea `/etc/systemd/system/descubre@.service`, una sola plantilla para los cuatro:
+url() { echo "https://$P-$1-$S.azurewebsites.net"; }
 
-   ```ini
-   [Unit]
-   Description=Descubre EC %i
-   After=network-online.target
+for svc in ms-booking ms-order ms-inventory ms-pricing; do
+  name=$P-$svc-$S
+  if [ -z "$(az webapp list -g $RG --query "[?name=='$name'].name" -o tsv)" ]; then
+    az webapp create -g $RG -p $PLAN -n $name --runtime "NODE:22-lts" --output none || continue
+  fi
+  az webapp update -g $RG -n $name --https-only true --output none && \
+  az webapp config set -g $RG -n $name --always-on true --min-tls-version 1.2 --startup-file "node apps/services/$svc/dist/main.js" --output none && \
+  az webapp config appsettings set -g $RG -n $name --output none --settings \
+    "DATABASE_URL=postgres://$ADMIN:$DBPASS@$DB_HOST:5432/${svc//-/_}" DATABASE_SSL=true DB_POOL_MAX=3 \
+    "RABBITMQ_URL=$RABBIT" "INTERNAL_TOKEN_SECRET=$INTERNAL" "SERVICE_TOKEN=$SVC" "ESB_URL=$(url esb)" \
+    SCM_DO_BUILD_DURING_DEPLOYMENT=false WEBSITES_CONTAINER_START_TIME_LIMIT=600 && \
+  echo "OK $svc"
+done
 
-   [Service]
-   User=azureuser
-   WorkingDirectory=/home/azureuser/app
-   EnvironmentFile=/etc/descubre/comun.env
-   EnvironmentFile=/etc/descubre/%i.env
-   ExecStart=/usr/bin/node apps/services/%i/dist/main.js
-   Restart=always
-   RestartSec=5
+az webapp config appsettings set -g $RG -n $P-ms-booking-$S --output none --settings "VOUCHER_SECRET=$VOUCHER" && echo "OK booking extra"
+az webapp config appsettings set -g $RG -n $P-ms-inventory-$S --output none --settings "BOOKING_REST_STOCK_URL=$STOCK_URL" "BOOKING_API_KEY=$STOCK_KEY" && echo "OK inventory extra"
+az webapp config appsettings set -g $RG -n $P-esb-$S --output none --settings \
+  "BOOKING_URL=$(url ms-booking)" "ORDER_URL=$(url ms-order)" "INVENTORY_URL=$(url ms-inventory)" "PRICING_URL=$(url ms-pricing)" && echo "OK esb"
+az webapp config appsettings delete -g $RG -n $P-esb-$S --setting-names BOOKING_GRPC ORDER_GRPC INVENTORY_GRPC PRICING_GRPC --output none && echo "OK esb limpio"
+echo "=== TERMINADO ==="
+EOF
+bash ~/paso11.sh
+```
 
-   [Install]
-   WantedBy=multi-user.target
-   ```
+Debe mostrar 8 líneas `OK` y `=== TERMINADO ===`. Al final, ejecuta `clear`, porque los valores quedan visibles.
 
-4. Arranca y revisa:
-
-   ```bash
-   sudo systemctl daemon-reload
-   sudo systemctl enable --now descubre@ms-booking descubre@ms-order descubre@ms-inventory descubre@ms-pricing
-   systemctl status 'descubre@*' --no-pager
-   journalctl -u descubre@ms-booking -f
-   ```
+Si dejas vacía `BOOKING_REST_STOCK_URL`, Inventory no envía el stock y lo guarda como pendiente: se entrega cuando la definas. La
+`X-API-Key` la generas tú con el comando del paso 8, y se la envías a Booking en la ficha de registro.
 
 ### Paso 12 — Pásame estos datos
 
 - [ ] Dominio de cada App Service y URL de la Static Web App.
-- [ ] IP pública de la VM.
 - [ ] Nombre del servidor PostgreSQL.
-- [ ] Respuesta sobre el puerto 50051 y el host de Booking Prototipo.
-- [ ] Confirmación de las variables del paso 10. **Ningún secreto ni contraseña**: van solo en Azure y en la VM.
+- [ ] URL de stock de Booking Prototipo.
+- [ ] Confirmación de las variables del paso 10. **Ningún secreto ni contraseña**: van solo en Azure.
 
 ---
 
@@ -409,12 +355,15 @@ Conéctate a la VM con SSH, como en el paso 6.5.
    - Si el botón aparece deshabilitado: **Configuración** → **Configuración general** → activar **Autenticación básica de publicación
      SCM** → Guardar.
 3. Cada `push` a `main` despliega las apps. El avance se ve en la pestaña **Actions**.
-4. 🧑 La VM se actualiza a mano:
+4. 🧑 Con el Gateway desplegado y el frontend ya en v3 (pendiente 7 de la sección 2), apunta el portal al Gateway. En
+   `AtraccionesService-web/.env.production`, usa la URL de `descubre-gateway`, sin prefijo ni `/` final:
 
-   ```bash
-   cd ~/app && git pull && npm ci && npx tsc -b apps/services
-   sudo systemctl restart 'descubre@*'
+   ```ini
+   VITE_API_URL=https://<descubre-gateway>.azurewebsites.net
+   VITE_AUTH_URL=https://<descubre-gateway>.azurewebsites.net
    ```
+
+   Haz commit y push: el workflow de la Static Web App recompila y publica solo.
 
 ---
 
@@ -423,8 +372,6 @@ Conéctate a la VM con SSH, como en el paso 6.5.
 | Qué | Cómo | Esperado |
 |-----|------|----------|
 | Apps vivas | `https://<app>.azurewebsites.net/api/v3/health` | `status: UP` y `database_connected: true` |
-| VM | `systemctl status 'descubre@*'` | Los cuatro en `active (running)` |
-| Puerto gRPC | `Test-NetConnection <ip-de-la-vm> -Port 50051`, desde una IP permitida | `TcpTestSucceeded: True` |
 | Puerto cerrado | Lo mismo, desde una IP no permitida | Falla |
 | RabbitMQ | Panel de CloudAMQP → **RabbitMQ Manager** → **Queues** | Aparecen `ms-catalog`, `ms-order`, `ms-booking` y `ms-payment-webhooks` |
 | Migraciones | `SELECT name FROM schema_migrations` en cada base | Una fila por migración |
@@ -435,7 +382,7 @@ Conéctate a la VM con SSH, como en el paso 6.5.
 | Sin cupos | Reservar más que el aforo | `409` con `code: OUT_OF_STOCK` y ninguna orden abierta |
 | Idempotencia | Repetir la compra con la misma `Idempotency-Key` | La misma respuesta y una sola reserva |
 | Factura | Tras una compra aprobada | Factura `AUTORIZADA` por el SRI simulado |
-| Logs | App Service → **Secuencia de registro**; en la VM, `journalctl -u descubre@ms-order -f` | Arranque y errores, con su `correlation_id` |
+| Logs | App Service → **Secuencia de registro** | Arranque y errores, con su `correlation_id` |
 
 ---
 
@@ -446,12 +393,11 @@ Conéctate a la VM con SSH, como en el paso 6.5.
 | El servicio se apaga al arrancar con "debe tener al menos 32 caracteres" | Falta un secreto o es corto | Revisar los pasos 8, 10 y 11 |
 | `remaining connection slots are reserved` | Demasiadas conexiones para B1ms | Bajar `DB_POOL_MAX`, o subir el nivel del servidor |
 | Error `extension is not allow-listed` en las migraciones | Falta `azure.extensions` | Paso 4.5 |
-| El ESB responde `503` hacia Booking, Order o Inventory | Regla de red, o IP de salida del App Service que cambió | Revisar el paso 7.5 y las **Direcciones IP de salida** |
+| El ESB responde `503` hacia Booking, Order o Inventory | Regla de red, o IP de salida del App Service que cambió | Revisar `BOOKING_URL`, `ORDER_URL` e `INVENTORY_URL` y el `SERVICE_TOKEN` |
 | `401` en `/internal/**` | `SERVICE_TOKEN` distinto entre componentes | Debe ser idéntico en todos |
 | `403` en rutas de usuario | El principal no trae el `usu_id` numérico ni los roles | Pendiente 2 de la sección 2 |
 | Los precios o calificaciones no llegan a Catalog | Servicio sin `RABBITMQ_URL`: usa un bus en memoria y no avisa a los demás | Definirla en **todos** los servicios con eventos |
 | Conexiones rechazadas en CloudAMQP | Se alcanzó el límite del plan | Revisar el panel de CloudAMQP y avisarme |
 | Un pago queda `PENDIENTE` | `PAYMENT_WEBHOOK_URL` o `WEBHOOK_SECRET` mal puestos | Revisar el log de `ms-payment`; Order cancela la orden a los 30 minutos |
-| La VM se queda sin memoria al compilar | Falta el swap | Paso 6.5 |
 | La primera petición tarda ~20 s | Falta Always On | Activarlo en cada app |
-| El crédito baja rápido | La VM o PostgreSQL siguen encendidos | Detenerlos desde el portal cuando no se usen |
+| El crédito baja rápido | PostgreSQL y el backend anterior siguen encendidos | Detener lo que no se use |

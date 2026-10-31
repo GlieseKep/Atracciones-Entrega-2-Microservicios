@@ -3,13 +3,13 @@
 | | |
 |---|---|
 | Microservicio | 10 · Order Management Service |
-| Protocolo | gRPC sobre HTTP/2 (detrás del ESB) |
+| Protocolo | HTTP con JSON detrás del ESB: `POST /internal/rpc/<Método>` con `X-Service-Token`. El `.proto` sigue siendo el contrato (cambio del 2026-10-31: las tiendas van solo en App Service) |
 | Clasificación (arquitectura_esb_v3) | Asíncrono: publica `OrdenCreada` y `OrdenPagada`. |
 | Contrato | [order.proto](order.proto) |
 | Contrato externo de referencia | `Plan/PlanBooking/atracciones-openapi-v3(1).yaml` (`external_order_id`, `total_price`) |
 | Base de datos | [ms_order.sql](ms_order.sql) → base `ms_order` |
 | Ref. externas | `usu_id`, `cla_id` (Identity); `cai_id` (Cart); `mpa_id` (Payment); `atr_id` (Catalog); `cup_id` (Coupon) |
-| Puerto local propuesto | `GRPC_PORT=50068` |
+| Puerto local propuesto | `PORT=4024` |
 
 ## 1. Objetivo
 

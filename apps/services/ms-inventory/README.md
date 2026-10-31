@@ -1,4 +1,4 @@
-# ms-inventory · Inventory & Availability Service (gRPC)
+# ms-inventory · Inventory & Availability Service (HTTP interno)
 
 Horarios, turnos, aforo y fechas bloqueadas. Descuenta cupos sin sobreventa y envía cada cambio a Booking Prototipo.
 
@@ -26,7 +26,7 @@ La administración es para `ADMIN`, u `OPERADOR` de la atracción. Para un `OPER
 ## Eventos y stock
 
 - **Bus:** `inventory.CupoBloqueado` e `inventory.CupoLiberado`, por `OutboxRelay`.
-- **Booking Prototipo:** filas `STOCK_BOOKING` del mismo outbox, que entrega `BookingStockSync` por gRPC. No van al bus, para que una caída de Booking no frene los eventos.
+- **Booking Prototipo:** filas `STOCK_BOOKING` del mismo outbox, que entrega `BookingStockSync` por `POST /api/v3/inventory/stock` con `X-API-Key`. No van al bus, para que una caída de Booking no frene los eventos.
 - `PushStockUpdate` para cada venta, cancelación o cambio de aforo; `StreamInventoryChanges` para los lotes del generador.
 - `STALE_TIMESTAMP_IGNORED` cuenta como entregado. `ITEM_NOT_FOUND` e `INVALID_SLOT` se registran y no se reintentan.
 
@@ -40,7 +40,7 @@ La administración es para `ADMIN`, u `OPERADOR` de la atracción. Para un `OPER
 ```
 npm run build
 npm run db:migrate -- ms-inventory
-INTERNAL_TOKEN_SECRET=... ESB_URL=... RABBITMQ_URL=... BOOKING_STOCK_GRPC=host:50051 node apps/services/ms-inventory/dist/main.js
+INTERNAL_TOKEN_SECRET=... SERVICE_TOKEN=... ESB_URL=... RABBITMQ_URL=... BOOKING_REST_STOCK_URL=https://host/api/v3/inventory/stock BOOKING_API_KEY=... node apps/services/ms-inventory/dist/main.js
 ```
 
-Opcionales: `BOOKING_STOCK_TLS=true`, `BOOKING_SERVICE_ID` y `BOOKING_SYNC_ENABLED=false`.
+Opcional: `BOOKING_SYNC_ENABLED=false`. Sin `BOOKING_REST_STOCK_URL`, el stock queda pendiente en el outbox.

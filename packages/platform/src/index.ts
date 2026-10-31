@@ -6,6 +6,7 @@ export * from './documents';
 export * from './esb-client';
 export * from './formats';
 export * from './grpc';
+export * from './rpc-http';
 export * from './health';
 export * from './http';
 export * from './logging';

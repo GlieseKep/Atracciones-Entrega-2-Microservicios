@@ -21,10 +21,12 @@ import type { GetPriceTableRequest, ListTariffsRequest, QuoteTicketsRequest, Set
 import { PricingRepository } from './persistence/pricing-repository';
 
 export interface MsPricingConfig {
-  grpcPort: number;
+  port: number;
   database: DatabaseSettings;
   /** Verifica el principal que reenvía el Gateway. */
   internalTokenSecret: string;
+  /** Protege `/internal/rpc`. */
+  serviceToken: string;
   esbUrl: string;
   nodeId: string;
   nodeCode: string;
@@ -32,9 +34,10 @@ export interface MsPricingConfig {
 
 export function readMsPricingConfig(env: NodeJS.ProcessEnv = process.env): MsPricingConfig {
   return {
-    grpcPort: Number(env.GRPC_PORT ?? 50062),
+    port: Number(env.PORT ?? 4026),
     database: { url: env.DATABASE_URL ?? 'postgres://postgres:tourgirls-local@localhost:5433/ms_pricing', ssl: env.DATABASE_SSL === 'true' },
     internalTokenSecret: env.INTERNAL_TOKEN_SECRET ?? '',
+    serviceToken: env.SERVICE_TOKEN ?? '',
     esbUrl: env.ESB_URL ?? 'http://127.0.0.1:3300',
     nodeId: env.NODE_ID ?? 'node-dilan-pricing-01',
     nodeCode: env.NODE_CODE ?? 'DILAN_PRICING',
@@ -54,7 +57,7 @@ export interface MsPricingService {
 
 const VERSION = '1.0.0';
 
-/** Pricing Service (gRPC, contrato `Plan/ms_pricing/pricing.proto`): tarifas versionadas por atracción y tipo de boleto. */
+/** Pricing Service (HTTP interno definido por el proto, contrato `Plan/ms_pricing/pricing.proto`): tarifas versionadas por atracción y tipo de boleto. */
 export function createMsPricingService(config: MsPricingConfig, dataSource: DataSource, deps: MsPricingDependencies = {}): MsPricingService {
   const logger = deps.logger ?? createLogger('ms-pricing');
   const esb = deps.esb ?? new EsbClient(config.esbUrl);

@@ -32,10 +32,12 @@ import { ScheduleRepository } from './persistence/schedule-repository';
 import { SeatRepository } from './persistence/seat-repository';
 
 export interface MsInventoryConfig {
-  grpcPort: number;
+  port: number;
   database: DatabaseSettings;
   /** Verifica el principal que reenvía el Gateway. */
   internalTokenSecret: string;
+  /** Protege `/internal/rpc`. */
+  serviceToken: string;
   esbUrl: string;
   booking: BookingStockConfig;
   bookingSyncEnabled: boolean;
@@ -45,16 +47,16 @@ export interface MsInventoryConfig {
 
 export function readMsInventoryConfig(env: NodeJS.ProcessEnv = process.env): MsInventoryConfig {
   return {
-    grpcPort: Number(env.GRPC_PORT ?? 50067),
+    port: Number(env.PORT ?? 4025),
     database: { url: env.DATABASE_URL ?? 'postgres://postgres:tourgirls-local@localhost:5433/ms_inventory', ssl: env.DATABASE_SSL === 'true' },
     internalTokenSecret: env.INTERNAL_TOKEN_SECRET ?? '',
+    serviceToken: env.SERVICE_TOKEN ?? '',
     esbUrl: env.ESB_URL ?? 'http://127.0.0.1:3300',
     booking: {
-      address: env.BOOKING_STOCK_GRPC ?? 'localhost:50051',
-      tls: env.BOOKING_STOCK_TLS === 'true',
-      serviceId: env.BOOKING_SERVICE_ID ?? 'NODE_ATR_DILAN',
+      url: env.BOOKING_REST_STOCK_URL ?? '',
+      apiKey: env.BOOKING_API_KEY ?? '',
     },
-    bookingSyncEnabled: env.BOOKING_SYNC_ENABLED !== 'false',
+    bookingSyncEnabled: env.BOOKING_SYNC_ENABLED !== 'false' && Boolean(env.BOOKING_REST_STOCK_URL),
     nodeId: env.NODE_ID ?? 'node-dilan-inventory-01',
     nodeCode: env.NODE_CODE ?? 'DILAN_INVENTORY',
   };
@@ -75,7 +77,7 @@ const VERSION = '1.0.0';
 
 type Message = Record<string, unknown>;
 
-/** Inventory & Availability Service (gRPC, contrato `Plan/ms_inventory/inventory.proto`): horarios, turnos y aforo. */
+/** Inventory & Availability Service (HTTP interno definido por el proto, contrato `Plan/ms_inventory/inventory.proto`): horarios, turnos y aforo. */
 export function createMsInventoryService(config: MsInventoryConfig, dataSource: DataSource, deps: MsInventoryDependencies = {}): MsInventoryService {
   const logger = deps.logger ?? createLogger('ms-inventory');
   const esb = deps.esb ?? new EsbClient(config.esbUrl);

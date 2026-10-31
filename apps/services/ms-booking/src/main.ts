@@ -1,4 +1,4 @@
-import { createEventBus, createLogger, startGrpcServer } from '@atracciones/platform';
+import { createEventBus, createLogger, createRpcHttpService, listen } from '@atracciones/platform';
 import { createMsBookingService, readMsBookingConfig } from './app';
 import { EventPublisher } from './application/event-publisher';
 import { EVENT_PATTERNS, EVENT_QUEUE } from './application/payment-events';
@@ -7,7 +7,7 @@ import { createDataSource } from './persistence/data-source';
 async function main() {
   const logger = createLogger('ms-booking');
   const config = readMsBookingConfig();
-  for (const [name, value] of [['INTERNAL_TOKEN_SECRET', config.internalTokenSecret], ['VOUCHER_SECRET', config.voucherSecret]]) {
+  for (const [name, value] of [['INTERNAL_TOKEN_SECRET', config.internalTokenSecret], ['SERVICE_TOKEN', config.serviceToken], ['VOUCHER_SECRET', config.voucherSecret]]) {
     if (value.length < 32) throw new Error(`${name} debe tener al menos 32 caracteres.`);
   }
   const dataSource = createDataSource({ ...config.database, migrationsRun: true });
@@ -19,8 +19,9 @@ async function main() {
   new EventPublisher(dataSource, booking.events, bus, logger).start();
   booking.lifecycle.start();
 
-  const server = await startGrpcServer([{ definition: booking.definition, implementation: booking.implementation }], config.grpcPort);
-  logger.info('Booking (ms_booking) listo', { grpc_port: server.port });
+  const app = createRpcHttpService({ service: 'ms-booking', definition: booking.definition, implementation: booking.implementation, serviceToken: config.serviceToken, dataSource, logger });
+  const server = await listen(app, config.port);
+  logger.info('Booking (ms_booking) listo', { port: server.port });
 }
 
 main().catch((error) => {

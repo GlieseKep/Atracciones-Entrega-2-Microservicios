@@ -28,10 +28,12 @@ import { IdempotencyRepository } from './persistence/idempotency-repository';
 import { ReservationRepository } from './persistence/reservation-repository';
 
 export interface MsBookingConfig {
-  grpcPort: number;
+  port: number;
   database: DatabaseSettings;
   /** Verifica el principal que reenvía el Gateway. */
   internalTokenSecret: string;
+  /** Protege `/internal/rpc`. */
+  serviceToken: string;
   /** Firma del QR. */
   voucherSecret: string;
   esbUrl: string;
@@ -43,9 +45,10 @@ export interface MsBookingConfig {
 
 export function readMsBookingConfig(env: NodeJS.ProcessEnv = process.env): MsBookingConfig {
   return {
-    grpcPort: Number(env.GRPC_PORT ?? 50069),
+    port: Number(env.PORT ?? 4023),
     database: { url: env.DATABASE_URL ?? 'postgres://postgres:tourgirls-local@localhost:5433/ms_booking', ssl: env.DATABASE_SSL === 'true' },
     internalTokenSecret: env.INTERNAL_TOKEN_SECRET ?? '',
+    serviceToken: env.SERVICE_TOKEN ?? '',
     voucherSecret: env.VOUCHER_SECRET ?? '',
     esbUrl: env.ESB_URL ?? 'http://127.0.0.1:3300',
     basePath: env.BASE_PATH ?? '/api/v3',
@@ -71,7 +74,7 @@ const VERSION = '1.0.0';
 
 type Message = Record<string, unknown>;
 
-/** Booking Service (gRPC, contrato `Plan/ms_booking/booking.proto`): reservas, proceso de compra, check-in y feed de eventos. */
+/** Booking Service (HTTP interno definido por el proto, contrato `Plan/ms_booking/booking.proto`): reservas, proceso de compra, check-in y feed de eventos. */
 export function createMsBookingService(config: MsBookingConfig, dataSource: DataSource, deps: MsBookingDependencies = {}): MsBookingService {
   const logger = deps.logger ?? createLogger('ms-booking');
   const remote = new Remote(deps.esb ?? new EsbClient(config.esbUrl));

@@ -1,4 +1,4 @@
-import { createEventBus, createLogger, OutboxRelay, startGrpcServer } from '@atracciones/platform';
+import { createEventBus, createLogger, createRpcHttpService, listen, OutboxRelay } from '@atracciones/platform';
 import { createMsOrderService, readMsOrderConfig } from './app';
 import { CartSync } from './application/cart-sync';
 import { EVENT_PATTERNS, EVENT_QUEUE } from './application/payment-events';
@@ -8,7 +8,9 @@ import { createDataSource } from './persistence/data-source';
 async function main() {
   const logger = createLogger('ms-order');
   const config = readMsOrderConfig();
-  if (config.internalTokenSecret.length < 32) throw new Error('INTERNAL_TOKEN_SECRET debe tener al menos 32 caracteres.');
+  for (const [name, value] of [['INTERNAL_TOKEN_SECRET', config.internalTokenSecret], ['SERVICE_TOKEN', config.serviceToken]]) {
+    if (value.length < 32) throw new Error(`${name} debe tener al menos 32 caracteres.`);
+  }
   const dataSource = createDataSource({ ...config.database, migrationsRun: true });
   await dataSource.initialize();
   const order = createMsOrderService(config, dataSource, { logger });
@@ -20,8 +22,9 @@ async function main() {
   new CartSync(dataSource, order.esb, logger).start();
   order.staleOrders.start();
 
-  const server = await startGrpcServer([{ definition: order.definition, implementation: order.implementation }], config.grpcPort);
-  logger.info('Order (ms_order) listo', { grpc_port: server.port });
+  const app = createRpcHttpService({ service: 'ms-order', definition: order.definition, implementation: order.implementation, serviceToken: config.serviceToken, dataSource, logger });
+  const server = await listen(app, config.port);
+  logger.info('Order (ms_order) listo', { port: server.port });
 }
 
 main().catch((error) => {

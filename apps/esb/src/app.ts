@@ -17,6 +17,8 @@ import { parseSoapResponse, soapEnvelope } from './soap';
 
 export interface EsbConfig {
   port: number;
+  /** Se envía como `X-Service-Token` a las rutas internas de los servicios. */
+  serviceToken: string;
   /** URL base (REST) o `host:puerto` (gRPC) de cada servicio. */
   targets: Partial<Record<TargetName, string>>;
   breaker: { errorThresholdPercentage: number; resetTimeoutMs: number; volumeThreshold: number };
@@ -27,13 +29,15 @@ export interface EsbConfig {
 export function readEsbConfig(env: NodeJS.ProcessEnv = process.env): EsbConfig {
   return {
     port: Number(env.PORT ?? 3300),
+    serviceToken: env.SERVICE_TOKEN ?? '',
     targets: {
       identity: env.IDENTITY_URL ?? 'http://127.0.0.1:4001',
       catalog: env.CATALOG_URL ?? 'http://127.0.0.1:4002',
-      inventory: env.INVENTORY_GRPC ?? '127.0.0.1:50061',
+      inventory: env.INVENTORY_URL ?? env.INVENTORY_GRPC ?? '127.0.0.1:50061',
+      pricing: env.PRICING_URL ?? 'http://127.0.0.1:4026',
       cart: env.CART_URL ?? 'http://127.0.0.1:4004',
-      order: env.ORDER_GRPC ?? '127.0.0.1:50065',
-      booking: env.BOOKING_GRPC ?? '127.0.0.1:50066',
+      order: env.ORDER_URL ?? env.ORDER_GRPC ?? '127.0.0.1:50065',
+      booking: env.BOOKING_URL ?? env.BOOKING_GRPC ?? '127.0.0.1:50066',
       payment: env.PAYMENT_URL ?? 'http://127.0.0.1:4007',
       invoicing: env.INVOICING_URL ?? 'http://127.0.0.1:4008',
       audit: env.AUDIT_URL ?? 'http://127.0.0.1:4009',
@@ -135,6 +139,7 @@ export class EsbRouter {
     const { body } = await httpJson(`${this.target(route).replace(/\/$/, '')}${path}${withQuery ? queryString(rest) : ''}`, {
       method: route.method,
       body: withQuery ? undefined : rest,
+      headers: { 'x-service-token': this.config.serviceToken },
       timeoutMs: route.timeoutMs ?? 5000,
     });
     return body ?? null;

@@ -21,10 +21,12 @@ import { IdempotencyRepository } from './persistence/idempotency-repository';
 import { OrderRepository } from './persistence/order-repository';
 
 export interface MsOrderConfig {
-  grpcPort: number;
+  port: number;
   database: DatabaseSettings;
   /** Verifica el principal que reenvía el Gateway. */
   internalTokenSecret: string;
+  /** Protege `/internal/rpc`. */
+  serviceToken: string;
   esbUrl: string;
   nodeId: string;
   nodeCode: string;
@@ -32,9 +34,10 @@ export interface MsOrderConfig {
 
 export function readMsOrderConfig(env: NodeJS.ProcessEnv = process.env): MsOrderConfig {
   return {
-    grpcPort: Number(env.GRPC_PORT ?? 50068),
+    port: Number(env.PORT ?? 4024),
     database: { url: env.DATABASE_URL ?? 'postgres://postgres:tourgirls-local@localhost:5433/ms_order', ssl: env.DATABASE_SSL === 'true' },
     internalTokenSecret: env.INTERNAL_TOKEN_SECRET ?? '',
+    serviceToken: env.SERVICE_TOKEN ?? '',
     esbUrl: env.ESB_URL ?? 'http://127.0.0.1:3300',
     nodeId: env.NODE_ID ?? 'node-dilan-order-01',
     nodeCode: env.NODE_CODE ?? 'DILAN_ORDER',
@@ -58,7 +61,7 @@ const VERSION = '1.0.0';
 
 type Message = Record<string, unknown>;
 
-/** Order Management Service (gRPC, contrato `Plan/ms_order/order.proto`): órdenes, cupones aplicados y seguimiento del pago. */
+/** Order Management Service (HTTP interno definido por el proto, contrato `Plan/ms_order/order.proto`): órdenes, cupones aplicados y seguimiento del pago. */
 export function createMsOrderService(config: MsOrderConfig, dataSource: DataSource, deps: MsOrderDependencies = {}): MsOrderService {
   const logger = deps.logger ?? createLogger('ms-order');
   const esb = deps.esb ?? new EsbClient(config.esbUrl);

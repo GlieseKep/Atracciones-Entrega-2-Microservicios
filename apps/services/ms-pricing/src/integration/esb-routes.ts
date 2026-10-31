@@ -1,15 +1,14 @@
-/** Rutas del ESB hacia Pricing (`servicio.operación` → método gRPC), con la misma forma que `GrpcRoute` de `apps/esb/src/routes.ts`. */
-export interface PricingGrpcRoute {
-  protocol: 'grpc';
+/** Rutas del ESB hacia Pricing (`servicio.operación` → `POST /internal/rpc/<Método>`), con la misma forma que `RestRoute` de `apps/esb/src/routes.ts`. */
+export interface PricingRestRoute {
+  protocol: 'rest';
   target: 'pricing';
-  proto: 'internal/pricing.proto';
-  service: 'descubre.pricing.PricingService';
-  method: string;
+  method: 'POST';
+  path: string;
   timeoutMs: number;
 }
 
-const route = (method: string, timeoutMs = 2000): PricingGrpcRoute => ({
-  protocol: 'grpc', target: 'pricing', proto: 'internal/pricing.proto', service: 'descubre.pricing.PricingService', method, timeoutMs,
+const route = (method: string, timeoutMs = 2000): PricingRestRoute => ({
+  protocol: 'rest', target: 'pricing', method: 'POST', path: `/internal/rpc/${method}`, timeoutMs,
 });
 
 export const MS_PRICING_ROUTES = {
@@ -18,7 +17,7 @@ export const MS_PRICING_ROUTES = {
   'pricing.getPriceTable': route('GetPriceTable'),
   'pricing.listTariffs': route('ListTariffs', 5000),
   'pricing.setPriceTable': route('SetPriceTable', 5000),
-} as const satisfies Record<string, PricingGrpcRoute>;
+} as const satisfies Record<string, PricingRestRoute>;
 
 export type PricingRouteKey = keyof typeof MS_PRICING_ROUTES;
 

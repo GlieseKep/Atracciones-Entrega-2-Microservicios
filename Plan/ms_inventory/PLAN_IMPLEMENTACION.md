@@ -3,13 +3,13 @@
 | | |
 |---|---|
 | Microservicio | 7 · Inventory & Availability Service |
-| Protocolo | gRPC sobre HTTP/2 (detrás del ESB) |
+| Protocolo | HTTP con JSON detrás del ESB: `POST /internal/rpc/<Método>` con `X-Service-Token`. El `.proto` sigue siendo el contrato (cambio del 2026-10-31: las tiendas van solo en App Service) |
 | Clasificación (arquitectura_esb_v3) | Asíncrono: publica `CupoBloqueado` y `CupoLiberado` al bus. |
 | Contrato | [inventory.proto](inventory.proto) |
 | Contratos externos | `GET /atracciones/{id}/disponibilidad` de `atracciones-openapi-v3(1).yaml`; `Plan/PlanBooking/inventory.proto` (stock hacia Booking Prototipo) |
 | Base de datos | [ms_inventory.sql](ms_inventory.sql) → base `ms_inventory` |
 | Ref. externas | `atr_codigo` (Catalog) |
-| Puerto local propuesto | `GRPC_PORT=50067` |
+| Puerto local propuesto | `PORT=4025` |
 
 ## 1. Objetivo
 

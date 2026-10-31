@@ -1,4 +1,4 @@
-# ms-booking · Booking Service (gRPC)
+# ms-booking · Booking Service (HTTP interno)
 
 Dueño de las reservas. Atiende la compra, la consulta, la cancelación y el check-in del contrato v3, coordina el proceso de compra y alimenta el feed `GET /atracciones/eventos`.
 
@@ -43,7 +43,6 @@ Cada 5 minutos: `PENDING` de más de 30 minutos y `CONFIRMED` sin check-in con f
 ```
 npm run build
 npm run db:migrate -- ms-booking
-INTERNAL_TOKEN_SECRET=... VOUCHER_SECRET=... ESB_URL=... RABBITMQ_URL=... node apps/services/ms-booking/dist/main.js
+INTERNAL_TOKEN_SECRET=... SERVICE_TOKEN=... VOUCHER_SECRET=... ESB_URL=... RABBITMQ_URL=... node apps/services/ms-booking/dist/main.js
 ```
 
-Para el despliegue en la VM, `GRPC_PORT=50051`.

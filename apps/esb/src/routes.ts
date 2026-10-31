@@ -36,7 +36,7 @@ export interface SoapRoute {
 export type Route = RestRoute | GrpcRoute | SoapRoute;
 
 /** Destinos: URL base para REST, `host:puerto` para gRPC, URL del endpoint para SOAP. */
-export type TargetName = 'identity' | 'catalog' | 'inventory' | 'cart' | 'order' | 'booking' | 'payment' | 'invoicing' | 'audit' | 'sri_recepcion' | 'sri_autorizacion';
+export type TargetName = 'identity' | 'catalog' | 'inventory' | 'pricing' | 'cart' | 'order' | 'booking' | 'payment' | 'invoicing' | 'audit' | 'sri_recepcion' | 'sri_autorizacion';
 
 const inventory = (method: string, timeoutMs = 2000): GrpcRoute => ({ protocol: 'grpc', target: 'inventory', proto: 'internal/inventory.proto', service: 'atracciones.inventory.InventoryService', method, timeoutMs });
 const order = (method: string, timeoutMs = 9000): GrpcRoute => ({ protocol: 'grpc', target: 'order', proto: 'internal/order.proto', service: 'atracciones.order.OrderService', method, timeoutMs });

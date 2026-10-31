@@ -5,7 +5,7 @@
 #
 # Uso:  powershell -ExecutionPolicy Bypass -File .\start-microservices.ps1
 #
-# Para la reunion con Booking: cambia BOOKING_STOCK_GRPC (inventory) por <ip-tailscale-de-booking>:50051
+# Para la reunion con Booking: define BOOKING_REST_STOCK_URL y BOOKING_API_KEY en ms-inventory
 # y PUBLIC_BASE_URL (partner-api) por http://<tu-ip-tailscale>:3000/api/v2, y vuelve a ejecutar.
 $root = $PSScriptRoot
 
@@ -24,7 +24,7 @@ $apps = [ordered]@{
   'identity'     = @{ file = 'apps/services/identity/dist/main.js'; env = @{ ADMIN_EMAIL = 'admin@descubreec.test'; ADMIN_PASSWORD = 'Admin-Local-2026' } }
   'ms-identity'  = @{ file = 'apps/services/ms-identity/dist/main.js'; env = @{ JWT_SECRET = 'jwt-secret-local-ms-identity-solo-desarrollo' } }
   'ms-catalog'   = @{ file = 'apps/services/ms-catalog/dist/main.js'; env = @{} }
-  'ms-inventory' = @{ file = 'apps/services/ms-inventory/dist/main.js'; env = @{ BOOKING_STOCK_GRPC = 'localhost:50051'; BOOKING_SERVICE_ID = 'NODE_ATR_DILAN' } }
+  'ms-inventory' = @{ file = 'apps/services/ms-inventory/dist/main.js'; env = @{} }
   'ms-cart'      = @{ file = 'apps/services/ms-cart/dist/main.js'; env = @{} }
   'ms-payment'   = @{ file = 'apps/services/ms-payment/dist/main.js'; env = @{ WEBHOOK_SECRET = 'webhook-secret-local-solo-para-desarrollo' } }
   'ms-order'     = @{ file = 'apps/services/ms-order/dist/main.js'; env = @{} }
