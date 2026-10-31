@@ -74,8 +74,7 @@ export class InMemoryEventBus implements EventBus {
     }
   }
 
-  async subscribe(name: string, patterns: string[], handler: EventHandler): Promise<void> {
-    const queue = `${PREFIX}${name}`;
+  async subscribe(queue: string, patterns: string[], handler: EventHandler): Promise<void> {
     this.subscriptions.push({ queue, matchers: patterns.map(topicMatcher), handler, chain: Promise.resolve() });
   }
 
@@ -130,7 +129,8 @@ export class RabbitMqEventBus implements EventBus {
     });
   }
 
-  async subscribe(queue: string, patterns: string[], handler: EventHandler): Promise<void> {
+  async subscribe(name: string, patterns: string[], handler: EventHandler): Promise<void> {
+    const queue = `${PREFIX}${name}`;
     await this.channel.assertQueue(`${queue}.dlq`, { durable: true });
     await this.channel.bindQueue(`${queue}.dlq`, DLX, queue);
     await this.channel.assertQueue(queue, { durable: true, arguments: { 'x-dead-letter-exchange': DLX, 'x-dead-letter-routing-key': queue } });
