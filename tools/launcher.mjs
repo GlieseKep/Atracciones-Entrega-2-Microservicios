@@ -82,7 +82,8 @@ function start(spec, attempt = 0) {
     cwd: root,
     silent: true,
     execArgv: [`--max-old-space-size=${spec.memory ?? 128}`],
-    env: { ...inherited, ...spec.env, PORT: String(spec.port), ESB_URL: local(PORTS.esb), NODE_ENV: 'production' },
+    // ESB_CALL_TIMEOUT_MS: mayor que la ruta más lenta del ESB (compra: 20 s × ESB_TIMEOUT_FACTOR 3 = 60 s).
+    env: { ESB_CALL_TIMEOUT_MS: '65000', ...inherited, ...spec.env, PORT: String(spec.port), ESB_URL: local(PORTS.esb), NODE_ENV: 'production' },
   });
   const startedAt = Date.now();
   children.set(spec.name, child);

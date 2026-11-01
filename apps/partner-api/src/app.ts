@@ -104,6 +104,16 @@ export function createPartnerApi(config: PartnerApiConfig): PartnerApi {
     next();
   });
   app.post('/api/v3/atracciones/reservas', reservationAliases);
+  // Disponibilidad: el contrato v3 pide `?date=`; también se acepta `?fecha=` (alias del contrato v2).
+  app.get('/api/v3/atracciones/:id/disponibilidad', (req, _res, next) => {
+    const { fecha, ...query } = req.query;
+    if (fecha === undefined) return next();
+    if (query.date !== undefined && query.date !== fecha) {
+      return next(AppError.unprocessable('ALIAS_CONFLICT', 'date y fecha tienen valores distintos.', [{ name: 'fecha', reason: 'Debe ser igual a date.' }]));
+    }
+    Object.defineProperty(req, 'query', { value: { ...query, date: query.date ?? fecha }, writable: true, configurable: true });
+    next();
+  });
   app.use(
     OpenApiValidator.middleware({
       apiSpec: openApiContractPath(),
