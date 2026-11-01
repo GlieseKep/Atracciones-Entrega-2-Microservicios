@@ -19,6 +19,12 @@ read -rp 'WEBHOOK_SECRET: ' WEBHOOK
 read -rp 'VOUCHER_SECRET: ' VOUCHER
 read -rp 'BOOKING_API_KEY (la X-API-Key de la ficha): ' STOCK_KEY
 
+# Los servicios no arrancan con secretos de menos de 32 caracteres.
+for pair in "INTERNAL_TOKEN_SECRET:$INTERNAL" "SERVICE_TOKEN:$SVC" "JWT_SECRET:$JWT" "WEBHOOK_SECRET:$WEBHOOK" "VOUCHER_SECRET:$VOUCHER"; do
+  name=${pair%%:*}; value=${pair#*:}
+  [ ${#value} -ge 32 ] || { echo "ERROR: $name tiene ${#value} caracteres; debe tener al menos 32."; exit 1; }
+done
+
 # 1. Plan y app (solo si faltan).
 if [ -z "$(az appservice plan list -g $RG --query "[?name=='$PLAN'].name" -o tsv)" ]; then
   az appservice plan create -g $RG -n $PLAN --is-linux --sku $SKU --location $REGION --output none && echo "OK plan $PLAN ($SKU)" || exit 1
@@ -33,8 +39,8 @@ az webapp config set -g $RG -n $APP --always-on true --min-tls-version 1.2 --sta
   --generic-configurations '{"healthCheckPath": "/health"}' --output none && echo "OK configuración general" || exit 1
 
 # 3. Publicación básica (SCM), para descargar el perfil que usa GitHub Actions.
-az resource update -g $RG -n basicPublishingCredentialsPolicies/scm --parent sites/$APP \
-  --resource-type Microsoft.Web/sites/config --namespace Microsoft.Web --set properties.allow=true --output none && echo "OK publicación básica"
+az resource update --ids "$(az webapp show -g $RG -n $APP --query id -o tsv)/basicPublishingCredentialsPolicies/scm" \
+  --set properties.allow=true --output none && echo "OK publicación básica"
 
 # 4. Variables de entorno.
 az webapp config appsettings set -g $RG -n $APP --output none --settings \
