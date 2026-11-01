@@ -1,0 +1,48 @@
+# Compila, empaqueta (tools/package-microservices.mjs) y publica Descubre EC en UNA App Service (tourgirls-gateway-mm),
+# como pide GUIA_SOCIOS_AZURE_APP_SERVICE. La app arranca todos los procesos con `node tools/launcher.mjs`.
+#
+# Secreto del repositorio: AZURE_WEBAPP_PUBLISH_PROFILE (perfil de publicación de tourgirls-gateway-mm).
+name: Desplegar en Azure App Service
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/esb/**'
+      - 'apps/gateway/**'
+      - 'apps/graphql/**'
+      - 'apps/partner-api/**'
+      - 'apps/sri-mock/**'
+      - 'apps/services/ms-*/**'
+      - 'packages/platform/**'
+      - 'packages/contracts/**'
+      - 'tools/launcher.mjs'
+      - 'tools/package-microservices.mjs'
+      - 'package-lock.json'
+      - '.github/workflows/deploy-azure.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-azure
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsc -b packages/platform apps/services apps/esb apps/gateway apps/graphql apps/partner-api apps/sri-mock
+      - run: node tools/package-microservices.mjs
+      # zip en Linux: rutas con '/', que App Service entiende (la guía advierte contra Compress-Archive de Windows).
+      - run: cd out/microservices && zip -qr ../microservices.zip .
+      - uses: azure/webapps-deploy@v3
+        with:
+          app-name: tourgirls-gateway-mm
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: out/microservices.zip

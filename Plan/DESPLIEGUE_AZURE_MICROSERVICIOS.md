@@ -1,5 +1,8 @@
 # DESPLIEGUE_AZURE_MICROSERVICIOS — Subir Descubre EC a Azure paso a paso
 
+> **Obsoleta (2026-10-31).** El despliegue de 20 apps se reemplazó por una sola App Service: ver
+> [PLAN_DESPLIEGUE_UNA_APP.md](PLAN_DESPLIEGUE_UNA_APP.md).
+
 Guía para publicar la arquitectura de microservicios en Azure, con **todos los servicios en App Service** y **RabbitMQ en
 CloudAMQP** (plan gratuito Little Lemur). Hay pasos que haces tú en los portales (🧑) y cambios de código que hago yo antes de
 desplegar (🤖).
