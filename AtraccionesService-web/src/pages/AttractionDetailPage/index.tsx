@@ -1,11 +1,11 @@
-import { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { MapPin, Share2 } from 'lucide-react';
 import { AttractionCard } from '@/components/attractions/AttractionCard';
 import { AttractionDetails } from '@/components/attractions/AttractionDetails';
 import { AttractionGallery } from '@/components/attractions/AttractionGallery';
 import { BookingCard } from '@/components/attractions/BookingCard';
-import { Badge, badgeTone } from '@/components/common/Badge';
+import { ReviewsSection } from '@/components/attractions/ReviewsSection';
+import { Badge } from '@/components/common/Badge';
 import { Button } from '@/components/common/Button';
 import { ErrorState } from '@/components/common/Feedback';
 import { Rating } from '@/components/common/Rating';
@@ -13,43 +13,32 @@ import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
 import { Carousel, CarouselItem } from '@/components/ui/Carousel';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { serializeFilters } from '@/features/attractions/filters';
-import { useAllAttractions, useAttraction } from '@/hooks/useAttractions';
-import { useAuth } from '@/hooks/useAuth';
+import { useAttraction, useSearch } from '@/hooks/useAttractions';
 import { useUiStore } from '@/stores/uiStore';
-import { formatPrice, formatReviewCount, formatScore } from '@/utils/formatters';
+import { isApiError } from '@/utils/api';
+import { formatFromPrice } from '@/utils/formatters';
 import { paths } from '@/utils/routes';
 import NotFoundPage from '../NotFoundPage';
-import { isApiError } from '@/utils/api';
 
 export default function AttractionDetailPage() {
   const { id } = useParams();
   const attraction = useAttraction(id);
-  const catalog = useAllAttractions();
-  const { signIn } = useAuth();
   const notify = useUiStore((s) => s.notify);
-
   const a = attraction.data;
-  const related = useMemo(
-    () =>
-      a
-        ? (catalog.data ?? [])
-            .filter((x) => x.id !== a.id && x.categories.some((c) => a.categories.includes(c)))
-            .slice(0, 8)
-        : [],
-    [a, catalog.data],
-  );
+  // Relacionadas: otras experiencias de la misma ciudad.
+  const related = useSearch({ ciudad: a?.city, sort: 'POPULARITY', limit: 9 }, !!a?.city);
 
   if (attraction.status === 'error') {
     if (isApiError(attraction.error, 'notFound')) return <NotFoundPage />;
     return (
       <div className="page-container pt-10">
-        <ErrorState error={attraction.error} onRetry={attraction.retry} onLogin={() => signIn()} />
+        <ErrorState error={attraction.error} onRetry={attraction.retry} />
       </div>
     );
   }
   if (!a) return <DetailSkeleton />;
 
-  const city = a.locations[0]?.city;
+  const others = (related.data?.data ?? []).filter((x) => x.id !== a.id).slice(0, 8);
 
   const share = async () => {
     try {
@@ -70,65 +59,43 @@ export default function AttractionDetailPage() {
           items={[
             { label: 'Inicio', to: '/' },
             { label: 'Ecuador', to: paths.attractions() },
-            ...(city ? [{ label: city, to: paths.attractions(serializeFilters({ city })) }] : []),
+            { label: a.city, to: paths.attractions(serializeFilters({ city: a.city })) },
             { label: a.name },
           ]}
         />
 
         <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
           <div className="max-w-3xl">
-            {a.badges.length > 0 && (
-              <div className="mb-2 flex gap-2">
-                {a.badges.map((b) => (
-                  <Badge key={b} tone={badgeTone(b) === 'overlay' ? 'brand' : badgeTone(b)}>
-                    {b}
-                  </Badge>
-                ))}
-              </div>
+            {a.rating.badge_text && a.rating.review_count > 0 && (
+              <Badge tone="brand" className="mb-2">
+                {a.rating.badge_text}
+              </Badge>
             )}
             <h1 className="text-2xl leading-tight sm:text-[32px]">{a.name}</h1>
             <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-              {a.ratings && (
+              {a.rating.review_count > 0 && (
                 <a href="#opiniones" className="inline-flex items-center gap-1 hover:underline">
-                  <Rating score={a.ratings.score} reviews={a.ratings.numberOfReviews} showScore />
+                  <Rating score={a.rating.score} reviews={a.rating.review_count} showScore />
                 </a>
               )}
-              {city && (
-                <span className="inline-flex items-center gap-1 text-ink-soft">
-                  <MapPin size={15} aria-hidden="true" /> {city}, Ecuador
-                </span>
-              )}
+              <span className="inline-flex items-center gap-1 text-ink-soft">
+                <MapPin size={15} aria-hidden="true" /> {a.city}, Ecuador
+              </span>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="tertiary" size="sm" onClick={share}>
-              <Share2 size={16} aria-hidden="true" /> Compartir
-            </Button>
-          </div>
+          <Button variant="tertiary" size="sm" onClick={share}>
+            <Share2 size={16} aria-hidden="true" /> Compartir
+          </Button>
         </div>
 
         <div className="mt-5">
-          <AttractionGallery photos={a.photos} name={a.name} />
+          <AttractionGallery photos={a.photos ?? []} name={a.name} />
         </div>
 
         <div className="mt-10 grid grid-cols-1 gap-10 lg:grid-cols-[1fr_380px]">
           <div>
             <AttractionDetails attraction={a} />
-            {a.ratings && (
-              <section id="opiniones" className="scroll-mt-32 border-t border-line py-8">
-                <h2 className="mb-4 text-xl">Opiniones</h2>
-                <div className="flex items-center gap-5 rounded-md bg-brand-50 p-5">
-                  <p className="text-5xl font-extrabold">{formatScore(a.ratings.score)}</p>
-                  <div>
-                    <Rating score={a.ratings.score} size={20} />
-                    <p className="mt-1 text-sm text-ink-soft">
-                      Basado en {formatReviewCount(a.ratings.numberOfReviews)} opiniones de viajeros
-                      verificados.
-                    </p>
-                  </div>
-                </div>
-              </section>
-            )}
+            <ReviewsSection attraction={a} />
           </div>
           <div id="reservar" className="scroll-mt-32">
             <div className="lg:sticky lg:top-36">
@@ -138,11 +105,11 @@ export default function AttractionDetailPage() {
         </div>
       </div>
 
-      {related.length > 0 && (
+      {others.length > 0 && (
         <section aria-labelledby="related-title" className="page-container mt-10">
-          <SectionHeader id="related-title" title="También te puede gustar" />
+          <SectionHeader id="related-title" title={`Más cosas que hacer en ${a.city}`} action={{ label: 'Ver todas', to: paths.attractions(serializeFilters({ city: a.city })) }} />
           <Carousel label="Experiencias relacionadas">
-            {related.map((r) => (
+            {others.map((r) => (
               <CarouselItem key={r.id}>
                 <AttractionCard attraction={r} />
               </CarouselItem>
@@ -151,11 +118,11 @@ export default function AttractionDetailPage() {
         </section>
       )}
 
-      {/* Barra inferior fija en móvil, como en Viator */}
+      {/* Barra inferior fija en móvil */}
       <div className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-between border-t border-line bg-white px-4 py-3 lg:hidden">
         <p>
           <span className="block text-xs text-ink-soft">Desde</span>
-          <span className="text-lg font-extrabold">{formatPrice(a.price)}</span>
+          <span className="text-lg font-extrabold">{formatFromPrice(a.price)}</span>
         </p>
         <a href="#reservar" className="rounded-full bg-brand-500 px-5 py-3 font-semibold text-white">
           Ver disponibilidad

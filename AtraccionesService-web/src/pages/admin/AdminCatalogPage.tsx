@@ -3,8 +3,6 @@ import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
-import { catalogAdmin } from '@/api/admin';
-import { listAttractions } from '@/api/attractions';
 import { Button } from '@/components/common/Button';
 import { Alert, ErrorState } from '@/components/common/Feedback';
 import { IconButton } from '@/components/common/IconButton';
@@ -15,11 +13,20 @@ import { Pagination } from '@/components/search/SearchResults';
 import { useAsync } from '@/hooks/useAsync';
 import { useIdempotentMutation } from '@/hooks/useReservations';
 import { useUiStore } from '@/stores/uiStore';
-import type { Attraction, CreateAttractionRequest } from '@/types/attraction';
 import { errorMessage } from '@/utils/api';
-import { formatDuration, formatPrice, PRODUCT_TYPE_LABEL } from '@/utils/formatters';
 import { paths } from '@/utils/routes';
-import { attractionFormSchema, splitList, type AttractionFormValues } from '@/utils/validation';
+import {
+  attractionFormSchema,
+  catalogAdmin,
+  formatDuration,
+  formatPrice,
+  listAttractions,
+  PRODUCT_TYPE_LABEL,
+  splitList,
+  type Attraction,
+  type AttractionFormValues,
+  type CreateAttractionRequest,
+} from './legacy';
 
 const PAGE = 10;
 

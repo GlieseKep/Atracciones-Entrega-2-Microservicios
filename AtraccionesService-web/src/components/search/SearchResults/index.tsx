@@ -1,10 +1,10 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { AttractionCard, AttractionCardSkeleton } from '@/components/attractions/AttractionCard';
 import { usePagination } from '@/hooks/usePagination';
-import type { Attraction } from '@/types/attraction';
+import type { AttractionCard as Card } from '@/types/attraction';
 
 interface Props {
-  items: Attraction[];
+  items: Card[];
   loading: boolean;
   layout: 'grid' | 'list';
 }

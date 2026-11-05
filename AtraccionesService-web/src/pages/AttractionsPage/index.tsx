@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { LayoutGrid, List, SlidersHorizontal } from 'lucide-react';
 import { AttractionFilters } from '@/components/attractions/AttractionFilters';
 import { Button } from '@/components/common/Button';
-import { Alert, EmptyState, ErrorState } from '@/components/common/Feedback';
+import { EmptyState, ErrorState } from '@/components/common/Feedback';
 import { Modal } from '@/components/common/Modal';
 import { Select } from '@/components/common/Select';
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
@@ -18,17 +18,16 @@ import {
   type CatalogFilters,
   type SortOption,
 } from '@/features/attractions/filters';
-import { useAttractions } from '@/hooks/useAttractions';
-import { useAuth } from '@/hooks/useAuth';
+import { useAttractions, useCatalogFacets } from '@/hooks/useAttractions';
 
 const LAYOUT_KEY = 'ea.results.layout';
 
-/** Resultados con filtros laterales, orden y paginación (página de resultados de Viator). */
+/** Resultados de `POST /atracciones/search` con filtros laterales, orden y paginación del servidor. */
 export default function AttractionsPage() {
   const [params, setParams] = useSearchParams();
   const filters = useMemo(() => parseFilters(params), [params]);
-  const { status, error, retry, page, facets, source, data } = useAttractions(filters);
-  const { signIn } = useAuth();
+  const { status, error, retry, data } = useAttractions(filters);
+  const facets = useCatalogFacets();
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [layout, setLayout] = useState<'grid' | 'list'>(() => {
     try {
@@ -58,7 +57,7 @@ export default function AttractionsPage() {
   const clear = () => setParams(serializeFilters({ ...DEFAULT_FILTERS, q: filters.q }));
   const place = filters.city || 'Ecuador';
   const count = activeFilterCount(filters);
-  const total = page?.total ?? 0;
+  const total = data?.metadata.total_results ?? 0;
 
   const filterPanel = <AttractionFilters filters={filters} facets={facets} onChange={update} />;
 
@@ -71,13 +70,7 @@ export default function AttractionsPage() {
           ...(filters.city ? [{ label: filters.city }] : [{ label: 'Cosas que hacer' }]),
         ]}
       />
-      <h1 className="mt-4 text-3xl sm:text-4xl">
-        {filters.q ? `Resultados para “${filters.q}”` : `Cosas que hacer en ${place}`}
-      </h1>
-
-      {source === 'demo' && (
-        <Alert className="mt-4">Estás viendo el catálogo de demostración (sin conexión al API).</Alert>
-      )}
+      <h1 className="mt-4 text-3xl sm:text-4xl">{filters.q ? `Resultados para “${filters.q}”` : `Cosas que hacer en ${place}`}</h1>
 
       <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-[264px_1fr]">
         <aside className="hidden lg:block" aria-label="Filtros">
@@ -90,9 +83,7 @@ export default function AttractionsPage() {
               <SlidersHorizontal size={16} aria-hidden="true" /> Filtros{count ? ` (${count})` : ''}
             </Button>
             <p className="text-sm text-ink-soft" role="status" aria-live="polite">
-              {status === 'loading' && !data
-                ? 'Buscando…'
-                : `${total} ${total === 1 ? 'resultado' : 'resultados'}`}
+              {status === 'loading' && !data ? 'Buscando…' : `${total} ${total === 1 ? 'resultado' : 'resultados'}`}
             </p>
             <div className="ml-auto flex items-center gap-2">
               <Select
@@ -103,11 +94,7 @@ export default function AttractionsPage() {
                 onChange={(e) => update({ sort: e.target.value as SortOption })}
                 options={SORT_OPTIONS.map((o) => ({ value: o.value, label: `Ordenar: ${o.label}` }))}
               />
-              <div
-                className="hidden rounded-full border border-line p-0.5 sm:flex"
-                role="group"
-                aria-label="Vista"
-              >
+              <div className="hidden rounded-full border border-line p-0.5 sm:flex" role="group" aria-label="Vista">
                 {(['grid', 'list'] as const).map((l) => (
                   <button
                     key={l}
@@ -117,11 +104,7 @@ export default function AttractionsPage() {
                     aria-label={l === 'grid' ? 'Vista en cuadrícula' : 'Vista en lista'}
                     className={`rounded-full p-2 ${layout === l ? 'bg-ink text-white' : 'hover:bg-surface'}`}
                   >
-                    {l === 'grid' ? (
-                      <LayoutGrid size={16} aria-hidden="true" />
-                    ) : (
-                      <List size={16} aria-hidden="true" />
-                    )}
+                    {l === 'grid' ? <LayoutGrid size={16} aria-hidden="true" /> : <List size={16} aria-hidden="true" />}
                   </button>
                 ))}
               </div>
@@ -129,13 +112,13 @@ export default function AttractionsPage() {
           </div>
 
           <div className="mt-4">
-            <SearchSummary filters={filters} onChange={update} onClear={clear} />
+            <SearchSummary filters={filters} categories={facets.categories} onChange={update} onClear={clear} />
           </div>
 
           <div className="mt-6">
             {status === 'error' ? (
-              <ErrorState error={error} onRetry={retry} onLogin={() => signIn()} />
-            ) : page && page.total === 0 ? (
+              <ErrorState error={error} onRetry={retry} />
+            ) : data && data.data.length === 0 ? (
               <EmptyState
                 title="No encontramos experiencias con esos criterios"
                 action={
@@ -151,13 +134,11 @@ export default function AttractionsPage() {
                 </ul>
               </EmptyState>
             ) : (
-              <SearchResults items={page?.items ?? []} loading={status === 'loading'} layout={layout} />
+              <SearchResults items={data?.data ?? []} loading={status === 'loading'} layout={layout} />
             )}
           </div>
 
-          {page && (
-            <Pagination page={page.page} totalPages={page.totalPages} onPage={(p) => update({ page: p })} />
-          )}
+          {data && <Pagination page={data.metadata.page} totalPages={data.metadata.total_pages} onPage={(p) => update({ page: p })} />}
         </section>
       </div>
 

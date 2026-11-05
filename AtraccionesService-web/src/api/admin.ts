@@ -1,19 +1,18 @@
-import type { IsoDate, IsoDateTime, PagedResponse } from '@/types/api';
-import { createAttraction, deleteAttraction, patchAttraction, replaceAttraction } from './attractions';
+import type { IsoDate, IsoDateTime } from '@/types/api';
 import { http } from './client';
 
 /**
- * Endpoints administrativos (`/admin`): scope `attractions:write` + permiso local `admin:manage` (rol `admin`).
- * El catálogo usa los endpoints de `/atracciones` con el permiso `catalog:write`.
+ * Endpoints administrativos del monolito anterior (`/admin`). El panel queda fuera de `Plan/AUDITORIA_FRONTEND.md` y
+ * tiene su propia auditoría pendiente; el acceso ya se decide por el rol `ADMIN` de ms-identity.
  */
-export const catalogAdmin = {
-  create: createAttraction,
-  replace: replaceAttraction,
-  patch: patchAttraction,
-  remove: deleteAttraction,
-};
 
-export const ADMIN_SCOPE = 'attractions:write';
+export interface PagedResponse<T> {
+  totalItems: number;
+  itemsPerPage: number;
+  currentPage: number;
+  totalPages: number;
+  data: T[];
+}
 
 export interface Money {
   currency: string;

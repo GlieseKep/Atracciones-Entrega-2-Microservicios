@@ -1,15 +1,21 @@
 import { Badge, type BadgeTone } from '@/components/common/Badge';
-import type { OrderStatus } from '@/types/order';
-import type { PaymentSimulationStatus } from '@/types/payment';
-import type { ReservationStatus } from '@/types/reservation';
 
-const RESERVATION: Record<ReservationStatus, [string, BadgeTone]> = {
-  PENDING: ['Pendiente', 'warning'],
+/** Etiquetas de estado. Aceptan cualquier texto: el panel administrativo aún usa los estados del monolito. */
+
+const RESERVATION: Record<string, [string, BadgeTone]> = {
+  PENDING: ['Pendiente de pago', 'warning'],
   CONFIRMED: ['Confirmada', 'success'],
+  CHECKED_IN: ['Check-in hecho', 'success'],
+  COMPLETED: ['Completada', 'neutral'],
   CANCELLED: ['Cancelada', 'danger'],
+  EXPIRED: ['Vencida', 'danger'],
 };
 
-const ORDER: Record<OrderStatus, [string, BadgeTone]> = {
+const ORDER: Record<string, [string, BadgeTone]> = {
+  CREADA: ['Creada', 'warning'],
+  PAGADA: ['Pagada', 'success'],
+  CANCELADA: ['Cancelada', 'danger'],
+  REEMBOLSADA: ['Reembolsada', 'neutral'],
   PENDING_PAYMENT: ['Pendiente de pago', 'warning'],
   PAID: ['Pagado', 'success'],
   FULFILLED: ['Completado', 'success'],
@@ -18,7 +24,7 @@ const ORDER: Record<OrderStatus, [string, BadgeTone]> = {
   REFUNDED: ['Reembolsado', 'neutral'],
 };
 
-const PAYMENT: Record<PaymentSimulationStatus, [string, BadgeTone]> = {
+const PAYMENT: Record<string, [string, BadgeTone]> = {
   PENDING: ['Pendiente', 'warning'],
   AUTHORIZED: ['Autorizado', 'success'],
   SETTLED: ['Liquidado', 'success'],
@@ -29,19 +35,19 @@ const PAYMENT: Record<PaymentSimulationStatus, [string, BadgeTone]> = {
   REFUNDED: ['Reembolsado', 'neutral'],
 };
 
-export const orderStatusLabel = (s: OrderStatus) => ORDER[s]?.[0] ?? s;
+export const reservationStatusLabel = (s: string) => RESERVATION[s]?.[0] ?? s;
 
-export function ReservationStatusBadge({ status }: { status: ReservationStatus }) {
+export function ReservationStatusBadge({ status }: { status: string }) {
   const [label, tone] = RESERVATION[status] ?? [status, 'neutral'];
   return <Badge tone={tone}>{label}</Badge>;
 }
 
-export function OrderStatusBadge({ status }: { status: OrderStatus }) {
+export function OrderStatusBadge({ status }: { status: string }) {
   const [label, tone] = ORDER[status] ?? [status, 'neutral'];
   return <Badge tone={tone}>{label}</Badge>;
 }
 
-export function PaymentStatusBadge({ status }: { status: PaymentSimulationStatus }) {
+export function PaymentStatusBadge({ status }: { status: string }) {
   const [label, tone] = PAYMENT[status] ?? [status, 'neutral'];
   return <Badge tone={tone}>{label}</Badge>;
 }

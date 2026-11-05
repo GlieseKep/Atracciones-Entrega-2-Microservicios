@@ -9,7 +9,6 @@ import { AdminTable, Sub, type Column } from './AdminTable';
 
 /** Cada cuánto se refrescan el estado y las métricas mientras la página está abierta. */
 const REFRESH_MS = 15_000;
-const API_ORIGIN = env.apiBaseUrl.replace(/\/api\/v1$/, '');
 
 const RESOURCE_TYPES = [
   { value: 'attraction', label: 'Atracciones' },
@@ -77,8 +76,8 @@ function formatUptime(seconds: number): string {
  */
 export default function AdminObservabilityPage() {
   const metrics = useAsync((signal) => adminApi.observability(signal), []);
-  const api = useAsync((signal) => checkHealth(`${API_ORIGIN}/health`, signal), []);
-  const auth = useAsync((signal) => checkHealth(`${env.authUrl}/health`, signal), []);
+  const api = useAsync((signal) => checkHealth(`${env.apiOrigin}/health`, signal), []);
+  const auth = useAsync((signal) => checkHealth(`${env.apiBaseUrl}/atracciones/health`, signal), []);
   const { retry: reloadMetrics } = metrics;
   const { retry: reloadApi } = api;
   const { retry: reloadAuth } = auth;
@@ -128,7 +127,7 @@ export default function AdminObservabilityPage() {
       <h2 className="mt-8 text-xl">Estado de los servicios</h2>
       <ul className="mt-4 grid gap-4 sm:grid-cols-3">
         <ServiceCard
-          name="API de atracciones"
+          name="Gateway"
           ok={api.data?.ok}
           detail={api.data && ms(api.data.latencyMs)}
         />
@@ -140,7 +139,7 @@ export default function AdminObservabilityPage() {
           }
         />
         <ServiceCard
-          name="Servicio de autenticación"
+          name="Partner API (contrato v3)"
           ok={auth.data?.ok}
           detail={auth.data && ms(auth.data.latencyMs)}
         />

@@ -1,6 +1,6 @@
-import type { ProblemDetails } from '@/types/api';
+import type { InvalidParam } from '@/types/api';
 
-/** Categorías de error que la interfaz sabe explicar (plan §11). */
+/** Categorías de error que la interfaz sabe explicar. */
 export type ApiErrorKind =
   | 'network'
   | 'sessionExpired'
@@ -15,72 +15,83 @@ export type ApiErrorKind =
   | 'rateLimit'
   | 'server';
 
+/** Lo que llega del servidor: ProblemDetails (REST) o `errors[].extensions` (GraphQL), ya normalizado. */
+export interface ErrorInfo {
+  code?: string;
+  detail?: string;
+  invalidParams?: InvalidParam[];
+  correlationId?: string;
+}
+
 export class ApiError extends Error {
   readonly kind: ApiErrorKind;
   readonly status: number;
   readonly code?: string;
-  /** Errores de validación por campo, ya en texto amigable. */
+  /** Errores por campo (`invalid_params`), con el nombre del campo tal como lo envía el servicio. */
   readonly fieldErrors: Record<string, string[]>;
-  readonly traceId?: string;
+  readonly correlationId?: string;
 
-  constructor(kind: ApiErrorKind, status: number, problem: ProblemDetails = {}) {
-    super(friendlyMessage(kind, problem.code));
+  constructor(kind: ApiErrorKind, status: number, info: ErrorInfo = {}) {
+    super(friendlyMessage(kind, info.code, status < 500 ? info.detail : undefined));
     this.name = 'ApiError';
     this.kind = kind;
     this.status = status;
-    this.code = problem.code;
-    this.traceId = problem.traceId;
-    this.fieldErrors = problem.errors ?? {};
+    this.code = info.code;
+    this.correlationId = info.correlationId;
+    this.fieldErrors = {};
+    for (const param of info.invalidParams ?? []) (this.fieldErrors[param.name] ??= []).push(param.reason);
   }
 }
 
-const AVAILABILITY_CODES = new Set(['INSUFFICIENT_AVAILABILITY', 'SLOT_UNAVAILABLE', 'ORDER_HOLD_EXPIRED']);
-const PAYMENT_CODES = new Set(['PAYMENT_ATTEMPTS_EXCEEDED', 'ORDER_NOT_PAYABLE', 'AMOUNT_MISMATCH']);
-const IDEMPOTENCY_CODES = new Set(['IDEMPOTENCY_KEY_REUSED', 'IDEMPOTENCY_IN_PROGRESS']);
+const AVAILABILITY_CODES = new Set(['OUT_OF_STOCK', 'SLOT_TIME_MISMATCH', 'SLOT_MISMATCH', 'SLOT_NOT_FOUND', 'DATE_IN_PAST', 'DATE_BLOCKED']);
+const PAYMENT_CODES = new Set(['PAYMENT_REJECTED', 'PAYMENT_FAILED', 'PAYMENT_DECLINED', 'INVALID_CARD']);
+const IDEMPOTENCY_CODES = new Set(['IDEMPOTENCY_KEY_MISMATCH', 'IDEMPOTENCY_KEY_REUSED', 'IDEMPOTENCY_IN_PROGRESS']);
 
-/** Clasifica una respuesta HTTP fallida a partir del estado y del `code` RFC 7807. */
-export function classifyProblem(status: number, problem: ProblemDetails = {}, hadToken = false): ApiErrorKind {
-  const code = problem.code ?? '';
+/** Clasifica un error a partir del estado HTTP y del código del servicio. */
+export function classifyError(status: number, code = '', hadToken = false): ApiErrorKind {
   if (IDEMPOTENCY_CODES.has(code)) return 'idempotency';
   if (AVAILABILITY_CODES.has(code)) return 'availability';
   if (PAYMENT_CODES.has(code)) return 'payment';
   switch (status) {
     case 400:
+    case 422:
       return 'validation';
     case 401:
-      return hadToken ? 'sessionExpired' : 'unauthenticated';
+      return hadToken && code !== 'INVALID_CREDENTIALS' ? 'sessionExpired' : 'unauthenticated';
     case 403:
       return 'forbidden';
     case 404:
       return 'notFound';
     case 409:
       return 'conflict';
-    case 422:
-      return 'payment';
     case 429:
       return 'rateLimit';
     default:
-      return status >= 500 ? 'server' : 'conflict';
+      return status >= 500 || status === 0 ? 'server' : 'conflict';
   }
 }
 
+/** Mensajes propios para los códigos de los servicios; el resto usa el `detail` del servicio o el genérico. */
 const SPECIFIC: Record<string, string> = {
-  INSUFFICIENT_AVAILABILITY: 'Ya no quedan suficientes plazas para ese horario. Prueba con otra hora o menos entradas.',
-  SLOT_UNAVAILABLE: 'Ese horario ya no está disponible. Elige otra fecha u hora.',
-  ORDER_HOLD_EXPIRED: 'La reserva temporal de plazas expiró. Vuelve a iniciar la compra.',
-  PAYMENT_ATTEMPTS_EXCEEDED: 'Se alcanzó el número máximo de intentos de pago para este pedido.',
-  ORDER_NOT_PAYABLE: 'Este pedido ya no admite pagos.',
-  AMOUNT_MISMATCH: 'El importe no coincide con el calculado por el servidor. Actualiza el resumen e inténtalo de nuevo.',
-  IDEMPOTENCY_KEY_REUSED: 'Esta operación ya se envió con otros datos. Revisa el resumen e inténtalo como una operación nueva.',
+  OUT_OF_STOCK: 'Ya no quedan suficientes cupos para ese horario. Prueba con otra hora o menos boletos.',
+  SLOT_TIME_MISMATCH: 'El horario elegido no coincide con la fecha. Vuelve a elegir el horario.',
+  SLOT_MISMATCH: 'El horario elegido no coincide con la fecha. Vuelve a elegir el horario.',
+  DATE_IN_PAST: 'La fecha de la actividad ya pasó. Elige otra fecha.',
+  ALIAS_CONFLICT: 'La solicitud tiene datos repetidos con valores distintos.',
+  ATTRACTION_NOT_FOUND: 'Esta experiencia ya no está disponible.',
+  INVALID_CUSTOMER: 'Revisa los datos del titular: nombre completo, correo, teléfono y documento.',
+  INVALID_TICKET_COUNT: 'Debe haber al menos un boleto de adulto.',
+  INVALID_CREDENTIALS: 'El correo o la contraseña son incorrectos.',
+  INVALID_REFRESH_TOKEN: 'Tu sesión expiró. Inicia sesión de nuevo para continuar.',
+  ACCOUNT_DISABLED: 'Tu cuenta está desactivada. Escríbenos desde el centro de ayuda.',
+  INVALID_CURRENT_PASSWORD: 'La contraseña actual no es correcta.',
+  INVALID_TOKEN: 'El enlace no es válido o ya venció. Solicita uno nuevo.',
+  IDEMPOTENCY_KEY_MISMATCH: 'Esta operación ya se envió con otros datos. Revisa el resumen e inténtalo de nuevo.',
   IDEMPOTENCY_IN_PROGRESS: 'Tu solicitud anterior todavía se está procesando. Espera unos segundos.',
-  INVALID_STATE_TRANSITION: 'La operación no está permitida en el estado actual.',
-  RESERVATION_ALREADY_STARTED: 'La actividad ya comenzó y no se puede cancelar.',
-  RESERVATION_MANAGED_BY_ORDER: 'Esta reserva pertenece a un pedido: cancélala desde el pedido.',
-  PROFILE_NOT_REGISTERED: 'Completa tu perfil antes de continuar.',
-  PROFILE_INCOMPLETE: 'Completa tus datos de facturación antes de continuar.',
-  USER_INACTIVE: 'Tu cuenta está desactivada. Contacta con soporte.',
-  CONCURRENCY_CONFLICT: 'Otra persona modificó este recurso al mismo tiempo. Vuelve a intentarlo.',
-  ATTRACTION_HAS_ACTIVE_RESERVATIONS: 'La atracción tiene reservas activas y no se puede eliminar.',
+  RATE_LIMITED: 'Demasiadas solicitudes seguidas. Espera un momento.',
+  CANCELLATION_DEADLINE_PASSED: 'Ya pasó el plazo de cancelación gratuita de esta reserva. Escríbenos desde el centro de ayuda.',
+  REVIEW_ALREADY_EXISTS: 'Ya publicaste una opinión sobre esta experiencia.',
+  INVOICE_NOT_FOUND: 'La factura de este pedido todavía no se ha emitido.',
 };
 
 const GENERIC: Record<ApiErrorKind, string> = {
@@ -90,7 +101,7 @@ const GENERIC: Record<ApiErrorKind, string> = {
   forbidden: 'No tienes permiso para realizar esta acción.',
   notFound: 'No encontramos lo que buscabas.',
   availability: 'No hay disponibilidad suficiente para la selección.',
-  payment: 'El pago simulado fue rechazado. Puedes intentarlo con otro método.',
+  payment: 'El pago fue rechazado. Puedes intentarlo con otro método.',
   idempotency: 'Esta operación ya fue enviada.',
   conflict: 'No se pudo completar la operación por un conflicto con el estado actual.',
   validation: 'Algunos datos no son válidos. Revisa el formulario.',
@@ -98,9 +109,11 @@ const GENERIC: Record<ApiErrorKind, string> = {
   server: 'Ocurrió un problema en el servidor. Inténtalo más tarde.',
 };
 
-/** Mensaje amigable sin detalles internos (ni `detail`, ni trazas). */
-export function friendlyMessage(kind: ApiErrorKind, code?: string): string {
-  return (code && SPECIFIC[code]) || GENERIC[kind];
+/** Mensaje amigable: el del código conocido, el `detail` de un error de negocio (4xx) o el genérico. Nunca trazas. */
+export function friendlyMessage(kind: ApiErrorKind, code?: string, detail?: string): string {
+  if (code && SPECIFIC[code]) return SPECIFIC[code];
+  if (detail && kind !== 'sessionExpired' && kind !== 'network') return detail;
+  return GENERIC[kind];
 }
 
 /** Convierte cualquier error en texto apto para la interfaz. */
@@ -111,4 +124,11 @@ export function errorMessage(error: unknown): string {
 
 export function isApiError(error: unknown, ...kinds: ApiErrorKind[]): error is ApiError {
   return error instanceof ApiError && (kinds.length === 0 || kinds.includes(error.kind));
+}
+
+/** Primer error del campo `name` (o de un campo anidado como `customer.email`). */
+export function fieldError(error: unknown, ...names: string[]): string | undefined {
+  if (!(error instanceof ApiError)) return undefined;
+  for (const name of names) if (error.fieldErrors[name]?.[0]) return error.fieldErrors[name][0];
+  return undefined;
 }

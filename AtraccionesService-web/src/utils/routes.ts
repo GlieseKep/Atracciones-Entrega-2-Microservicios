@@ -7,14 +7,14 @@ export const paths = {
     return qs ? `/atracciones?${qs}` : '/atracciones';
   },
   attraction: (id: string) => `/atracciones/${id}`,
-  reserve: (id: string, query?: URLSearchParams) => withQuery(`/atracciones/${id}/reservar`, query),
-  purchase: (id: string, query?: URLSearchParams) => withQuery(`/atracciones/${id}/comprar`, query),
+  checkout: (id: string, query?: URLSearchParams) => withQuery(`/atracciones/${id}/comprar`, query),
   reservation: (id: string) => `/reservas/${id}`,
-  order: (id: string) => `/pedidos/${id}`,
   profile: (tab?: string) => (tab ? `/perfil?tab=${tab}` : '/perfil'),
+  help: (section?: string) => (section ? `/ayuda#${section}` : '/ayuda'),
   admin: () => '/admin',
   login: (returnTo?: string) => withQuery('/login', returnTo && returnTo !== '/' ? new URLSearchParams({ returnTo }) : undefined),
   register: (returnTo?: string) => withQuery('/registro', returnTo && returnTo !== '/' ? new URLSearchParams({ returnTo }) : undefined),
+  recover: () => '/recuperar',
 };
 
 function withQuery(path: string, query?: URLSearchParams) {

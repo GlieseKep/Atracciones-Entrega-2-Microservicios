@@ -1,61 +1,43 @@
 import { create } from 'zustand';
-import type { User } from '@/types/identity';
-
-/** Claims no sensibles que la interfaz necesita para mostrar sesión y permisos. */
-export interface SessionClaims {
-  sub: string;
-  email?: string;
-  name?: string;
-  scopes: string[];
-  roles: string[];
-}
+import type { RoleName, User } from '@/types/identity';
 
 export type AuthStatus = 'anonymous' | 'authenticating' | 'authenticated';
 
 interface AuthState {
   status: AuthStatus;
-  /** Solo en memoria: nunca se persiste en localStorage ni sessionStorage (plan §10). */
+  /** Solo en memoria: nunca se persisten en localStorage ni sessionStorage. Recargar la página cierra la sesión. */
   accessToken: string | null;
+  refreshToken: string | null;
   expiresAt: number | null;
-  claims: SessionClaims | null;
+  /** Usuario de ms-identity; sus `roles` deciden qué ve la interfaz (el servidor sigue autorizando). */
   user: User | null;
   sessionExpired: boolean;
   setAuthenticating: () => void;
-  setSession: (token: string, expiresAt: number, claims: SessionClaims) => void;
-  setUser: (user: User | null) => void;
+  setSession: (accessToken: string, refreshToken: string, expiresAt: number, user: User) => void;
+  setUser: (user: User) => void;
   clear: (options?: { expired?: boolean }) => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   status: 'anonymous',
   accessToken: null,
+  refreshToken: null,
   expiresAt: null,
-  claims: null,
   user: null,
   sessionExpired: false,
   setAuthenticating: () => set({ status: 'authenticating' }),
-  setSession: (accessToken, expiresAt, claims) => set({ status: 'authenticated', accessToken, expiresAt, claims, sessionExpired: false }),
+  setSession: (accessToken, refreshToken, expiresAt, user) =>
+    set({ status: 'authenticated', accessToken, refreshToken, expiresAt, user, sessionExpired: false }),
   setUser: (user) => set({ user }),
   clear: (options) =>
     set({
       status: 'anonymous',
       accessToken: null,
+      refreshToken: null,
       expiresAt: null,
-      claims: null,
       user: null,
       sessionExpired: options?.expired ?? false,
     }),
 }));
 
-/** Token vigente o `null` si no hay sesión o expiró. */
-export function currentAccessToken(): string | null {
-  const { accessToken, expiresAt } = useAuthStore.getState();
-  if (!accessToken) return null;
-  if (expiresAt !== null && Date.now() >= expiresAt) {
-    useAuthStore.getState().clear({ expired: true });
-    return null;
-  }
-  return accessToken;
-}
-
-export const hasScope = (claims: SessionClaims | null, scope: string) => !!claims?.scopes.includes(scope);
+export const hasRole = (user: User | null, role: RoleName) => !!user?.roles.includes(role);

@@ -3,14 +3,18 @@ export const ROUTES = {
   home: '/',
   attractions: '/atracciones',
   attractionDetail: '/atracciones/:id',
-  reserve: '/atracciones/:id/reservar',
-  purchase: '/atracciones/:id/comprar',
+  checkout: '/atracciones/:id/comprar',
+  /** Ruta del portal anterior ("reservar sin pagar"): ahora lleva a la compra. */
+  legacyReserve: '/atracciones/:id/reservar',
   search: '/buscar',
   reservation: '/reservas/:reservationId',
-  order: '/pedidos/:orderId',
   profile: '/perfil',
   help: '/ayuda',
   login: '/login',
   register: '/registro',
+  recover: '/recuperar',
+  /** Enlaces de los correos de ms-identity (`?token=`). */
+  resetPassword: '/recuperar-clave',
+  verifyEmail: '/verificar-correo',
   admin: '/admin',
 } as const;

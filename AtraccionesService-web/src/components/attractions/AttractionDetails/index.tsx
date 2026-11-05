@@ -1,87 +1,125 @@
 import type { ReactNode } from 'react';
-import { Building2, CalendarX2, Check, Clock, Languages, Smartphone, Ticket, X } from 'lucide-react';
-import type { Attraction } from '@/types/attraction';
-import { formatDuration, formatLanguage, PRODUCT_TYPE_LABEL } from '@/utils/formatters';
+import { Accessibility, Building2, Bus, CalendarX2, Check, Clock, Languages, Phone, User, Utensils, X } from 'lucide-react';
+import type { AttractionDetail } from '@/types/attraction';
 import { AttractionMap } from '../AttractionMap';
 
-/** Secciones de contenido del detalle, en el orden de Viator: resumen, incluye, qué esperar, encuentro, info adicional, cancelación. */
-export function AttractionDetails({ attraction: a }: { attraction: Attraction }) {
+/** Secciones de la ficha (`AtraccionDetailResponseV2`): resumen, incluye, itinerario, encuentro, accesibilidad, cancelación. */
+export function AttractionDetails({ attraction: a }: { attraction: AttractionDetail }) {
   const highlights = [
-    { icon: Clock, label: formatDuration(a.duration) },
-    { icon: Ticket, label: PRODUCT_TYPE_LABEL[a.productType] },
-    { icon: Smartphone, label: 'Entrada móvil' },
-    a.supportedLanguages.length > 0 && {
-      icon: Languages,
-      label: `Ofrecido en: ${a.supportedLanguages.map(formatLanguage).join(', ')}`,
-    },
+    a.duration && { icon: Clock, label: a.duration },
+    a.inclusions.includes_guide && { icon: User, label: 'Guía certificado' },
+    a.inclusions.includes_transport && { icon: Bus, label: 'Transporte incluido' },
+    a.inclusions.includes_food && { icon: Utensils, label: 'Alimentación incluida' },
+    a.guide_languages?.length && { icon: Languages, label: `Guía en ${a.guide_languages.join(', ')}` },
   ].filter(Boolean) as { icon: typeof Clock; label: string }[];
+
+  const access = a.accessibility;
+  const accessItems = [
+    [access?.wheelchair_accessible, 'Apto para silla de ruedas'],
+    [access?.stroller_accessible, 'Apto para coches de bebé'],
+    [access?.service_animals_allowed, 'Admite animales de asistencia'],
+  ] as const;
+  const policy = a.cancellation_policy;
 
   return (
     <div className="divide-y divide-line">
       <Section title="Descripción general" first>
-        <p className="whitespace-pre-line text-[16px] leading-7 text-ink">{a.longDescription}</p>
-        <ul className="mt-5 grid gap-3 sm:grid-cols-2">
-          {highlights.map(({ icon: Icon, label }) => (
-            <li key={label} className="flex items-center gap-2.5">
-              <Icon size={20} className="text-ink-soft" aria-hidden="true" /> {label}
-            </li>
-          ))}
-        </ul>
-      </Section>
-
-      <Section title="Qué incluye">
-        <ul className="grid gap-2.5 sm:grid-cols-2">
-          {a.includes.map((item) => (
-            <li key={item} className="flex items-center gap-2.5">
-              <Check size={18} className="text-success" aria-hidden="true" /> {item}
-            </li>
-          ))}
-          {!a.includes.includes('Transporte') && (
-            <li className="flex items-center gap-2.5 text-ink-soft">
-              <X size={18} className="text-danger" aria-hidden="true" /> Transporte al punto de encuentro
-            </li>
-          )}
-          <li className="flex items-center gap-2.5 text-ink-soft">
-            <X size={18} className="text-danger" aria-hidden="true" /> Propinas
-          </li>
-        </ul>
-        {a.categories.length > 0 && (
-          <div className="mt-5 flex flex-wrap gap-2">
-            {a.categories.map((c) => (
-              <span key={c} className="rounded-full bg-surface px-3 py-1 text-sm font-semibold">
-                {c}
-              </span>
+        <p className="whitespace-pre-line text-[16px] leading-7 text-ink">{a.description}</p>
+        {highlights.length > 0 && (
+          <ul className="mt-5 grid gap-3 sm:grid-cols-2">
+            {highlights.map(({ icon: Icon, label }) => (
+              <li key={label} className="flex items-center gap-2.5">
+                <Icon size={20} className="text-ink-soft" aria-hidden="true" /> {label}
+              </li>
             ))}
-          </div>
+          </ul>
         )}
       </Section>
 
-      {a.locations[0] && (
-        <Section title="Punto de encuentro">
-          <AttractionMap location={a.locations[0]} />
+      {!!(a.inclusions_list?.length || a.exclusions_list?.length) && (
+        <Section title="Qué incluye">
+          <ul className="grid gap-2.5 sm:grid-cols-2">
+            {a.inclusions_list?.map((item) => (
+              <li key={item} className="flex items-start gap-2.5">
+                <Check size={18} className="mt-0.5 shrink-0 text-success" aria-hidden="true" /> {item}
+              </li>
+            ))}
+            {a.exclusions_list?.map((item) => (
+              <li key={item} className="flex items-start gap-2.5 text-ink-soft">
+                <X size={18} className="mt-0.5 shrink-0 text-danger" aria-hidden="true" /> {item}
+              </li>
+            ))}
+          </ul>
         </Section>
       )}
 
-      <Section title="Información adicional">
-        <ul className="list-disc space-y-1.5 pl-5 text-ink-soft">
-          <li>Recibirás la confirmación en el momento de la reserva.</li>
-          <li>Lleva ropa abrigada: en los Andes la temperatura cambia rápidamente.</li>
-          <li>Se recomienda un nivel de forma física moderado para actividades en altura.</li>
-          <li>Máximo 100 viajeros por reserva.</li>
-        </ul>
-        {a.operator && (
-          <p className="mt-4 flex items-center gap-2 text-sm text-ink-soft">
-            <Building2 size={16} aria-hidden="true" /> Operado por <span className="font-semibold text-ink">{a.operator.name}</span>
-          </p>
-        )}
+      {a.itinerary.length > 0 && (
+        <Section title="Itinerario">
+          <ol className="space-y-5 border-l-2 border-line pl-5">
+            {[...a.itinerary]
+              .sort((x, y) => x.stop_number - y.stop_number)
+              .map((stop) => (
+                <li key={stop.stop_number} className="relative">
+                  <span className="absolute -left-[31px] top-0 flex h-5 w-5 items-center justify-center rounded-full bg-brand-500 text-[11px] font-bold text-white">
+                    {stop.stop_number}
+                  </span>
+                  <p className="font-semibold">
+                    {stop.time} · {stop.title}
+                  </p>
+                  {stop.description && <p className="mt-0.5 text-sm text-ink-soft">{stop.description}</p>}
+                  <p className="mt-0.5 text-xs text-ink-muted">
+                    {stop.duration_minutes} min{stop.location_name ? ` · ${stop.location_name}` : ''}
+                  </p>
+                </li>
+              ))}
+          </ol>
+        </Section>
+      )}
+
+      <Section title="Punto de encuentro">
+        <AttractionMap point={a.meeting_point_geo} />
       </Section>
+
+      {accessItems.some(([value]) => value !== undefined) && (
+        <Section title="Accesibilidad">
+          <ul className="grid gap-2.5 sm:grid-cols-2">
+            {accessItems.map(([value, label]) => (
+              <li key={label} className={`flex items-center gap-2.5 ${value ? '' : 'text-ink-soft'}`}>
+                {value ? (
+                  <Accessibility size={18} className="text-success" aria-hidden="true" />
+                ) : (
+                  <X size={18} className="text-danger" aria-hidden="true" />
+                )}
+                {value ? label : `No ${label.charAt(0).toLowerCase()}${label.slice(1)}`}
+              </li>
+            ))}
+          </ul>
+        </Section>
+      )}
+
+      {a.proveedor?.nombre_comercial && (
+        <Section title="Operador">
+          <p className="flex items-center gap-2 text-ink-soft">
+            <Building2 size={16} aria-hidden="true" /> <span className="font-semibold text-ink">{a.proveedor.nombre_comercial}</span>
+            {a.proveedor.ruc && <span className="text-sm">· RUC {a.proveedor.ruc}</span>}
+          </p>
+          {a.proveedor.telefono_emergencia && (
+            <p className="mt-2 flex items-center gap-2 text-sm text-ink-soft">
+              <Phone size={16} aria-hidden="true" /> Emergencias: {a.proveedor.telefono_emergencia}
+            </p>
+          )}
+        </Section>
+      )}
 
       <Section title="Política de cancelación" id="cancelacion">
         <p className="flex items-start gap-2.5">
-          <CalendarX2 size={20} className={`mt-0.5 shrink-0 ${a.freeCancellation ? 'text-success' : 'text-danger'}`} aria-hidden="true" />
-          {a.freeCancellation
-            ? 'Cancela gratis antes de que empiece la actividad para recibir un reembolso completo.'
-            : 'Esta experiencia no es reembolsable. No se admiten cambios ni cancelaciones gratuitas.'}
+          <CalendarX2 size={20} className={`mt-0.5 shrink-0 ${policy?.free_cancellation ? 'text-success' : 'text-danger'}`} aria-hidden="true" />
+          <span>
+            {policy?.free_cancellation
+              ? `Cancela gratis hasta ${policy.deadline_hours} horas antes del inicio para recibir el reembolso completo.`
+              : 'Esta experiencia no admite cancelación gratuita.'}
+            {policy?.description && <span className="mt-1 block text-sm text-ink-soft">{policy.description}</span>}
+          </span>
         </p>
       </Section>
     </div>

@@ -1,24 +1,16 @@
-/** Tipos compartidos del contrato HTTP (AtraccionesService.Contracts/Common). JSON en camelCase. */
+/** Tipos compartidos del Gateway: contrato v3 (REST) y servicios del portal (GraphQL). JSON en snake_case. */
 
-/** Fecha local `YYYY-MM-DD` (DateOnly). */
+/** Fecha local `YYYY-MM-DD`. */
 export type IsoDate = string;
-/** Instante ISO 8601 con zona (DateTimeOffset). */
+/** Instante ISO 8601 con zona. */
 export type IsoDateTime = string;
 
-export interface Price {
-  currency: string;
-  total: number;
+export interface InvalidParam {
+  name: string;
+  reason: string;
 }
 
-export interface PagedResponse<T> {
-  totalItems: number;
-  itemsPerPage: number;
-  currentPage: number;
-  totalPages: number;
-  data: T[];
-}
-
-/** Cuerpo RFC 7807 que devuelve el API (incluye `code` y `traceId` como extensiones). */
+/** ProblemDetails (RFC 7807) del Gateway y de la Partner API. */
 export interface ProblemDetails {
   type?: string;
   title?: string;
@@ -26,6 +18,27 @@ export interface ProblemDetails {
   detail?: string;
   instance?: string;
   code?: string;
-  traceId?: string;
-  errors?: Record<string, string[]>;
+  correlation_id?: string;
+  timestamp?: string;
+  invalid_params?: InvalidParam[];
+}
+
+/** Error de GraphQL: el código del servicio va en `extensions.reason`. */
+export interface GraphqlError {
+  message: string;
+  extensions?: {
+    code?: string;
+    reason?: string;
+    status?: number;
+    invalidParams?: InvalidParam[];
+    correlationId?: string;
+  };
+}
+
+export interface PaginationMetadata {
+  total_results: number;
+  page: number;
+  limit: number;
+  total_pages: number;
+  next_cursor?: string | null;
 }

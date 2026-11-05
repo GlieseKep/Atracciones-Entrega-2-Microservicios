@@ -1,34 +1,41 @@
 import { X } from 'lucide-react';
-import { DURATION_OPTIONS, type CatalogFilters } from '@/features/attractions/filters';
+import { DURATION_OPTIONS, INCLUSION_OPTIONS, type CatalogFilters } from '@/features/attractions/filters';
+import type { Category } from '@/types/attraction';
 import { formatDate } from '@/utils/dates';
-import { formatLanguage, formatMoney } from '@/utils/formatters';
+import { formatMoney } from '@/utils/formatters';
 
 interface Props {
   filters: CatalogFilters;
+  categories: Category[];
   onChange: (patch: Partial<CatalogFilters>) => void;
   onClear: () => void;
 }
 
 /** Chips con los filtros activos, removibles uno a uno. */
-export function SearchSummary({ filters, onChange, onClear }: Props) {
+export function SearchSummary({ filters, categories, onChange, onClear }: Props) {
   const chips: { key: string; label: string; remove: () => void }[] = [];
   if (filters.q) chips.push({ key: 'q', label: `“${filters.q}”`, remove: () => onChange({ q: '' }) });
   if (filters.city) chips.push({ key: 'city', label: filters.city, remove: () => onChange({ city: '' }) });
+  if (filters.category) {
+    const name = categories.find((c) => c.id === filters.category)?.nombre ?? 'Categoría';
+    chips.push({ key: 'cat', label: name, remove: () => onChange({ category: '' }) });
+  }
   if (filters.date) chips.push({ key: 'date', label: formatDate(filters.date), remove: () => onChange({ date: '' }) });
-  filters.categories.forEach((c) =>
-    chips.push({ key: `c-${c}`, label: c, remove: () => onChange({ categories: filters.categories.filter((x) => x !== c) }) }),
-  );
-  filters.durations.forEach((d) =>
+  if (filters.maxPrice) chips.push({ key: 'p', label: `Hasta ${formatMoney(filters.maxPrice)}`, remove: () => onChange({ maxPrice: null }) });
+  if (filters.maxHours) {
+    const label = DURATION_OPTIONS.find((o) => o.value === filters.maxHours)?.label ?? `Hasta ${filters.maxHours} h`;
+    chips.push({ key: 'h', label, remove: () => onChange({ maxHours: null }) });
+  }
+  filters.includes.forEach((inc) =>
     chips.push({
-      key: `d-${d}`,
-      label: DURATION_OPTIONS.find((o) => o.value === d)?.label ?? d,
-      remove: () => onChange({ durations: filters.durations.filter((x) => x !== d) }),
+      key: `i-${inc}`,
+      label: INCLUSION_OPTIONS.find((o) => o.value === inc)?.label ?? inc,
+      remove: () => onChange({ includes: filters.includes.filter((x) => x !== inc) }),
     }),
   );
-  if (filters.maxPrice) chips.push({ key: 'p', label: `Hasta ${formatMoney(filters.maxPrice)}`, remove: () => onChange({ maxPrice: null }) });
-  if (filters.minRating) chips.push({ key: 'r', label: `${filters.minRating}+ estrellas`, remove: () => onChange({ minRating: null }) });
-  if (filters.language) chips.push({ key: 'l', label: formatLanguage(filters.language), remove: () => onChange({ language: '' }) });
+  if (filters.language) chips.push({ key: 'l', label: `Guía en ${filters.language}`, remove: () => onChange({ language: '' }) });
   if (filters.freeCancellation) chips.push({ key: 'fc', label: 'Cancelación gratuita', remove: () => onChange({ freeCancellation: false }) });
+  if (filters.accessible) chips.push({ key: 'acc', label: 'Silla de ruedas', remove: () => onChange({ accessible: false }) });
 
   if (!chips.length) return null;
   return (

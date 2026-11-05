@@ -1,8 +1,9 @@
-import type { Price } from '@/types/api';
+import type { TicketPrices } from '@/types/attraction';
+import type { TicketCounts, TicketType } from '@/types/booking';
 
 const LOCALE = 'es-EC';
 
-/** `US$ 9,50` — mismo formato corto que usa Viator para precios "desde". */
+/** `US$ 9,50` — formato corto para precios "desde". */
 export function formatMoney(amount: number, currency = 'USD'): string {
   const formatted = new Intl.NumberFormat(LOCALE, {
     style: 'currency',
@@ -14,28 +15,34 @@ export function formatMoney(amount: number, currency = 'USD'): string {
   return currency === 'USD' ? formatted.replace('USD', 'US$').replace(/\s+/, ' ').trim() : formatted;
 }
 
-export const formatPrice = (price: Price) => formatMoney(price.total, price.currency);
+/** Precio "desde": la tarifa de adulto. */
+export const formatFromPrice = (price: TicketPrices) => formatMoney(price.adult, price.currency);
 
-/** Convierte una duración ISO 8601 (`PT2H30M`, `P1D`) a minutos. Devuelve `null` si no es válida. */
-export function durationToMinutes(iso: string): number | null {
-  const match = /^P(?!$)(?:(\d+)D)?(?:T(?=\d)(?:(\d+)H)?(?:(\d+)M)?)?$/.exec(iso);
-  if (!match) return null;
-  const [, d = '0', h = '0', m = '0'] = match;
-  return Number(d) * 24 * 60 + Number(h) * 60 + Number(m);
-}
+export const TICKET_TYPES: { type: TicketType; label: string; help: string }[] = [
+  { type: 'adult', label: 'Adultos', help: '13 a 64 años' },
+  { type: 'child', label: 'Niños', help: '5 a 12 años' },
+  { type: 'senior', label: 'Adultos mayores', help: '65 años o más' },
+  { type: 'infant', label: 'Infantes', help: '0 a 4 años, ocupan cupo' },
+];
 
-/** `PT2H30M` → `2 h 30 min`; `P1D` → `1 día`. */
-export function formatDuration(iso: string): string {
-  const total = durationToMinutes(iso);
-  if (total === null) return iso;
-  const days = Math.floor(total / 1440);
-  const hours = Math.floor((total % 1440) / 60);
-  const minutes = total % 60;
-  const parts: string[] = [];
-  if (days) parts.push(`${days} ${days === 1 ? 'día' : 'días'}`);
-  if (hours) parts.push(`${hours} h`);
-  if (minutes) parts.push(`${minutes} min`);
-  return parts.join(' ') || '0 min';
+export const ticketTotal = (counts: TicketCounts) => counts.adult + counts.child + counts.senior + counts.infant;
+
+/** Importe estimado con la tarifa del catálogo; Booking calcula el total final. */
+export const estimateTotal = (price: TicketPrices, counts: TicketCounts) =>
+  Math.round((price.adult * counts.adult + price.child * counts.child + price.senior * counts.senior + price.infant * counts.infant) * 100) / 100;
+
+/** `2 adultos, 1 niño` */
+export function describeTickets(counts: Partial<TicketCounts>): string {
+  const names: Record<TicketType, [string, string]> = {
+    adult: ['adulto', 'adultos'],
+    child: ['niño', 'niños'],
+    senior: ['adulto mayor', 'adultos mayores'],
+    infant: ['infante', 'infantes'],
+  };
+  return (Object.keys(names) as TicketType[])
+    .filter((t) => (counts[t] ?? 0) > 0)
+    .map((t) => `${counts[t]} ${names[t][counts[t] === 1 ? 0 : 1]}`)
+    .join(', ');
 }
 
 export function formatReviewCount(count: number): string {
@@ -46,15 +53,8 @@ export function formatScore(score: number): string {
   return score.toLocaleString(LOCALE, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 }
 
-export const PRODUCT_TYPE_LABEL = {
-  SINGLE_TICKET: 'Entrada',
-  GUIDED_TOUR: 'Tour guiado',
-  PACKAGE: 'Excursión de día completo',
-} as const;
+/** Las reseñas puntúan de 1 a 10; las estrellas de la interfaz, de 0 a 5. */
+export const toStars = (score10: number) => Math.round((score10 / 2) * 10) / 10;
 
-export const LANGUAGE_LABEL: Record<string, string> = { es: 'Español', en: 'Inglés', fr: 'Francés', de: 'Alemán' };
-
-export const formatLanguage = (code: string) => LANGUAGE_LABEL[code] ?? code.toUpperCase();
-
-/** Abrevia un identificador para mostrarlo como código de seguimiento. */
-export const shortCode = (id: string) => id.replace(/-/g, '').slice(0, 8).toUpperCase();
+/** `Tour Quito (ADULT)` → `Tour Quito`: las líneas de la orden llevan el tipo de boleto en el nombre. */
+export const lineAttractionName = (descripcion: string) => descripcion.replace(/\s*\((ADULT|CHILD|SENIOR|INFANT|STUDENT)\)$/, '');

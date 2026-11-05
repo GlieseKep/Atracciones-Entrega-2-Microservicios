@@ -2,29 +2,38 @@ import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { CalendarDays, CheckCircle2, Clock, Ticket, Users } from 'lucide-react';
-import { getReservation } from '@/api/reservations';
-import { photoAt } from '@/components/attractions/AttractionCard';
-import { Button, ButtonLink } from '@/components/common/Button';
+import { CalendarDays, CheckCircle2, Clock, FileText, MapPin, QrCode, Receipt, Ticket, User, Users } from 'lucide-react';
+import { getReservation } from '@/api/bookings';
+import { getOrder, getOrderInvoice } from '@/api/orders';
+import { Button } from '@/components/common/Button';
 import { Alert, ErrorState } from '@/components/common/Feedback';
 import { TextArea } from '@/components/common/Input';
 import { Modal } from '@/components/common/Modal';
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
-import { ReservationStatusBadge } from '@/components/profile/StatusBadge';
+import { OrderStatusBadge, ReservationStatusBadge } from '@/components/profile/StatusBadge';
 import { useAsync } from '@/hooks/useAsync';
-import { useAttraction } from '@/hooks/useAttractions';
 import { useCancelReservation } from '@/hooks/useReservations';
 import { useUiStore } from '@/stores/uiStore';
+import type { Reservation } from '@/types/booking';
+import type { OrderDetail } from '@/types/order';
 import { errorMessage } from '@/utils/api';
-import { formatDate } from '@/utils/dates';
-import { formatPrice, shortCode } from '@/utils/formatters';
+import { formatDate, formatDateTime } from '@/utils/dates';
+import { describeTickets, formatMoney, lineAttractionName } from '@/utils/formatters';
 import { paths } from '@/utils/routes';
 import { cancelReasonSchema, type CancelReasonValues } from '@/utils/validation';
 
+const CANCELLABLE = ['PENDING', 'CONFIRMED'];
+
+const METHOD_LABEL: Record<string, string> = { CREDIT_CARD: 'Tarjeta de crédito', DEBIT_CARD: 'Tarjeta de débito', PAYPAL: 'PayPal', TRANSFER: 'Transferencia' };
+
+const TICKET_LABEL: Record<string, string> = { ADULT: 'Adulto', CHILD: 'Niño', SENIOR: 'Adulto mayor', INFANT: 'Infante', STUDENT: 'Estudiante' };
+
+/** Reserva de Booking con su orden (ms-order) y, si ya se emitió, la factura (ms-invoicing). */
 export default function ReservationDetailPage() {
   const { reservationId = '' } = useParams();
   const reservation = useAsync((signal) => getReservation(reservationId, signal), [reservationId]);
-  const attraction = useAttraction(reservation.data?.attractionId);
+  const ordNumero = reservation.data?.external_order_id;
+  const order = useAsync((signal) => getOrder(ordNumero!, signal), [ordNumero, reservation.data?.status], !!ordNumero);
   const [cancelOpen, setCancelOpen] = useState(false);
 
   if (reservation.status === 'error') {
@@ -37,71 +46,201 @@ export default function ReservationDetailPage() {
   if (!reservation.data) return <div className="page-container skeleton mt-10 h-80" aria-busy="true" />;
 
   const r = reservation.data;
-  const a = attraction.data;
+  const name = order.data?.lineas[0] ? lineAttractionName(order.data.lineas[0].descripcion) : 'Tu experiencia';
 
   return (
-    <div className="page-container max-w-3xl pt-4">
-      <Breadcrumbs items={[{ label: 'Inicio', to: '/' }, { label: 'Mis reservas', to: paths.profile('reservas') }, { label: `#${shortCode(r.reservationId)}` }]} />
+    <div className="page-container max-w-4xl pt-4">
+      <Breadcrumbs items={[{ label: 'Inicio', to: '/' }, { label: 'Mis reservas', to: paths.profile('reservas') }, { label: r.reservation_code }]} />
 
       {r.status === 'CONFIRMED' && (
-        <div className="mt-6 flex items-center gap-3 rounded-md bg-[#EEF7F2] p-4 text-success">
+        <div className="mt-6 flex items-center gap-3 rounded-md bg-[#EEF7F2] p-4 text-success" role="status">
           <CheckCircle2 size={28} aria-hidden="true" />
-          <p className="font-semibold">Tu reserva está confirmada. ¡Prepárate para disfrutar!</p>
+          <p className="font-semibold">Tu compra está confirmada. Presenta el código QR y tu documento en el punto de encuentro.</p>
         </div>
       )}
+      {r.status === 'PENDING' && (
+        <Alert className="mt-6">Tu reserva está registrada y el pago está pendiente de confirmación. Los cupos quedan reservados mientras tanto.</Alert>
+      )}
 
-      <div className="card-surface mt-6 overflow-hidden">
-        {a?.photos[0] && <img src={photoAt(a.photos[0].url, 960)} alt="" className="h-48 w-full object-cover" />}
-        <div className="p-6">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="font-mono text-sm text-ink-muted">Reserva #{shortCode(r.reservationId)}</p>
-              <h1 className="mt-1 text-2xl">{a?.name ?? 'Tu experiencia'}</h1>
+      <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-[1fr_300px]">
+        <div className="space-y-6">
+          <section className="card-surface p-6">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="font-mono text-sm text-ink-muted">Reserva {r.reservation_code}</p>
+                <h1 className="mt-1 text-2xl">{name}</h1>
+              </div>
+              <ReservationStatusBadge status={r.status} />
             </div>
-            <ReservationStatusBadge status={r.status} />
-          </div>
-          <ul className="mt-5 grid gap-3 sm:grid-cols-2">
-            <li className="flex items-center gap-2">
-              <CalendarDays size={18} aria-hidden="true" /> {formatDate(r.date, { weekday: 'long', month: 'long' })}
-            </li>
-            <li className="flex items-center gap-2">
-              <Clock size={18} aria-hidden="true" /> {r.time} (hora local)
-            </li>
-            <li className="flex items-center gap-2">
-              <Users size={18} aria-hidden="true" /> {r.ticketCount} {r.ticketCount === 1 ? 'entrada' : 'entradas'}
-            </li>
-            <li className="flex items-center gap-2">
-              <Ticket size={18} aria-hidden="true" /> Total {formatPrice(r.totalPrice)}
-            </li>
-          </ul>
-          <div className="mt-6 flex flex-wrap gap-3 border-t border-line pt-5">
-            {a && (
-              <ButtonLink to={paths.attraction(a.id)} variant="secondary">
-                Ver la experiencia
-              </ButtonLink>
+            <ul className="mt-5 grid gap-3 sm:grid-cols-2">
+              <li className="flex items-center gap-2">
+                <CalendarDays size={18} aria-hidden="true" /> {formatDate(r.date, { weekday: 'long', month: 'long' })}
+              </li>
+              <li className="flex items-center gap-2">
+                <Clock size={18} aria-hidden="true" /> {r.time}
+              </li>
+              <li className="flex items-center gap-2">
+                <Users size={18} aria-hidden="true" />
+                {describeTickets({ adult: r.adult_count, child: r.child_count, senior: r.senior_count, infant: r.infant_count })}
+              </li>
+              <li className="flex items-center gap-2">
+                <Ticket size={18} aria-hidden="true" /> Total {formatMoney(r.total_price, r.currency)}
+              </li>
+              <li className="flex items-center gap-2">
+                <User size={18} aria-hidden="true" /> Guía: {r.guia_asignado}
+              </li>
+              {r.punto_encuentro && (
+                <li className="flex items-center gap-2">
+                  <MapPin size={18} aria-hidden="true" /> {r.punto_encuentro}
+                </li>
+              )}
+            </ul>
+            {r.reembolso_id && (
+              <Alert tone="success" className="mt-5">
+                Reembolso {r.reembolso_id}: {formatMoney(r.monto_reembolsado ?? 0, r.currency)}.
+              </Alert>
             )}
-            {r.status !== 'CANCELLED' && (
-              <Button variant="danger" onClick={() => setCancelOpen(true)}>
-                Cancelar reserva
-              </Button>
+            {CANCELLABLE.includes(r.status) && (
+              <div className="mt-6 border-t border-line pt-5">
+                <Button variant="danger" onClick={() => setCancelOpen(true)}>
+                  Cancelar reserva
+                </Button>
+              </div>
             )}
-          </div>
+          </section>
+
+          <section className="card-surface p-6" aria-labelledby="holder-title">
+            <h2 id="holder-title" className="text-lg">
+              Titular
+            </h2>
+            <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
+              <Row label="Nombre" value={r.customer.full_name} />
+              <Row label="Documento" value={`${r.customer.document_type} ${r.customer.document_id}`} />
+              <Row label="Correo" value={r.customer.email} />
+              <Row label="Teléfono" value={r.customer.phone} />
+            </dl>
+          </section>
+
+          <OrderSection order={order} />
         </div>
+
+        <aside className="space-y-4">
+          {r.voucher_qr_payload && ['CONFIRMED', 'CHECKED_IN'].includes(r.status) && (
+            <section className="card-surface p-5 text-center" aria-labelledby="voucher-title">
+              <h2 id="voucher-title" className="flex items-center justify-center gap-2 text-lg">
+                <QrCode size={18} aria-hidden="true" /> Voucher
+              </h2>
+              <p className="mt-2 text-3xl font-extrabold tracking-wider">{r.reservation_code}</p>
+              <p className="mt-3 break-all rounded-sm bg-surface p-2 text-left font-mono text-[11px] text-ink-soft">{r.voucher_qr_payload}</p>
+              <p className="mt-2 text-xs text-ink-muted">El guía escanea este código en el check-in. También lo recibiste por correo.</p>
+            </section>
+          )}
+          {order.data && <InvoiceCard order={order.data} />}
+          <p className="text-sm text-ink-soft">
+            ¿Necesitas ayuda? Consulta la{' '}
+            <Link to={paths.help('cancelacion')} className="link">
+              política de cancelación
+            </Link>{' '}
+            o{' '}
+            <Link to={paths.help('contacto')} className="link">
+              escríbenos
+            </Link>
+            .
+          </p>
+        </aside>
       </div>
-      <p className="mt-4 text-sm text-ink-soft">
-        ¿Necesitas ayuda? Consulta nuestra <Link to="/ayuda#cancelacion" className="link">política de cancelación</Link>.
-      </p>
 
       <CancelDialog
         open={cancelOpen}
         onClose={() => setCancelOpen(false)}
-        reservationId={r.reservationId}
+        reservationId={r.reservation_id}
         onCancelled={(updated) => {
           reservation.setData(updated);
           setCancelOpen(false);
         }}
       />
     </div>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt className="text-ink-muted">{label}</dt>
+      <dd className="font-semibold">{value}</dd>
+    </div>
+  );
+}
+
+function OrderSection({ order }: { order: ReturnType<typeof useAsync<OrderDetail>> }) {
+  if (order.status === 'error') return <ErrorState error={order.error} onRetry={order.retry} className="py-8" />;
+  if (!order.data) return <div className="skeleton h-40" aria-busy="true" />;
+  const { orden, lineas, metodo, fecha } = order.data;
+  return (
+    <section className="card-surface p-6" aria-labelledby="order-title">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 id="order-title" className="flex items-center gap-2 text-lg">
+            <Receipt size={18} aria-hidden="true" /> Orden {orden.ord_numero}
+          </h2>
+          <p className="text-sm text-ink-soft">
+            {formatDateTime(fecha)} · {METHOD_LABEL[metodo] ?? metodo}
+          </p>
+        </div>
+        <OrderStatusBadge status={orden.estado} />
+      </div>
+      <ul className="mt-4 divide-y divide-line text-sm">
+        {lineas.map((line) => (
+          <li key={line.det_id} className="flex justify-between gap-3 py-2">
+            <span>
+              {TICKET_LABEL[line.ticket_type] ?? line.ticket_type} × {line.cantidad}{' '}
+              <span className="text-ink-muted">({formatMoney(line.precio_unitario, orden.moneda)} c/u)</span>
+            </span>
+            <span className="font-semibold">{formatMoney(line.subtotal, orden.moneda)}</span>
+          </li>
+        ))}
+      </ul>
+      <dl className="mt-3 space-y-1 border-t border-line pt-3 text-sm">
+        <Amount label="Subtotal" value={formatMoney(orden.subtotal, orden.moneda)} />
+        {orden.descuento > 0 && <Amount label="Descuento" value={`−${formatMoney(orden.descuento, orden.moneda)}`} />}
+        <Amount label="IVA" value={formatMoney(orden.iva, orden.moneda)} />
+        <div className="flex justify-between pt-1 text-lg font-extrabold">
+          <dt>Total</dt>
+          <dd>{formatMoney(orden.total, orden.moneda)}</dd>
+        </div>
+      </dl>
+    </section>
+  );
+}
+
+function Amount({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between text-ink-soft">
+      <dt>{label}</dt>
+      <dd>{value}</dd>
+    </div>
+  );
+}
+
+/** La factura la emite Invoicing al pagarse la orden; si aún no existe (o no se puede consultar), no se muestra. */
+function InvoiceCard({ order }: { order: OrderDetail }) {
+  const invoice = useAsync((signal) => getOrderInvoice(order.orden.ord_id, signal), [order.orden.ord_id, order.orden.estado]);
+  if (!invoice.data) return null;
+  const f = invoice.data;
+  return (
+    <section className="card-surface p-5" aria-labelledby="invoice-title">
+      <h2 id="invoice-title" className="flex items-center gap-2 text-lg">
+        <FileText size={18} aria-hidden="true" /> Factura
+      </h2>
+      <dl className="mt-3 space-y-2 text-sm">
+        <Amount label="Número" value={f.numero} />
+        <Amount label="Emitida" value={formatDateTime(f.emitida_en)} />
+        <Amount label="A nombre de" value={f.razon_social} />
+        <Amount label="SRI" value={f.estado_sri === 'AUTORIZADA' ? 'Autorizada' : f.estado_sri === 'RECHAZADA' ? 'Rechazada' : 'En proceso'} />
+        <Amount label="Total" value={formatMoney(f.total)} />
+      </dl>
+      {f.autorizacion_sri && <p className="mt-3 break-all font-mono text-[11px] text-ink-muted">Autorización {f.autorizacion_sri}</p>}
+    </section>
   );
 }
 
@@ -114,7 +253,7 @@ function CancelDialog({
   open: boolean;
   onClose: () => void;
   reservationId: string;
-  onCancelled: (r: Awaited<ReturnType<typeof getReservation>>) => void;
+  onCancelled: (r: Reservation) => void;
 }) {
   const { run, pending, error } = useCancelReservation(reservationId);
   const notify = useUiStore((s) => s.notify);
@@ -127,7 +266,7 @@ function CancelDialog({
   const submit = handleSubmit(async ({ reason }) => {
     try {
       const updated = await run(reason.trim());
-      notify('Reserva cancelada.', 'success');
+      notify('Reserva cancelada. El reembolso se procesa en el mismo método de pago.', 'success');
       onCancelled(updated);
     } catch {
       /* se muestra abajo */
@@ -152,7 +291,7 @@ function CancelDialog({
       }
     >
       <form onSubmit={submit} noValidate className="space-y-4">
-        <p className="text-ink-soft">Esta acción no se puede deshacer. Las plazas se liberarán para otros viajeros.</p>
+        <p className="text-ink-soft">Esta acción no se puede deshacer. Los cupos se liberan y, si pagaste, se emite el reembolso.</p>
         <TextArea label="Motivo de la cancelación" error={errors.reason?.message} {...register('reason')} />
         {!!error && <Alert tone="error">{errorMessage(error)}</Alert>}
       </form>

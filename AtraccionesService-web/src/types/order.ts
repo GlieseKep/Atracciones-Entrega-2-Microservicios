@@ -1,46 +1,54 @@
-import type { IsoDate, IsoDateTime, Price } from './api';
-import type { PaymentSummary } from './payment';
+import type { IsoDateTime } from './api';
 
-export type OrderStatus =
-  | 'PENDING_PAYMENT'
-  | 'PAID'
-  | 'FULFILLED'
-  | 'CANCELLED'
-  | 'PARTIALLY_REFUNDED'
-  | 'REFUNDED';
+/** Órdenes de ms-order (las crea Booking en la compra) y facturas de ms-invoicing. */
 
-export interface OrderItem {
-  id: string;
-  attractionId: string;
-  date: IsoDate;
-  time: string;
-  quantity: number;
-  unitPrice: Price;
-  status: string;
+export type OrderState = 'CREADA' | 'PAGADA' | 'CANCELADA' | 'REEMBOLSADA';
+
+export interface OrderSummary {
+  ord_id: number;
+  ord_numero: string;
+  estado: OrderState;
+  subtotal: number;
+  descuento: number;
+  iva: number;
+  total: number;
+  moneda: string;
 }
 
-export interface Order {
-  id: string;
-  customerId: string;
-  purchaseId?: string | null;
-  reservationId?: string | null;
-  status: OrderStatus;
-  currency: string;
-  totalAmount: number;
-  createdAt: IsoDateTime;
-  updatedAt: IsoDateTime;
-  items: OrderItem[];
-  paymentSimulation?: PaymentSummary | null;
+export interface OrderLine {
+  det_id: number;
+  atr_id: number;
+  /** Nombre de la atracción con el tipo de boleto, por ejemplo `Tour Quito (ADULT)`. */
+  descripcion: string;
+  ticket_type: 'ADULT' | 'CHILD' | 'SENIOR' | 'INFANT' | 'STUDENT';
+  cantidad: number;
+  precio_unitario: number;
+  subtotal: number;
 }
 
-export interface OrderEvent {
-  eventType: string;
-  previousStatus?: string | null;
-  newStatus: string;
-  createdAt: IsoDateTime;
+export interface OrderDetail {
+  orden: OrderSummary;
+  metodo: string;
+  lineas: OrderLine[];
+  fecha: IsoDateTime;
 }
 
-export interface OrderEventsResponse {
-  orderId: string;
-  events: OrderEvent[];
+export type InvoiceState = 'NO_PAGADA' | 'PAGADA' | 'ANULADA';
+
+export interface Invoice {
+  id: number;
+  ord_id: number;
+  numero: string;
+  clave_acceso: string | null;
+  autorizacion_sri: string | null;
+  estado: InvoiceState;
+  estado_sri: 'PENDIENTE' | 'AUTORIZADA' | 'RECHAZADA';
+  emitida_en: IsoDateTime;
+  subtotal: number;
+  descuento: number;
+  iva: number;
+  total: number;
+  identificacion: string;
+  razon_social: string;
+  correo: string;
 }

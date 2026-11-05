@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Pencil, Plus } from 'lucide-react';
 import { adminApi, type AdminSlot } from '@/api/admin';
-import { listAttractions } from '@/api/attractions';
 import { Badge } from '@/components/common/Badge';
 import { Button } from '@/components/common/Button';
 import { Alert } from '@/components/common/Feedback';
@@ -13,6 +12,7 @@ import { useAsync } from '@/hooks/useAsync';
 import { useUiStore } from '@/stores/uiStore';
 import { errorMessage } from '@/utils/api';
 import { formatDate, isValidLocalTime, today } from '@/utils/dates';
+import { listAttractions } from './legacy';
 import { AdminTable, Sub, type Column } from './AdminTable';
 
 const MAX_CAPACITY = 10_000;

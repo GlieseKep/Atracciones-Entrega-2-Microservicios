@@ -1,39 +1,21 @@
-import type { IsoDateTime } from './api';
+import type { PaymentMethodCode } from './booking';
 
-/** Pasarela simulada: nunca se envían ni muestran datos de tarjeta. */
-export type PaymentMethod = 'CARD' | 'BANK_TRANSFER';
-
-export type PaymentSimulationStatus =
-  | 'PENDING'
-  | 'AUTHORIZED'
-  | 'SETTLED'
-  | 'REJECTED'
-  | 'FAILED'
-  | 'CANCELLED'
-  | 'PARTIALLY_REFUNDED'
-  | 'REFUNDED';
-
-export interface PaymentSummary {
-  id: string;
-  paymentMethod: PaymentMethod;
-  status: PaymentSimulationStatus;
-  gatewayReference?: string | null;
+/** Métodos de pago de ms-payment (`paymentListMethods`). */
+export interface PaymentMethodInfo {
+  id: number;
+  codigo: PaymentMethodCode;
+  nombre: string;
+  /** El método pide datos de la tarjeta (marca y últimos 4 dígitos). */
+  requiere_datos: boolean;
 }
 
-export interface CreatePaymentSimulationRequest {
-  orderId: string;
-  paymentMethod: PaymentMethod;
-  amount: number;
+/** `couponValidateCoupon`. */
+export interface CouponValidation {
+  code: string;
+  valid: boolean;
+  reason: 'COUPON_NOT_FOUND' | 'COUPON_INACTIVE' | 'COUPON_NOT_STARTED' | 'COUPON_EXPIRED' | null;
+  type?: 'PORCENTAJE' | 'FIJO';
+  value?: number;
+  discount_amount: number;
   currency: string;
-}
-
-export interface PaymentSimulation {
-  id: string;
-  orderId: string;
-  paymentMethod: PaymentMethod;
-  status: PaymentSimulationStatus;
-  amount: number;
-  currency: string;
-  gatewayReference?: string | null;
-  createdAt: IsoDateTime;
 }

@@ -1,7 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
-import { listMyReservations } from '@/api/customers';
-import { cancelReservation, createReservation } from '@/api/reservations';
-import type { Reservation, ReservationListParams, ReservationRequest } from '@/types/reservation';
+import { cancelReservation, createReservation, listMyReservations } from '@/api/bookings';
+import type { CreateReservationRequest, Reservation, ReservationStatus } from '@/types/booking';
 import { isApiError } from '@/utils/api';
 import { IdempotencyKeyManager } from '@/utils/idempotency';
 import { useAsync } from './useAsync';
@@ -39,10 +38,9 @@ export function useIdempotentMutation<TPayload, TResult>(
   return { run, pending, error, clearError: () => setError(null) };
 }
 
-export function useCreateReservation(attractionId: string) {
-  return useIdempotentMutation<ReservationRequest, Reservation>(
-    useCallback((body, key) => createReservation(attractionId, body, key), [attractionId]),
-  );
+/** Compra completa en Booking: orden, cupos y pago en una sola operación idempotente. */
+export function useCreateReservation() {
+  return useIdempotentMutation<CreateReservationRequest, Reservation>(useCallback((body, key) => createReservation(body, key), []));
 }
 
 export function useCancelReservation(reservationId: string) {
@@ -51,6 +49,6 @@ export function useCancelReservation(reservationId: string) {
   );
 }
 
-export function useMyReservations(params: ReservationListParams) {
+export function useMyReservations(params: { estado?: ReservationStatus; page: number; limit: number }) {
   return useAsync((signal) => listMyReservations(params, signal), [JSON.stringify(params)]);
 }

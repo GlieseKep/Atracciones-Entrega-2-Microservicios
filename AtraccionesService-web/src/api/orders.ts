@@ -1,10 +1,8 @@
-import type { Order, OrderEventsResponse } from '@/types/order';
-import { http } from './client';
+import type { Invoice, OrderDetail } from '@/types/order';
+import { gql } from './client';
 
-export const getOrder = (orderId: string, signal?: AbortSignal) => http.get<Order>(`/orders/${orderId}`, { signal });
+/** Orden de ms-order por su número (`external_order_id` de la reserva). La crea Booking: el portal solo la consulta. */
+export const getOrder = (ordNumero: string, signal?: AbortSignal) => gql.query<OrderDetail>('orderGetOrder', { ord_numero: ordNumero }, { signal });
 
-export const getOrderEvents = (orderId: string, signal?: AbortSignal) =>
-  http.get<OrderEventsResponse>(`/orders/${orderId}/events`, { signal });
-
-export const cancelOrder = (orderId: string, reason: string, idempotencyKey: string) =>
-  http.post<Order>(`/orders/${orderId}/cancel`, { reason }, { idempotencyKey });
+/** Factura electrónica de la orden (ms-invoicing). */
+export const getOrderInvoice = (ordId: number, signal?: AbortSignal) => gql.query<Invoice>('invoicingGetOrderInvoice', { ordId }, { signal });

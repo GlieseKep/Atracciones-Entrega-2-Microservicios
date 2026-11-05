@@ -2,20 +2,21 @@ import { useEffect, useId, useState, type FormEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CalendarDays, MapPin, Search } from 'lucide-react';
 import { parseFilters, serializeFilters } from '@/features/attractions/filters';
+import { useCities } from '@/hooks/useAttractions';
 import { today } from '@/utils/dates';
 import { paths } from '@/utils/routes';
-
-export const KNOWN_CITIES = ['Quito', 'Latacunga', 'Mindo', 'Baños de Agua Santa', 'Riobamba', 'San Antonio de Pichincha'];
 
 interface SearchBarProps {
   /** `hero`: buscador grande del inicio (destino + fecha). `compact`: píldora de la cabecera. */
   variant?: 'hero' | 'compact';
 }
 
-/** Convierte el texto en filtro de ciudad cuando coincide con un destino conocido. */
-function toQuery(text: string, date: string) {
+const normalize = (value: string) => value.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+
+/** Convierte el texto en filtro de ciudad cuando coincide con una ciudad de ms-location; si no, es búsqueda libre. */
+function toQuery(text: string, date: string, cities: string[]) {
   const value = text.trim();
-  const city = KNOWN_CITIES.find((c) => c.toLowerCase() === value.toLowerCase());
+  const city = cities.find((c) => normalize(c) === normalize(value));
   return serializeFilters({ q: city ? '' : value, city: city ?? '', date });
 }
 
@@ -25,6 +26,7 @@ export function SearchBar({ variant = 'hero' }: SearchBarProps) {
   const current = parseFilters(params);
   const [text, setText] = useState(current.q || current.city);
   const [date, setDate] = useState<string>(current.date);
+  const cities = (useCities().data ?? []).map((c) => c.nombre);
   const listId = useId();
   const textId = useId();
   const dateId = useId();
@@ -36,12 +38,12 @@ export function SearchBar({ variant = 'hero' }: SearchBarProps) {
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    navigate(paths.attractions(toQuery(text, date)));
+    navigate(paths.attractions(toQuery(text, date, cities)));
   };
 
   const datalist = (
     <datalist id={listId}>
-      {KNOWN_CITIES.map((c) => (
+      {cities.map((c) => (
         <option key={c} value={c} />
       ))}
     </datalist>

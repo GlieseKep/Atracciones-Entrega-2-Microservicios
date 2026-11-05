@@ -5,8 +5,6 @@ COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY . .
 ARG VITE_API_URL
-ARG VITE_AUTH_URL
-ARG VITE_CATALOG_SOURCE=auto
 RUN npm run build
 
 FROM nginx:1.27-alpine

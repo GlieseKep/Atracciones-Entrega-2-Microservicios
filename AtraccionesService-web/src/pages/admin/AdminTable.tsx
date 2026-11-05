@@ -1,12 +1,11 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Search } from 'lucide-react';
-import type { AdminListParams } from '@/api/admin';
+import type { AdminListParams, PagedResponse } from '@/api/admin';
 import { EmptyState, ErrorState } from '@/components/common/Feedback';
 import { Input } from '@/components/common/Input';
 import { Select } from '@/components/common/Select';
 import { Pagination } from '@/components/search/SearchResults';
 import { useAsync } from '@/hooks/useAsync';
-import type { PagedResponse } from '@/types/api';
 
 export interface Column<T> {
   header: string;

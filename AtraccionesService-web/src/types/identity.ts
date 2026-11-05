@@ -1,46 +1,49 @@
-import type { IsoDateTime } from './api';
+import type { IsoDate, IsoDateTime } from './api';
 
-/** Tipos de identidad y perfil (AtraccionesService.Contracts/Identity). */
+/** Cuentas y sesión de ms-identity (`/api/v3/auth/**` y GraphQL `identity*`). */
 
-export interface RegisterProfileRequest {
-  billingName?: string;
-  billingEmail?: string;
-  billingAddress?: string;
-  taxId?: string;
-}
-
-export interface RegisterProfileResponse {
-  id: string;
-  email: string;
-  status: string;
-  customerId: string;
-  createdAt: IsoDateTime;
-}
+export type RoleName = 'ADMIN' | 'OPERADOR' | 'CLIENTE';
 
 export interface User {
-  id: string;
-  email: string;
-  status: string;
-  createdAt: IsoDateTime;
-  updatedAt: IsoDateTime;
+  id: number;
+  correo: string;
+  nombre: string;
+  apellido: string;
+  documento: string | null;
+  telefono: string | null;
+  fecha_nacimiento: IsoDate | null;
+  avatar: string | null;
+  verificado: boolean;
+  activo: boolean;
+  roles: RoleName[];
+  ultimo_acceso: IsoDateTime | null;
+  creado_en: IsoDateTime;
+  actualizado_en: IsoDateTime;
 }
 
-export interface Customer {
-  id: string;
-  userId: string;
-  billingName?: string | null;
-  billingEmail?: string | null;
-  billingAddress?: string | null;
-  taxId?: string | null;
-  paymentMethodReference?: string | null;
-  createdAt: IsoDateTime;
-  updatedAt: IsoDateTime;
+export interface SessionResponse {
+  access_token: string;
+  token_type: 'Bearer';
+  expires_in: number;
+  refresh_token: string;
+  usuario: User;
 }
 
-export interface UpdateCustomerRequest {
-  billingName: string;
-  billingEmail: string;
-  billingAddress: string;
-  taxId?: string;
-  paymentMethodReference?: string;
+export interface RegisterRequest {
+  correo: string;
+  password: string;
+  nombre: string;
+  apellido: string;
+  documento?: string | null;
+  telefono?: string | null;
+  fecha_nacimiento?: IsoDate | null;
+}
+
+/** Solo se envían los campos que cambian. */
+export interface ProfileUpdate {
+  nombre?: string;
+  apellido?: string;
+  documento?: string | null;
+  telefono?: string | null;
+  fecha_nacimiento?: IsoDate | null;
 }
