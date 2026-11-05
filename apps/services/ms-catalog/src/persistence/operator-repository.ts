@@ -106,6 +106,11 @@ export class OperatorRepository {
     return rows.map((row: { ope_id: string }) => Number(row.ope_id));
   }
 
+  async linkedUsers(opeId: number): Promise<{ usu_id: number; cargo: OperatorCharge }[]> {
+    const rows = await this.db.query(`SELECT usu_id, opeu_cargo FROM operador_usuario WHERE ope_id = $1 AND opeu_activo ORDER BY usu_id`, [opeId]);
+    return rows.map((row: { usu_id: string; opeu_cargo: OperatorCharge }) => ({ usu_id: Number(row.usu_id), cargo: row.opeu_cargo }));
+  }
+
   /** `false` si el usuario ya estaba vinculado y activo. Un vínculo inactivo se reactiva. */
   async linkUser(opeId: number, usuId: number, cargo: OperatorCharge): Promise<boolean> {
     const rows = await this.db.query(

@@ -1,6 +1,8 @@
 import { authPost } from '@/features/auth/session';
 import type {
   AdminAttraction,
+  AdminCategory,
+  AdminLanguage,
   AdminPage,
   AdminReview,
   Agreement,
@@ -16,6 +18,7 @@ import type {
   Inclusion,
   MetadataPage,
   Operator,
+  OperatorUser,
   PaginationPage,
   Payment,
   PaymentState,
@@ -26,6 +29,7 @@ import type {
   Slot,
   SlotsGuideResult,
   SystemHealth,
+  Tariff,
 } from '@/types/admin';
 import type { Category } from '@/types/attraction';
 import type { Reservation, ReservationPage, ReservationStatus } from '@/types/booking';
@@ -59,6 +63,7 @@ export const usersApi = {
     gql.query<MetadataPage<User>>('identityListUsers', clean(p), { signal }).then(fromMetadata),
   get: (id: number, signal?: Signal) => gql.query<User>('identityGetUser', { id }, { signal }),
   roles: (signal?: Signal) => gql.query<RoleInfo[]>('identityListRoles', {}, { signal }),
+  update: (id: number, patch: { nombre: string; apellido: string; telefono: string | null }) => gql.mutation<User>('identityUpdateUser', { id, ...patch }),
   setActive: (id: number, activo: boolean) => gql.mutation<User>('identitySetUserActive', { id, activo }),
   assignRole: (id: number, rol: RoleName) => gql.mutation<User>('identityAssignRole', { id, rol }),
   removeRole: (id: number, rol: RoleName) => gql.mutation<User>('identityRemoveRole', { id, rol }),
@@ -73,6 +78,9 @@ export const usersApi = {
 export const apiClientsApi = {
   list: (signal?: Signal) => gql.query<ApiClient[]>('identityListApiClients', {}, { signal }),
   create: (codigo: string, nombre: string) => gql.mutation<CreatedApiClient>('identityCreateApiClient', { codigo, nombre }),
+  rename: (id: number, nombre: string) => gql.mutation<ApiClient>('identityUpdateApiClient', { id, nombre }),
+  /** La clave anterior deja de valer. La nueva solo se ve en esta respuesta. */
+  regenerateKey: (id: number) => gql.mutation<CreatedApiClient>('identityRegenerateApiClientKey', { id }),
   setActive: (id: number, activo: boolean) => gql.mutation<ApiClient>('identitySetApiClientActive', { id, activo }),
 };
 
@@ -86,21 +94,40 @@ export const catalogApi = {
   update: (id: string, body: AttractionRequest) => gql.mutation<AdminAttraction>('catalogAdminUpdateAttraction', { id, ...body }),
   remove: (id: string) => gql.mutation<void>('catalogAdminDeleteAttraction', { id }),
   setState: (id: string, estado: AttractionState) => gql.mutation<AdminAttraction>('catalogAdminSetAttractionState', { id, estado }),
-  /** Todas las categorías, también las subcategorías: una atracción puede estar en cualquiera. */
+  /** También las inactivas, y sin caché: lo que se crea se ve al momento. */
+  adminCategories: (signal?: Signal) => gql.query<AdminCategory[]>('catalogAdminListCategories', {}, { signal }),
+  /** Las activas para el editor, con su ruta: una atracción puede estar en cualquiera, también en una subcategoría. */
   categories: async (signal?: Signal): Promise<Category[]> => {
-    type Node = Category & { subcategorias?: Node[] };
-    const flatten = (nodes: Node[], prefix = ''): Category[] =>
-      nodes.flatMap((n) => [{ ...n, nombre: `${prefix}${n.nombre}` }, ...flatten(n.subcategorias ?? [], `${prefix}${n.nombre} › `)]);
-    return flatten(await gql.query<Node[]>('catalogGetCategoryTree', {}, { signal }));
+    const items = await gql.query<AdminCategory[]>('catalogAdminListCategories', {}, { signal });
+    const byId = new Map(items.map((c) => [c.id, c]));
+    const path = (c: AdminCategory): string => {
+      const parent = c.padre_id ? byId.get(c.padre_id) : undefined;
+      return parent ? `${path(parent)} › ${c.nombre}` : c.nombre;
+    };
+    return items
+      .filter((c) => c.activa)
+      .map((c) => ({ id: c.id, padre_id: c.padre_id, nombre: path(c), slug: c.slug }))
+      .sort((x, y) => x.nombre.localeCompare(y.nombre, 'es'));
   },
-  createCategory: (body: { id: string; padre_id?: string; nombre: string; slug: string; descripcion?: string; orden?: number }) =>
+  createCategory: (body: { id: string; padre_id?: string; nombre: string; slug: string; descripcion?: string; icono?: string; orden?: number; incluye_comida?: boolean; incluye_transporte?: boolean; incluye_guia?: boolean }) =>
     gql.mutation<Category>('catalogCreateCategory', body),
-  languages: (signal?: Signal) => gql.query<{ codigo: string; nombre: string }[]>('catalogListLanguages', {}, { signal }),
+  updateCategory: (
+    codigo: string,
+    patch: Partial<{ nombre: string; descripcion: string | null; icono: string; orden: number; activa: boolean; incluye_comida: boolean; incluye_transporte: boolean; incluye_guia: boolean }>,
+  ) => gql.mutation<Category>('catalogUpdateCategory', { codigo, ...patch }),
+  adminLanguages: (signal?: Signal) => gql.query<AdminLanguage[]>('catalogAdminListLanguages', {}, { signal }),
+  languages: (signal?: Signal) => gql.query<AdminLanguage[]>('catalogAdminListLanguages', {}, { signal }),
+  createLanguage: (codigo: string, nombre: string) => gql.mutation<AdminLanguage>('catalogCreateLanguage', { codigo, nombre }),
+  updateLanguage: (codigo: string, nombre: string) => gql.mutation<void>('catalogUpdateLanguage', { codigo, nombre }),
+  deleteLanguage: (codigo: string) => gql.mutation<void>('catalogDeleteLanguage', { codigo }),
   inclusions: (signal?: Signal) => gql.query<Inclusion[]>('catalogListInclusions', {}, { signal }),
+  createInclusion: (body: { tipo: Inclusion['tipo']; nombre: string; orden: number }) => gql.mutation<Inclusion>('catalogCreateInclusion', body),
+  deleteInclusion: (id: number) => gql.mutation<void>('catalogDeleteInclusion', { id }),
   operators: (signal?: Signal) => gql.query<Operator[]>('catalogListOperators', {}, { signal }),
   createOperator: (body: { id: string; nombre_comercial: string; ruc?: string; email_soporte?: string; telefono_emergencia?: string; direccion?: string; prov_id: number }) =>
     gql.mutation<Operator>('catalogCreateOperator', body),
   updateOperator: (codigo: string, patch: Partial<Omit<Operator, 'id'>>) => gql.mutation<Operator>('catalogUpdateOperator', { codigo, ...patch }),
+  operatorUsers: (codigo: string, signal?: Signal) => gql.query<OperatorUser[]>('catalogListOperatorUsers', { codigo }, { signal }),
   linkOperatorUser: (codigo: string, usuId: number, cargo: 'ADMIN' | 'VENDEDOR' | 'GUIA') =>
     gql.mutation<void>('catalogLinkOperatorUser', { codigo, usu_id: usuId, cargo }),
   unlinkOperatorUser: (codigo: string, usuId: number) => gql.mutation<void>('catalogUnlinkOperatorUser', { codigo, usuId }),
@@ -136,6 +163,8 @@ export const pageOf = <T>(items: T[], page: number, limit: number): AdminPage<T>
 
 export const pricingApi = {
   get: (attractionId: string, signal?: Signal) => gql.query<PriceTable>('pricingGetPriceTable', { attraction_id: attractionId }, { signal }),
+  tariffs: (attractionId: string, signal?: Signal) =>
+    gql.query<{ items: Tariff[] }>('pricingListTariffs', { attraction_id: attractionId, include_history: true }, { signal }).then((r) => r.items ?? []),
   set: (body: { attraction_id: string; valid_from?: string; adult: number; child: number; senior: number; student?: number }) =>
     gql.mutation<PriceTable>('pricingSetPriceTable', body),
 };
@@ -197,7 +226,7 @@ export const couponsApi = {
   list: (p: PageParams & { code?: string; active?: '' | 'true' | 'false' }, signal?: Signal) =>
     gql.query<MetadataPage<Coupon>>('couponListCoupons', clean(p), { signal }).then(fromMetadata),
   create: (body: Coupon) => gql.mutation<Coupon>('couponCreateCoupon', body),
-  update: (code: string, patch: Partial<Pick<Coupon, 'start_date' | 'end_date' | 'max_uses' | 'active'>>) =>
+  update: (code: string, patch: Partial<Pick<Coupon, 'type' | 'value' | 'start_date' | 'end_date' | 'max_uses' | 'active'>>) =>
     gql.mutation<Coupon>('couponUpdateCoupon', { code, ...patch }),
   agreement: (signal?: Signal) => gql.query<Agreement>('couponGetAgreement', {}, { signal }),
   updateAgreement: (body: { permite_promociones: boolean; porcentaje_descuento_maximo: number; destinos_habilitados: string[]; vigencia_hasta: string; condiciones_combo?: string }) =>

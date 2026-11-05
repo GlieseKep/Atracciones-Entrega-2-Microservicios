@@ -77,6 +77,16 @@ export class ApiClientRepository {
     return rows.length > 0 ? toDto(rows[0]) : null;
   }
 
+  async rename(id: number, nombre: string): Promise<ClienteApiDto | null> {
+    const rows = returnedRows<ClienteApiRow>(await this.db.query(`UPDATE cliente_api SET cla_nombre = $2 WHERE cla_id = $1 AND cla_tipo = 'SOCIO' RETURNING ${COLUMNS}`, [id, nombre]));
+    return rows.length > 0 ? toDto(rows[0]) : null;
+  }
+
+  async setKey(id: number, keyHash: string): Promise<ClienteApiDto | null> {
+    const rows = returnedRows<ClienteApiRow>(await this.db.query(`UPDATE cliente_api SET cla_clave_hash = $2 WHERE cla_id = $1 AND cla_tipo = 'SOCIO' RETURNING ${COLUMNS}`, [id, keyHash]));
+    return rows.length > 0 ? toDto(rows[0]) : null;
+  }
+
   /** Busca una clave activa por su hash y registra el uso. */
   async useKey(keyHash: string): Promise<ClienteApiDto | null> {
     const rows = returnedRows<ClienteApiRow>(

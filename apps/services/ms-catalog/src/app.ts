@@ -19,6 +19,8 @@ import {
   parseGuide,
   parseGuidePatch,
   parseInclusion,
+  parseLanguage,
+  parseLanguageName,
   parseOperator,
   parseOperatorPatch,
   parseOperatorUser,
@@ -246,6 +248,17 @@ export function createMsCatalogService(config: MsCatalogConfig, dataSource: Data
     res.json(operator);
   });
 
+  api.get('/operadores/:codigo/usuarios', async (req, res) => {
+    await permissions.requireAdmin();
+    const links = await operators.linkedUsers(await operatorIdOf(req.params.codigo));
+    if (links.length === 0) return void res.json([]);
+    const users = await esb.call<{ id: number; nombre: string; apellido: string; correo: string }[]>('identity', 'getUsers', { ids: links.map((link) => link.usu_id) });
+    res.json(links.map((link) => {
+      const user = users.find((candidate) => candidate.id === link.usu_id);
+      return { ...link, nombre: user ? `${user.nombre} ${user.apellido}` : '', correo: user?.correo ?? '' };
+    }));
+  });
+
   api.post('/operadores/:codigo/usuarios', async (req, res) => {
     await permissions.requireAdmin();
     const opeId = await operatorIdOf(req.params.codigo);
@@ -264,6 +277,18 @@ export function createMsCatalogService(config: MsCatalogConfig, dataSource: Data
 
   // Categorías, idiomas e inclusiones ------------------------------------------
 
+  api.get('/admin/categorias', async (_req, res) => {
+    await permissions.requireStaff();
+    res.json((await categories.listAll()).map((row) => ({
+      ...toFlat(row),
+      descripcion: row.cat_descripcion,
+      icono: row.cat_icono,
+      orden: row.cat_orden,
+      activa: row.cat_activa,
+      atracciones: row.atracciones,
+    })));
+  });
+
   api.post('/categorias', async (req, res) => {
     await permissions.requireAdmin();
     const input = parseCategory(req.body);
@@ -278,13 +303,38 @@ export function createMsCatalogService(config: MsCatalogConfig, dataSource: Data
 
   api.patch('/categorias/:codigo', async (req, res) => {
     await permissions.requireAdmin();
-    const category = await categories.update(req.params.codigo, parseCategoryPatch(req.body));
+    const patch = parseCategoryPatch(req.body);
+    if (patch.cat_activa !== undefined) await categories.assertActivation(req.params.codigo, patch.cat_activa);
+    const category = await categories.update(req.params.codigo, patch);
     if (!category) throw AppError.notFound(`No existe la categoría ${req.params.codigo}.`, 'CATEGORY_NOT_FOUND');
     res.json(toFlat(category));
   });
 
   api.get('/idiomas', async (_req, res) => {
     res.json(await inclusions.listLanguages());
+  });
+
+  api.get('/admin/idiomas', async (_req, res) => {
+    await permissions.requireStaff();
+    res.json(await inclusions.listLanguagesAdmin());
+  });
+
+  api.post('/idiomas', async (req, res) => {
+    await permissions.requireAdmin();
+    const { codigo, nombre } = parseLanguage(req.body);
+    res.status(201).json(await inclusions.createLanguage(codigo, nombre));
+  });
+
+  api.patch('/idiomas/:codigo', async (req, res) => {
+    await permissions.requireAdmin();
+    await inclusions.renameLanguage(req.params.codigo, parseLanguageName(req.body));
+    res.status(204).end();
+  });
+
+  api.delete('/idiomas/:codigo', async (req, res) => {
+    await permissions.requireAdmin();
+    await inclusions.removeLanguage(req.params.codigo);
+    res.status(204).end();
   });
 
   api.get('/inclusiones', async (req, res) => {
@@ -300,6 +350,12 @@ export function createMsCatalogService(config: MsCatalogConfig, dataSource: Data
     await permissions.requireAdmin();
     const { tipo, nombre, orden } = parseInclusion(req.body);
     res.status(201).json(await inclusions.create(tipo, nombre, orden));
+  });
+
+  api.delete('/inclusiones/:id', async (req, res) => {
+    await permissions.requireAdmin();
+    await inclusions.remove(pathId(req.params.id, 'id'));
+    res.status(204).end();
   });
 
   // Administración de atracciones ----------------------------------------------

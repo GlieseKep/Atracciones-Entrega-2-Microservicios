@@ -639,6 +639,22 @@ paths:
           $ref: '#/components/responses/ProblemDetails409'
         '500':
           $ref: '#/components/responses/ProblemDetails500'
+  '/clientes-api/{id}/clave':
+    post:
+      tags:
+        - Clientes API
+      summary: Regenerar la clave de un socio
+      description: 'La clave anterior deja de valer. La nueva solo se devuelve en esta respuesta.'
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Socio con `api_key`.
   '/clientes-api/{id}/activo':
     put:
       tags:

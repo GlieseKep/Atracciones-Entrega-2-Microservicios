@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Plus, ShieldCheck } from 'lucide-react';
 import { auditApi, usersApi } from '@/api/admin';
+import { requestPasswordRecovery } from '@/api/auth';
 import { Badge } from '@/components/common/Badge';
 import { Button } from '@/components/common/Button';
 import { Alert, ErrorState } from '@/components/common/Feedback';
@@ -122,6 +123,7 @@ function UserDialog({ id, onClose, onChanged }: { id: number; onClose: () => voi
   const history = useAsync((signal) => auditApi.list({ page: 1, limit: 10, entidad: 'identity', entidad_id: String(id) }, signal), [id, user.data]);
   const [busy, setBusy] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<{ rol: RoleName; add: boolean } | null>(null);
+  const [editing, setEditing] = useState(false);
   const self = me?.id === id;
 
   const run = async (key: string, action: () => Promise<User>, message: string) => {
@@ -159,6 +161,30 @@ function UserDialog({ id, onClose, onChanged }: { id: number; onClose: () => voi
             <Info label="Creado" value={formatDateTime(u.creado_en)} />
             <Info label="Último acceso" value={u.ultimo_acceso ? formatDateTime(u.ultimo_acceso) : 'Nunca'} />
           </dl>
+
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="secondary" onClick={() => setEditing(true)}>
+              Editar datos
+            </Button>
+            <Button
+              size="sm"
+              variant="tertiary"
+              loading={busy === 'recuperacion'}
+              onClick={async () => {
+                setBusy('recuperacion');
+                try {
+                  await requestPasswordRecovery(u.correo);
+                  notify(`Se envió el correo para restablecer la contraseña a ${u.correo}.`, 'success');
+                } catch (error) {
+                  notify(errorMessage(error), 'error');
+                } finally {
+                  setBusy(null);
+                }
+              }}
+            >
+              Enviar correo para restablecer la contraseña
+            </Button>
+          </div>
 
           <section>
             <h3 className="text-base">Roles</h3>
@@ -223,6 +249,18 @@ function UserDialog({ id, onClose, onChanged }: { id: number; onClose: () => voi
         </div>
       )}
 
+      {editing && u && (
+        <EditUserDialog
+          user={u}
+          onClose={() => setEditing(false)}
+          onSaved={(updated) => {
+            setEditing(false);
+            user.setData(updated);
+            onChanged();
+          }}
+        />
+      )}
+
       {confirm && u && (
         <Modal
           open
@@ -255,6 +293,55 @@ function UserDialog({ id, onClose, onChanged }: { id: number; onClose: () => voi
           </p>
         </Modal>
       )}
+    </Modal>
+  );
+}
+
+function EditUserDialog({ user, onClose, onSaved }: { user: User; onClose: () => void; onSaved: (user: User) => void }) {
+  const notify = useUiStore((s) => s.notify);
+  const [nombre, setNombre] = useState(user.nombre);
+  const [apellido, setApellido] = useState(user.apellido);
+  const [telefono, setTelefono] = useState(user.telefono ?? '');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<unknown>(null);
+
+  const save = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const updated = await usersApi.update(user.id, { nombre: nombre.trim(), apellido: apellido.trim(), telefono: telefono.trim() || null });
+      notify('Datos actualizados.', 'success');
+      onSaved(updated);
+    } catch (e) {
+      setError(e);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal
+      open
+      size="sm"
+      onClose={onClose}
+      title="Editar datos"
+      footer={
+        <>
+          <Button variant="tertiary" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button loading={busy} disabled={!nombre.trim() || !apellido.trim()} onClick={save}>
+            Guardar
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <Input label="Nombre" maxLength={120} value={nombre} onChange={(e) => setNombre(e.target.value)} error={fieldError(error, 'nombre')} />
+        <Input label="Apellido" maxLength={120} value={apellido} onChange={(e) => setApellido(e.target.value)} error={fieldError(error, 'apellido')} />
+        <Input label="Teléfono (opcional)" maxLength={20} value={telefono} onChange={(e) => setTelefono(e.target.value)} error={fieldError(error, 'telefono')} />
+        {error !== null && <Alert tone="error">{errorMessage(error)}</Alert>}
+      </div>
     </Modal>
   );
 }

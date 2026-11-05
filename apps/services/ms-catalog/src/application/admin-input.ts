@@ -103,6 +103,22 @@ export function parseCategoryPatch(body: unknown): CategoryPatch {
   return patch;
 }
 
+/** ISO 639-1. */
+export function parseLanguage(body: unknown): { codigo: string; nombre: string } {
+  const f = new Fields(body);
+  const input = { codigo: f.text('codigo', 2).toLowerCase(), nombre: f.text('nombre', 50) };
+  if (input.codigo && !/^[a-z]{2}$/.test(input.codigo)) f.fail('codigo', 'Debe tener dos letras (ISO 639-1).');
+  f.done();
+  return input;
+}
+
+export function parseLanguageName(body: unknown): string {
+  const f = new Fields(body);
+  const nombre = f.text('nombre', 50);
+  f.done();
+  return nombre;
+}
+
 export function parseInclusion(body: unknown): { tipo: InclusionType; nombre: string; orden: number } {
   const f = new Fields(body);
   const input = { tipo: f.oneOf('tipo', INCLUSION_TYPES), nombre: f.text('nombre', 150), orden: f.integer('orden', { min: -32768, max: 32767 }, 0) };

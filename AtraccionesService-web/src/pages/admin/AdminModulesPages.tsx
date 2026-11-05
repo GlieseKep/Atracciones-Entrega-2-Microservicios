@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Copy, Plus } from 'lucide-react';
+import { Copy, KeyRound, Pencil, Plus } from 'lucide-react';
 import { apiClientsApi, couponsApi, operationsApi, pageOf, reviewsApi, supportApi } from '@/api/admin';
 import { Badge } from '@/components/common/Badge';
 import { Button } from '@/components/common/Button';
@@ -64,7 +64,7 @@ export function AdminReviewsPage() {
 export function AdminCouponsPage() {
   const notify = useUiStore((s) => s.notify);
   const [reload, setReload] = useState(0);
-  const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState<Coupon | 'new' | null>(null);
   const { busy, run } = useRowAction(() => setReload((n) => n + 1), notify);
 
   const columns: Column<Coupon>[] = [
@@ -77,9 +77,14 @@ export function AdminCouponsPage() {
       header: '',
       align: 'right',
       cell: (c) => (
-        <Button size="sm" variant="secondary" loading={busy === c.code} onClick={() => run(c.code, () => couponsApi.update(c.code, { active: !c.active }), c.active ? 'Cupón desactivado.' : 'Cupón activado.')}>
-          {c.active ? 'Desactivar' : 'Activar'}
-        </Button>
+        <span className="inline-flex gap-2">
+          <Button size="sm" variant="tertiary" onClick={() => setEditing(c)} aria-label={`Editar ${c.code}`}>
+            <Pencil size={15} aria-hidden="true" />
+          </Button>
+          <Button size="sm" variant="secondary" loading={busy === c.code} onClick={() => run(c.code, () => couponsApi.update(c.code, { active: !c.active }), c.active ? 'Cupón desactivado.' : 'Cupón activado.')}>
+            {c.active ? 'Desactivar' : 'Activar'}
+          </Button>
+        </span>
       ),
     },
   ];
@@ -98,17 +103,18 @@ export function AdminCouponsPage() {
         ]}
         reloadKey={reload}
         actions={
-          <Button onClick={() => setCreating(true)}>
+          <Button onClick={() => setEditing('new')}>
             <Plus size={16} aria-hidden="true" /> Nuevo cupón
           </Button>
         }
       />
       <AgreementCard />
-      {creating && (
+      {editing && (
         <CouponDialog
-          onClose={() => setCreating(false)}
+          coupon={editing === 'new' ? null : editing}
+          onClose={() => setEditing(null)}
           onSaved={() => {
-            setCreating(false);
+            setEditing(null);
             setReload((n) => n + 1);
           }}
         />
@@ -130,20 +136,28 @@ const couponSchema = z
   .refine((v) => !v.end_date || v.end_date >= v.start_date, { path: ['end_date'], message: 'No puede ser anterior al inicio.' });
 type CouponValues = z.infer<typeof couponSchema>;
 
-function CouponDialog({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+/** Al editar, el código no cambia. Un tipo o valor nuevo rige para las compras siguientes. */
+function CouponDialog({ coupon, onClose, onSaved }: { coupon: Coupon | null; onClose: () => void; onSaved: () => void }) {
   const notify = useUiStore((s) => s.notify);
   const [error, setError] = useState<unknown>(null);
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<CouponValues>({ resolver: zodResolver(couponSchema), defaultValues: { type: 'PORCENTAJE', start_date: today(), end_date: '', max_uses: '' } });
+  } = useForm<CouponValues>({
+    resolver: zodResolver(couponSchema),
+    defaultValues: coupon
+      ? { code: coupon.code, type: coupon.type, value: coupon.value, start_date: coupon.start_date, end_date: coupon.end_date ?? '', max_uses: coupon.max_uses === null ? '' : String(coupon.max_uses) }
+      : { type: 'PORCENTAJE', start_date: today(), end_date: '', max_uses: '' },
+  });
 
   const submit = handleSubmit(async (v) => {
     setError(null);
     try {
-      await couponsApi.create({ code: v.code, type: v.type, value: v.value, start_date: v.start_date, end_date: v.end_date || null, max_uses: v.max_uses ? Number(v.max_uses) : null, active: true });
-      notify('Cupón creado.', 'success');
+      const data = { type: v.type, value: v.value, start_date: v.start_date, end_date: v.end_date || null, max_uses: v.max_uses ? Number(v.max_uses) : null };
+      if (coupon) await couponsApi.update(coupon.code, data);
+      else await couponsApi.create({ code: v.code, ...data, active: true });
+      notify(coupon ? 'Cupón actualizado.' : 'Cupón creado.', 'success');
       onSaved();
     } catch (e) {
       setError(e);
@@ -155,16 +169,16 @@ function CouponDialog({ onClose, onSaved }: { onClose: () => void; onSaved: () =
     <Modal
       open
       onClose={onClose}
-      title="Nuevo cupón"
+      title={coupon ? `Editar ${coupon.code}` : 'Nuevo cupón'}
       footer={
         <>
           <Button variant="tertiary" onClick={onClose}>Cancelar</Button>
-          <Button loading={isSubmitting} onClick={submit}>Crear</Button>
+          <Button loading={isSubmitting} onClick={submit}>{coupon ? 'Guardar' : 'Crear'}</Button>
         </>
       }
     >
       <form onSubmit={submit} noValidate className="grid gap-4 sm:grid-cols-2">
-        <Input label="Código" error={err('code')} {...register('code')} />
+        <Input label="Código" disabled={!!coupon} error={err('code')} {...register('code')} />
         <Select
           label="Tipo"
           options={[
@@ -376,6 +390,8 @@ export function AdminPartnersPage() {
   const [reload, setReload] = useState(0);
   const [creating, setCreating] = useState(false);
   const [created, setCreated] = useState<CreatedApiClient | null>(null);
+  const [renaming, setRenaming] = useState<ApiClient | null>(null);
+  const [regenerating, setRegenerating] = useState<ApiClient | null>(null);
   const { busy, run } = useRowAction(() => setReload((n) => n + 1), notify);
 
   const columns: Column<ApiClient>[] = [
@@ -387,9 +403,17 @@ export function AdminPartnersPage() {
       header: '',
       align: 'right',
       cell: (c) => (
-        <Button size="sm" variant="secondary" loading={busy === String(c.id)} onClick={() => run(String(c.id), () => apiClientsApi.setActive(c.id, !c.activo), c.activo ? 'Socio desactivado: su clave deja de funcionar.' : 'Socio activado.')}>
-          {c.activo ? 'Desactivar' : 'Activar'}
-        </Button>
+        <span className="inline-flex gap-2">
+          <Button size="sm" variant="tertiary" onClick={() => setRenaming(c)} aria-label={`Renombrar ${c.nombre}`}>
+            <Pencil size={15} aria-hidden="true" />
+          </Button>
+          <Button size="sm" variant="tertiary" onClick={() => setRegenerating(c)} aria-label={`Regenerar la clave de ${c.nombre}`}>
+            <KeyRound size={15} aria-hidden="true" />
+          </Button>
+          <Button size="sm" variant="secondary" loading={busy === String(c.id)} onClick={() => run(String(c.id), () => apiClientsApi.setActive(c.id, !c.activo), c.activo ? 'Socio desactivado: su clave deja de funcionar.' : 'Socio activado.')}>
+            {c.activo ? 'Desactivar' : 'Activar'}
+          </Button>
+        </span>
       ),
     },
   ];
@@ -418,6 +442,26 @@ export function AdminPartnersPage() {
           }}
         />
       )}
+      {renaming && (
+        <RenamePartnerDialog
+          client={renaming}
+          onClose={() => setRenaming(null)}
+          onSaved={() => {
+            setRenaming(null);
+            setReload((n) => n + 1);
+          }}
+        />
+      )}
+      {regenerating && (
+        <RegenerateKeyDialog
+          client={regenerating}
+          onClose={() => setRegenerating(null)}
+          onDone={(client) => {
+            setRegenerating(null);
+            setCreated(client);
+          }}
+        />
+      )}
       {created && (
         <Modal open size="sm" onClose={() => setCreated(null)} title={`Clave de ${created.nombre}`} footer={<Button onClick={() => setCreated(null)}>Ya la guardé</Button>}>
           <Alert>Esta es la única vez que se muestra. Guárdala y entrégala por un canal seguro.</Alert>
@@ -436,6 +480,83 @@ export function AdminPartnersPage() {
         </Modal>
       )}
     </>
+  );
+}
+
+function RenamePartnerDialog({ client, onClose, onSaved }: { client: ApiClient; onClose: () => void; onSaved: () => void }) {
+  const notify = useUiStore((s) => s.notify);
+  const [nombre, setNombre] = useState(client.nombre);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<unknown>(null);
+
+  const save = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await apiClientsApi.rename(client.id, nombre.trim());
+      notify('Socio renombrado.', 'success');
+      onSaved();
+    } catch (e) {
+      setError(e);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal
+      open
+      size="sm"
+      onClose={onClose}
+      title={`Renombrar ${client.codigo}`}
+      footer={
+        <>
+          <Button variant="tertiary" onClick={onClose}>Cancelar</Button>
+          <Button loading={busy} disabled={!nombre.trim()} onClick={save}>Guardar</Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <Input label="Nombre" maxLength={150} value={nombre} onChange={(e) => setNombre(e.target.value)} error={fieldError(error, 'nombre')} />
+        {error !== null && <Alert tone="error">{errorMessage(error)}</Alert>}
+      </div>
+    </Modal>
+  );
+}
+
+function RegenerateKeyDialog({ client, onClose, onDone }: { client: ApiClient; onClose: () => void; onDone: (client: CreatedApiClient) => void }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<unknown>(null);
+
+  const regenerate = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      onDone(await apiClientsApi.regenerateKey(client.id));
+    } catch (e) {
+      setError(e);
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal
+      open
+      size="sm"
+      onClose={onClose}
+      title={`Regenerar la clave de ${client.nombre}`}
+      footer={
+        <>
+          <Button variant="tertiary" onClick={onClose}>Cancelar</Button>
+          <Button variant="danger" loading={busy} onClick={regenerate}>Regenerar</Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <p className="text-ink-soft">La clave actual dejará de funcionar. Este socio no podrá consultar ni reservar hasta que configure la nueva.</p>
+        {error !== null && <Alert tone="error">{errorMessage(error)}</Alert>}
+      </div>
+    </Modal>
   );
 }
 

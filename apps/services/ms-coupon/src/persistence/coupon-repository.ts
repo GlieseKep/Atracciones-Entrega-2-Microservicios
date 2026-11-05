@@ -58,7 +58,7 @@ export class CouponRepository {
   }
 
   async update(code: string, patch: CouponPatch): Promise<void> {
-    const columns: Record<keyof CouponPatch, string> = { start_date: 'cup_fecha_inicio', end_date: 'cup_fecha_fin', max_uses: 'cup_usos_max', active: 'cup_activo' };
+    const columns: Record<keyof CouponPatch, string> = { type: 'cup_tipo', value: 'cup_valor', start_date: 'cup_fecha_inicio', end_date: 'cup_fecha_fin', max_uses: 'cup_usos_max', active: 'cup_activo' };
     const fields = Object.keys(patch) as (keyof CouponPatch)[];
     const sets = fields.map((field, index) => `${columns[field]} = $${index + 2}`);
     await this.db.query(`UPDATE cupon SET ${sets.join(', ')} WHERE cup_codigo = $1`, [code, ...fields.map((field) => patch[field])]);

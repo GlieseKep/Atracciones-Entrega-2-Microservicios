@@ -208,7 +208,7 @@ paths:
     patch:
       tags:
         - Cupones
-      summary: 'Modificar vigencia, límite de usos o estado de un cupón'
+      summary: 'Modificar tipo, valor, vigencia, límite de usos o estado de un cupón'
       description: >-
         El código, el tipo y el valor no se cambian (las órdenes ya emitidas los usan); para otro descuento se crea
         otro cupón.

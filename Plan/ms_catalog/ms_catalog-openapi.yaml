@@ -784,6 +784,70 @@ paths:
         '500':
           $ref: '#/components/responses/ProblemDetails500'
       security: []
+  /admin/categorias:
+    get:
+      tags:
+        - Administración
+      summary: 'Listar todas las categorías, también las inactivas'
+      description: 'Cada categoría añade `descripcion`, `icono`, `orden`, `activa` y `atracciones` (no eliminadas que la usan).'
+      responses:
+        '200':
+          description: Categorías.
+  /admin/idiomas:
+    get:
+      tags:
+        - Administración
+      summary: Listar idiomas con las atracciones que usan cada uno
+      responses:
+        '200':
+          description: Idiomas.
+  '/idiomas/{codigo}':
+    patch:
+      tags:
+        - Administración
+      summary: Renombrar un idioma
+      parameters:
+        - name: codigo
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Renombrado.
+    delete:
+      tags:
+        - Administración
+      summary: Quitar un idioma
+      description: 'Responde 409 `LANGUAGE_IN_USE` si alguna atracción no eliminada lo usa.'
+      parameters:
+        - name: codigo
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Quitado.
+        '409':
+          $ref: '#/components/responses/ProblemDetails409'
+  '/inclusiones/{id}':
+    delete:
+      tags:
+        - Administración
+      summary: Quitar una inclusión
+      description: 'Responde 409 `INCLUSION_IN_USE` si alguna atracción no eliminada la usa.'
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Quitada.
+        '409':
+          $ref: '#/components/responses/ProblemDetails409'
   /inclusiones:
     get:
       tags:

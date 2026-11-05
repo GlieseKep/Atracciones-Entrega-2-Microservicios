@@ -61,7 +61,7 @@ src/
 ```
 
 El panel administrativo (`src/pages/admin`, rol `ADMIN`) usa GraphQL por `src/api/admin.ts`: usuarios y roles, catálogo,
-tarifas, guías y operadores, horarios y turnos, reservas, pedidos, pagos, facturas, cupones, reseñas, mensajes, socios,
+tarifas, qué incluye, categorías, idiomas, guías y operadores, horarios y turnos, reservas, pedidos, pagos, facturas, cupones, reseñas, mensajes, socios,
 reportes y observabilidad. El check-in (`/admin/checkin`) también lo usan `OPERADOR` y `GUIA`.
 Detalle y pendientes en [AUDITORIA_PANEL_ADMIN.md](../Plan/AUDITORIA_PANEL_ADMIN.md).
 

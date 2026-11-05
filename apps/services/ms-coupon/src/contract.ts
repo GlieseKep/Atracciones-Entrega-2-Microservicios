@@ -22,7 +22,7 @@ export interface CouponPage {
 export type CouponCreate = CouponDto;
 
 /** Solo trae los campos enviados. */
-export type CouponPatch = Partial<Pick<CouponDto, 'start_date' | 'end_date' | 'max_uses' | 'active'>>;
+export type CouponPatch = Partial<Pick<CouponDto, 'type' | 'value' | 'start_date' | 'end_date' | 'max_uses' | 'active'>>;
 
 export interface CouponValidationRequest {
   code: string;

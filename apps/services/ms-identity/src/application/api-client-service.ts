@@ -23,6 +23,20 @@ export class ApiClientService {
     return { ...client, api_key: apiKey };
   }
 
+  async rename(id: number, nombre: string): Promise<ClienteApiDto> {
+    const client = await this.clients.rename(id, nombre);
+    if (!client) throw AppError.notFound(`No existe el cliente API ${id}.`, 'API_CLIENT_NOT_FOUND');
+    return client;
+  }
+
+  /** La clave anterior deja de valer. Igual que al crear, la nueva solo existe en esta respuesta. */
+  async regenerateKey(id: number): Promise<ClienteApiCreadoDto> {
+    const apiKey = randomToken();
+    const client = await this.clients.setKey(id, sha256(apiKey));
+    if (!client) throw AppError.notFound(`No existe el cliente API ${id}.`, 'API_CLIENT_NOT_FOUND');
+    return { ...client, api_key: apiKey };
+  }
+
   list(): Promise<ClienteApiDto[]> {
     return this.clients.list();
   }

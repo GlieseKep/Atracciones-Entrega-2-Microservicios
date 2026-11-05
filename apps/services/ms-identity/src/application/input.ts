@@ -160,6 +160,13 @@ export function parseClienteApi(body: unknown): { codigo: string; nombre: string
   return input;
 }
 
+export function parseClienteApiNombre(body: unknown): string {
+  const f = fields(body);
+  const nombre = f.requiredText('nombre', 150);
+  f.done();
+  return nombre;
+}
+
 export function parseIds(body: unknown): number[] {
   const ids = fields(body).body.ids;
   if (!Array.isArray(ids) || ids.length < 1 || ids.length > 200) {

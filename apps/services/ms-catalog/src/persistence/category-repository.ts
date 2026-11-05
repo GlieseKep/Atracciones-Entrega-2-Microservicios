@@ -54,6 +54,26 @@ export type CategoryPatch = Partial<{
 export class CategoryRepository {
   constructor(private readonly db: DataSource) {}
 
+  /** Para el panel: también las inactivas, con cuántas atracciones las usan. */
+  listAll(): Promise<(CategoryRow & { atracciones: number })[]> {
+    return this.db.query(
+      `SELECT base.*, (SELECT count(*)::int FROM atraccion_categoria ac JOIN atraccion a ON a.atr_id = ac.atr_id
+                       WHERE ac.cat_id = base.cat_id AND a.atr_eliminado_en IS NULL) AS atracciones
+       FROM (${SELECT}) base ORDER BY base.cat_orden, base.cat_nombre`,
+    );
+  }
+
+  /** Una subcategoría activa bajo una categoría inactiva desaparecería del árbol sin avisar. */
+  async assertActivation(codigo: string, activa: boolean): Promise<void> {
+    if (activa) {
+      const [row] = await this.db.query(`${SELECT} WHERE c.cat_codigo = $1 AND p.cat_id IS NOT NULL AND NOT p.cat_activa`, [codigo]);
+      if (row) throw AppError.conflict('CATEGORY_PARENT_INACTIVE', 'Primero active la categoría padre.');
+      return;
+    }
+    const [child] = await this.db.query(`${SELECT} WHERE p.cat_codigo = $1 AND c.cat_activa LIMIT 1`, [codigo]);
+    if (child) throw AppError.conflict('CATEGORY_HAS_ACTIVE_CHILDREN', 'Primero desactive sus subcategorías.');
+  }
+
   listActive(): Promise<CategoryRow[]> {
     return this.db.query(`${SELECT} WHERE c.cat_activa ORDER BY c.cat_orden, c.cat_nombre`);
   }

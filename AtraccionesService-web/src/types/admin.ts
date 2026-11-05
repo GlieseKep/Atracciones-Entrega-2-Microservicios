@@ -131,6 +131,49 @@ export interface Inclusion {
   tipo: 'INCLUYE' | 'NO_INCLUYE' | 'RECOMENDACION';
   nombre: string;
   orden: number;
+  /** Atracciones que la usan: con alguna, no se puede quitar. */
+  atracciones: number;
+}
+
+export interface AdminLanguage {
+  codigo: string;
+  nombre: string;
+  atracciones: number;
+}
+
+export interface AdminCategory {
+  id: string;
+  padre_id: string | null;
+  nombre: string;
+  slug: string;
+  descripcion: string | null;
+  icono: string;
+  orden: number;
+  activa: boolean;
+  incluye_comida: boolean;
+  incluye_transporte: boolean;
+  incluye_guia: boolean;
+  atracciones: number;
+}
+
+export interface OperatorUser {
+  usu_id: number;
+  cargo: 'ADMIN' | 'VENDEDOR' | 'GUIA';
+  nombre: string;
+  correo: string;
+}
+
+/** Una fila por tipo de boleto y vigencia. */
+export interface Tariff {
+  tariff_id: number;
+  attraction_id: string;
+  ticket_type: string;
+  price: number;
+  currency: string;
+  valid_from: IsoDate;
+  /** Vacío = sin fin. */
+  valid_to: IsoDate | '';
+  current: boolean;
 }
 
 export interface PriceTable {

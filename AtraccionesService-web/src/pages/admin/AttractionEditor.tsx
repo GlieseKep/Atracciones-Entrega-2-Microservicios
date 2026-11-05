@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react';
 import { catalogApi } from '@/api/admin';
 import { listCities } from '@/api/catalog';
 import { Button } from '@/components/common/Button';
@@ -43,7 +43,12 @@ const schema = z
     categorias: z.array(z.string()).min(1, 'Elige al menos una categoría.'),
     idiomas: z.array(z.string()),
     inclusiones: z.array(z.string()),
-    fotos: z.string(),
+    fotos: z.array(
+      z.object({
+        url: z.string().trim().min(1, 'Indica la URL.').max(500),
+        alt: z.string().trim().max(200),
+      }),
+    ),
     itinerario: z.array(
       z.object({
         time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'HH:mm'),
@@ -98,7 +103,7 @@ const toValues = (a: AdminAttraction | null): Values => ({
   categorias: a?.categorias ?? [],
   idiomas: a?.idiomas ?? [],
   inclusiones: (a?.inclusiones ?? []).map(String),
-  fotos: [...(a?.fotos ?? [])].sort((x, y) => x.orden - y.orden).map((f) => f.url).join('\n'),
+  fotos: [...(a?.fotos ?? [])].sort((x, y) => x.orden - y.orden).map((f) => ({ url: f.url, alt: f.alt })),
   itinerario: (a?.itinerary ?? []).map((s) => ({
     time: to24h(s.time),
     title: s.title,
@@ -122,7 +127,11 @@ const toValues = (a: AdminAttraction | null): Values => ({
 
 const opt = (value: string) => (value ? value : undefined);
 
-function toRequest(v: Values, name: string): AttractionRequest {
+/**
+ * `inclusiones` son las casillas de lo que sí incluye. `kept` son los «no incluye» y las recomendaciones que la atracción
+ * ya tenía: el editor no los muestra, pero no se deben perder al guardar.
+ */
+function toRequest(v: Values, name: string, kept: number[]): AttractionRequest {
   return {
     name: v.name,
     slug: opt(v.slug),
@@ -139,12 +148,8 @@ function toRequest(v: Values, name: string): AttractionRequest {
     operador: v.operador,
     categorias: v.categorias,
     idiomas: v.idiomas,
-    inclusiones: v.inclusiones.map(Number),
-    fotos: v.fotos
-      .split(/\n/)
-      .map((url) => url.trim())
-      .filter(Boolean)
-      .map((url, orden) => ({ url, alt: `${name}, foto ${orden + 1}`, orden })),
+    inclusiones: [...new Set([...v.inclusiones.map(Number), ...kept])],
+    fotos: v.fotos.map((foto, orden) => ({ url: foto.url, alt: foto.alt || `${name}, foto ${orden + 1}`, orden })),
     itinerario: v.itinerario.map((s, i) => ({
       stop_number: i + 1,
       time: s.time,
@@ -186,11 +191,13 @@ export function AttractionEditor({ attraction, onClose, onSaved }: { attraction:
     formState: { errors, isSubmitting },
   } = useForm<Values>({ resolver: zodResolver(schema), defaultValues: toValues(attraction) });
   const stops = useFieldArray({ control, name: 'itinerario' });
+  const photos = useFieldArray({ control, name: 'fotos' });
 
   const submit = handleSubmit(async (v) => {
     setError(null);
     try {
-      const body = toRequest(v, v.name);
+      const included = new Set((options.data?.inclusions ?? []).filter((i) => i.tipo === 'INCLUYE').map((i) => i.id));
+      const body = toRequest(v, v.name, (attraction?.inclusiones ?? []).filter((id) => !included.has(id)));
       if (attraction) await catalogApi.update(attraction.id, body);
       else await catalogApi.create(body);
       notify(attraction ? 'Atracción actualizada.' : 'Atracción creada como borrador. Define tarifas y horarios y luego publícala.', 'success');
@@ -261,16 +268,21 @@ export function AttractionEditor({ attraction, onClose, onSaved }: { attraction:
               register={register('categorias')}
             />
             <CheckGroup label="Idiomas del guía" items={o.languages.map((l) => ({ value: l.codigo, label: l.nombre }))} register={register('idiomas')} />
-            <CheckGroup
-              label="Qué incluye / no incluye"
-              className="sm:col-span-2"
-              items={o.inclusions.map((i) => ({ value: String(i.id), label: `${i.tipo === 'INCLUYE' ? '✓' : i.tipo === 'NO_INCLUYE' ? '✗' : '•'} ${i.nombre}` }))}
-              register={register('inclusiones')}
-            />
-            <div className="flex flex-wrap gap-4 sm:col-span-2">
-              {check('includes_food', 'Incluye alimentación')}
-              {check('includes_transport', 'Incluye transporte')}
-              {check('includes_guide', 'Incluye guía')}
+            <div className="sm:col-span-2">
+              <p className="field-label">Qué incluye</p>
+              <div className="grid max-h-56 gap-2 overflow-y-auto rounded-md border border-line p-3 sm:grid-cols-2">
+                {check('includes_food', 'Alimentación')}
+                {check('includes_transport', 'Transporte')}
+                {check('includes_guide', 'Guía')}
+                {o.inclusions
+                  .filter((i) => i.tipo === 'INCLUYE')
+                  .map((i) => (
+                    <label key={i.id} className="flex items-center gap-2 text-sm">
+                      <input type="checkbox" value={String(i.id)} className="h-[18px] w-[18px] accent-[#C94D6B]" {...register('inclusiones')} /> {i.nombre}
+                    </label>
+                  ))}
+              </div>
+              <p className="field-help">Las opciones se agregan o quitan en la sección «Qué incluye» del panel.</p>
             </div>
           </Fieldset>
 
@@ -307,7 +319,30 @@ export function AttractionEditor({ attraction, onClose, onSaved }: { attraction:
           </Fieldset>
 
           <Fieldset title="Fotos">
-            <TextArea label="URL de las fotos, una por línea (la primera es la portada)" className="sm:col-span-2" rows={4} error={err('fotos')} {...register('fotos')} />
+            <div className="space-y-3 sm:col-span-2">
+              <p className="text-sm text-ink-soft">La primera es la portada. Sin texto alternativo, se genera con el nombre de la atracción.</p>
+              {photos.fields.map((field, i) => (
+                <div key={field.id} className="grid gap-3 rounded-md border border-line p-3 sm:grid-cols-[1fr_1fr_auto]">
+                  <Input label={`Foto ${i + 1}: URL`} error={errors.fotos?.[i]?.url?.message} {...register(`fotos.${i}.url`)} />
+                  <Input label="Texto alternativo" maxLength={200} error={errors.fotos?.[i]?.alt?.message} {...register(`fotos.${i}.alt`)} />
+                  <div className="flex items-end gap-1">
+                    <Button variant="tertiary" size="sm" disabled={i === 0} onClick={() => photos.swap(i, i - 1)} aria-label={`Subir foto ${i + 1}`}>
+                      <ArrowUp size={15} aria-hidden="true" />
+                    </Button>
+                    <Button variant="tertiary" size="sm" disabled={i === photos.fields.length - 1} onClick={() => photos.swap(i, i + 1)} aria-label={`Bajar foto ${i + 1}`}>
+                      <ArrowDown size={15} aria-hidden="true" />
+                    </Button>
+                    <Button variant="tertiary" size="sm" onClick={() => photos.remove(i)} aria-label={`Quitar foto ${i + 1}`}>
+                      <Trash2 size={15} aria-hidden="true" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              {err('fotos') && <p className="field-error">{err('fotos')}</p>}
+              <Button variant="secondary" size="sm" onClick={() => photos.append({ url: '', alt: '' })}>
+                <Plus size={15} aria-hidden="true" /> Añadir foto
+              </Button>
+            </div>
           </Fieldset>
 
           <Fieldset title="Accesibilidad, cancelación y paquetes">

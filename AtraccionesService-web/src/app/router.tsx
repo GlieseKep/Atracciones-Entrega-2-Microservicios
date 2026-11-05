@@ -23,6 +23,9 @@ const AdminLayout = lazy(() => import('@/pages/admin/AdminLayout'));
 const AdminDashboardPage = lazy(() => import('@/pages/admin/AdminDashboardPage'));
 const AdminCatalogPage = lazy(() => import('@/pages/admin/AdminCatalogPage'));
 const AdminAvailabilityPage = lazy(() => import('@/pages/admin/AdminAvailabilityPage'));
+const AdminInclusionsPage = lazy(() => import('@/pages/admin/AdminCatalogDataPages').then((m) => ({ default: m.AdminInclusionsPage })));
+const AdminCategoriesPage = lazy(() => import('@/pages/admin/AdminCatalogDataPages').then((m) => ({ default: m.AdminCategoriesPage })));
+const AdminLanguagesPage = lazy(() => import('@/pages/admin/AdminCatalogDataPages').then((m) => ({ default: m.AdminLanguagesPage })));
 const AdminUsersPage = lazy(() => import('@/pages/admin/AdminUsersPage'));
 const AdminGuidesPage = lazy(() => import('@/pages/admin/AdminGuidesPage'));
 const AdminReviewsPage = lazy(() => import('@/pages/admin/AdminModulesPages').then((m) => ({ default: m.AdminReviewsPage })));
@@ -76,6 +79,9 @@ export const router = createBrowserRouter([
         children: [
           { index: true, element: <AdminDashboardPage /> },
           { path: 'catalogo', element: <AdminCatalogPage /> },
+          { path: 'incluye', element: <AdminInclusionsPage /> },
+          { path: 'categorias', element: <AdminCategoriesPage /> },
+          { path: 'idiomas', element: <AdminLanguagesPage /> },
           { path: 'disponibilidad', element: <AdminAvailabilityPage /> },
           { path: 'reservas', element: <AdminReservationsPage /> },
           { path: 'pedidos', element: <AdminOrdersPage /> },

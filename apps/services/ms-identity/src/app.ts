@@ -22,6 +22,7 @@ import {
   parseCliente,
   parseClienteFiltros,
   parseClienteApi,
+  parseClienteApiNombre,
   parseCorreo,
   parseId,
   parseIds,
@@ -229,6 +230,11 @@ export function createMsIdentityService(config: MsIdentityConfig, dataSource: Da
     res.json(await users.get(parseId(req.params.id)));
   });
 
+  api.patch('/usuarios/:id', async (req, res) => {
+    await requireAdmin(req);
+    res.json(await users.updateProfile(parseId(req.params.id), parseProfilePatch(req.body)));
+  });
+
   api.put('/usuarios/:id/activo', async (req, res) => {
     const { principal } = await requireAdmin(req);
     res.json(await users.setActive(parseId(req.params.id), parseActivo(req.body), principal.id));
@@ -260,6 +266,16 @@ export function createMsIdentityService(config: MsIdentityConfig, dataSource: Da
     const { principal } = await requireAdmin(req);
     const { codigo, nombre } = parseClienteApi(req.body);
     res.status(201).json(await apiClients.create(codigo, nombre, principal.id));
+  });
+
+  api.patch('/clientes-api/:id', async (req, res) => {
+    await requireAdmin(req);
+    res.json(await apiClients.rename(parseId(req.params.id), parseClienteApiNombre(req.body)));
+  });
+
+  api.post('/clientes-api/:id/clave', async (req, res) => {
+    await requireAdmin(req);
+    res.json(await apiClients.regenerateKey(parseId(req.params.id)));
   });
 
   api.put('/clientes-api/:id/activo', async (req, res) => {

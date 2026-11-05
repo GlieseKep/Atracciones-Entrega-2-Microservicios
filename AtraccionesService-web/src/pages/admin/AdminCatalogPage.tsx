@@ -14,7 +14,7 @@ import { useAsync } from '@/hooks/useAsync';
 import { useUiStore } from '@/stores/uiStore';
 import type { AdminAttraction, AttractionState } from '@/types/admin';
 import { errorMessage, fieldError, isApiError } from '@/utils/api';
-import { today } from '@/utils/dates';
+import { formatDate, today } from '@/utils/dates';
 import { formatMoney } from '@/utils/formatters';
 import { AdminTable, Sub, useRowAction, type Column } from './AdminTable';
 import { AttractionEditor } from './AttractionEditor';
@@ -272,6 +272,49 @@ function PriceDialog({ attraction: a, onClose, onSaved }: { attraction: AdminAtt
           )}
         </form>
       )}
+      <TariffHistory attractionId={a.id} />
     </Modal>
+  );
+}
+
+const TICKET_LABEL: Record<string, string> = { ADULT: 'Adulto', CHILD: 'Niño', SENIOR: 'Adulto mayor', INFANT: 'Infante', STUDENT: 'Estudiante' };
+
+/** Vigentes, futuras y anteriores, como las devuelve ms-pricing. */
+function TariffHistory({ attractionId }: { attractionId: string }) {
+  const tariffs = useAsync((signal) => pricingApi.tariffs(attractionId, signal), [attractionId]);
+  return (
+    <section className="mt-6 border-t border-line pt-4">
+      <h3 className="text-base">Historial de tarifas</h3>
+      {tariffs.status === 'error' ? (
+        <p className="mt-2 text-sm text-ink-muted">{errorMessage(tariffs.error)}</p>
+      ) : !tariffs.data ? (
+        <div className="skeleton mt-2 h-16" aria-busy="true" />
+      ) : tariffs.data.length === 0 ? (
+        <p className="mt-2 text-sm text-ink-muted">Sin tarifas registradas.</p>
+      ) : (
+        <div className="mt-2 max-h-52 overflow-y-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="text-xs uppercase tracking-wide text-ink-soft">
+              <tr>
+                <th scope="col" className="py-1 pr-3">Boleto</th>
+                <th scope="col" className="py-1 pr-3">Precio</th>
+                <th scope="col" className="py-1 pr-3">Vigencia</th>
+                <th scope="col" className="py-1" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-line">
+              {tariffs.data.map((t) => (
+                <tr key={t.tariff_id}>
+                  <td className="py-1.5 pr-3">{TICKET_LABEL[t.ticket_type] ?? t.ticket_type}</td>
+                  <td className="py-1.5 pr-3">{formatMoney(t.price, t.currency)}</td>
+                  <td className="py-1.5 pr-3">{formatDate(t.valid_from)} — {t.valid_to ? formatDate(t.valid_to) : 'sin fin'}</td>
+                  <td className="py-1.5">{t.current && <Badge tone="success">Vigente</Badge>}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
   );
 }

@@ -39,12 +39,15 @@ export const MS_IDENTITY_ROUTES = {
   // Administración (rol ADMIN).
   'identity.listUsers': route('GET', '/usuarios'),
   'identity.getUser': route('GET', '/usuarios/:id'),
+  'identity.updateUser': route('PATCH', '/usuarios/:id'),
   'identity.setUserActive': route('PUT', '/usuarios/:id/activo'),
   'identity.assignRole': route('POST', '/usuarios/:id/roles'),
   'identity.removeRole': route('DELETE', '/usuarios/:id/roles/:rol'),
   'identity.listRoles': route('GET', '/roles'),
   'identity.listApiClients': route('GET', '/clientes-api'),
   'identity.createApiClient': route('POST', '/clientes-api'),
+  'identity.updateApiClient': route('PATCH', '/clientes-api/:id'),
+  'identity.regenerateApiClientKey': route('POST', '/clientes-api/:id/clave'),
   'identity.setApiClientActive': route('PUT', '/clientes-api/:id/activo'),
 
   // Clientes turistas que registra un socio (Booking) o un ADMIN. Registrar llama a Billing: plazo mayor.

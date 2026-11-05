@@ -15,7 +15,7 @@ import {
 import { Router, type Express, type RequestHandler } from 'express';
 import type { DataSource } from 'typeorm';
 import { AgreementService, parseAgreement } from './application/agreement';
-import { assertDates, parseCouponCreate, parseCouponPatch, parseCouponQuery, parseValidation } from './application/coupon-input';
+import { assertCoupon, parseCouponCreate, parseCouponPatch, parseCouponQuery, parseValidation } from './application/coupon-input';
 import { validateCoupon } from './application/coupon-validation';
 import { COUPON_BASE_PATH } from './integration/esb-routes';
 import { AgreementRepository } from './persistence/agreement-repository';
@@ -137,7 +137,7 @@ export function createMsCouponService(config: MsCouponConfig, dataSource: DataSo
     await requireAdmin();
     const current = await requireCoupon(req.params.code);
     const patch = parseCouponPatch(req.body);
-    assertDates(patch.start_date ?? current.start_date, patch.end_date === undefined ? current.end_date : patch.end_date);
+    assertCoupon(patch.type ?? current.type, patch.value ?? current.value, patch.start_date ?? current.start_date, patch.end_date === undefined ? current.end_date : patch.end_date);
     await coupons.update(current.code, patch);
     res.json(await requireCoupon(current.code));
   });

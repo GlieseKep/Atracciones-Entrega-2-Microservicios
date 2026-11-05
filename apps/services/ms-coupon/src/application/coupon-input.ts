@@ -54,11 +54,19 @@ export function parseCouponCreate(body: unknown): CouponCreate {
   };
 }
 
-/** El código, el tipo y el valor no cambian: para otro descuento se crea otro cupón. */
+/** El código no cambia. Un tipo o valor nuevo rige para las compras siguientes: las órdenes guardan el descuento aplicado. */
 export function parseCouponPatch(body: unknown): CouponPatch {
   const b = asBody(body);
   const errors: InvalidParam[] = [];
   const patch: CouponPatch = {};
+  if (b.type !== undefined) {
+    if (COUPON_TYPES.includes(b.type as CouponType)) patch.type = b.type as CouponType;
+    else errors.push({ name: 'type', reason: `Debe ser ${COUPON_TYPES.join(', ')}.` });
+  }
+  if (b.value !== undefined) {
+    if (typeof b.value === 'number' && Number.isFinite(b.value) && b.value >= 0) patch.value = b.value;
+    else errors.push({ name: 'value', reason: 'Debe ser un número no negativo.' });
+  }
   if (b.start_date !== undefined) {
     if (isDate(b.start_date)) patch.start_date = b.start_date;
     else errors.push({ name: 'start_date', reason: 'Debe ser una fecha YYYY-MM-DD.' });
@@ -80,7 +88,7 @@ export function parseCouponPatch(body: unknown): CouponPatch {
   return patch;
 }
 
-export const assertDates = (start: string, end: string | null) => assertCoherent(null, null, start, end);
+export const assertCoupon = assertCoherent;
 
 export function parseValidation(body: unknown): CouponValidationRequest {
   const b = asBody(body);

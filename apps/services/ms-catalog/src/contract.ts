@@ -74,6 +74,30 @@ export interface InclusionDto {
   tipo: InclusionType;
   nombre: string;
   orden: number;
+  /** Atracciones no eliminadas que la usan: con alguna, no se puede quitar. */
+  atracciones: number;
+}
+
+export interface IdiomaAdminDto {
+  codigo: string;
+  nombre: string;
+  atracciones: number;
+}
+
+/** Categoría del panel: también las inactivas, con lo que hace falta para editarla. */
+export interface CategoriaAdminDto extends CategoryFlat {
+  descripcion: string | null;
+  icono: string;
+  orden: number;
+  activa: boolean;
+  atracciones: number;
+}
+
+export interface OperadorUsuarioDto {
+  usu_id: number;
+  cargo: OperatorCharge;
+  nombre: string;
+  correo: string;
 }
 
 export interface LogisticaReserva {

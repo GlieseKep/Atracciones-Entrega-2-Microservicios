@@ -12,9 +12,10 @@ import { Modal } from '@/components/common/Modal';
 import { Select } from '@/components/common/Select';
 import { useAsync } from '@/hooks/useAsync';
 import { useUiStore } from '@/stores/uiStore';
-import type { Guide, Operator } from '@/types/admin';
+import type { Guide, Operator, OperatorUser } from '@/types/admin';
 import { errorMessage, fieldError } from '@/utils/api';
 import { AdminTable, Sub, useRowAction, type Column } from './AdminTable';
+import { UserPicker } from './UserPicker';
 
 const TABS = [
   { id: 'guias', label: 'Guías' },
@@ -145,6 +146,8 @@ function GuideDialog({ guide, operators, onClose, onSaved }: { guide: Guide | nu
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<GuideValues>({
     resolver: zodResolver(guideSchema),
@@ -198,15 +201,15 @@ function GuideDialog({ guide, operators, onClose, onSaved }: { guide: Guide | nu
         />
         <Input label="Nombre" placeholder="Lic. Carlos Morales" error={err('nombre')} {...register('nombre')} />
         <Input label="Credencial MINTUR" error={err('credencial_mintur')} {...register('credencial_mintur')} />
-        <Input
-          label="Cuenta en el sistema (opcional)"
-          className="sm:col-span-2"
-          inputMode="numeric"
-          placeholder="ID del usuario"
-          help="Solo si el guía hará el check-in con su propia cuenta. Dale además el rol Guía en Usuarios."
-          error={err('usu_id')}
-          {...register('usu_id')}
-        />
+        <div className="sm:col-span-2">
+          <UserPicker
+            label="Cuenta en el sistema (opcional)"
+            help="Solo si el guía hará el check-in con su propia cuenta. Dale además el rol Guía en Usuarios."
+            value={watch('usu_id') ? Number(watch('usu_id')) : null}
+            onChange={(id) => setValue('usu_id', id === null ? '' : String(id))}
+          />
+          {err('usu_id') && <p className="field-error">{err('usu_id')}</p>}
+        </div>
         {error !== null && (
           <div className="sm:col-span-2">
             <Alert tone="error">{errorMessage(error)}</Alert>
@@ -380,22 +383,28 @@ function OperatorDialog({ operator, onClose, onSaved }: { operator: Operator | n
 }
 
 /** Vincula una cuenta al operador. Para que gestione sus atracciones necesita además el rol OPERADOR (Usuarios). */
+const CARGOS: { value: OperatorUser['cargo']; label: string }[] = [
+  { value: 'ADMIN', label: 'Administrador del operador' },
+  { value: 'VENDEDOR', label: 'Vendedor' },
+  { value: 'GUIA', label: 'Guía' },
+];
+
 function LinkUserDialog({ operator, onClose }: { operator: Operator; onClose: () => void }) {
   const notify = useUiStore((s) => s.notify);
-  const [usuId, setUsuId] = useState('');
-  const [cargo, setCargo] = useState<'ADMIN' | 'VENDEDOR' | 'GUIA'>('ADMIN');
-  const [busy, setBusy] = useState<'link' | 'unlink' | null>(null);
+  const linked = useAsync((signal) => catalogApi.operatorUsers(operator.id, signal), [operator.id]);
+  const [usuId, setUsuId] = useState<number | null>(null);
+  const [cargo, setCargo] = useState<OperatorUser['cargo']>('ADMIN');
+  const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<unknown>(null);
-  const valid = /^\d+$/.test(usuId) && Number(usuId) > 0;
 
-  const act = async (kind: 'link' | 'unlink') => {
-    setBusy(kind);
+  const act = async (key: string, action: () => Promise<void>, message: string) => {
+    setBusy(key);
     setError(null);
     try {
-      if (kind === 'link') await catalogApi.linkOperatorUser(operator.id, Number(usuId), cargo);
-      else await catalogApi.unlinkOperatorUser(operator.id, Number(usuId));
-      notify(kind === 'link' ? 'Usuario vinculado.' : 'Usuario desvinculado.', 'success');
-      onClose();
+      await action();
+      notify(message, 'success');
+      setUsuId(null);
+      linked.retry();
     } catch (e) {
       setError(e);
     } finally {
@@ -406,32 +415,55 @@ function LinkUserDialog({ operator, onClose }: { operator: Operator; onClose: ()
   return (
     <Modal
       open
-      size="sm"
       onClose={onClose}
       title={`Usuarios de ${operator.nombre_comercial}`}
       footer={
-        <>
-          <Button variant="tertiary" disabled={!valid} loading={busy === 'unlink'} onClick={() => act('unlink')}>
-            Desvincular
-          </Button>
-          <Button disabled={!valid} loading={busy === 'link'} onClick={() => act('link')}>
-            Vincular
-          </Button>
-        </>
+        <Button variant="tertiary" onClick={onClose}>
+          Cerrar
+        </Button>
       }
     >
-      <div className="space-y-4">
-        <Input label="ID del usuario" inputMode="numeric" value={usuId} onChange={(e) => setUsuId(e.target.value.trim())} help="Lo ves en Usuarios. Debe tener el rol Operador." />
-        <Select
-          label="Cargo"
-          value={cargo}
-          onChange={(e) => setCargo(e.target.value as typeof cargo)}
-          options={[
-            { value: 'ADMIN', label: 'Administrador del operador' },
-            { value: 'VENDEDOR', label: 'Vendedor' },
-            { value: 'GUIA', label: 'Guía' },
-          ]}
-        />
+      <div className="space-y-5">
+        <section>
+          <h3 className="text-base">Vinculados</h3>
+          {linked.status === 'error' ? (
+            <p className="mt-2 text-sm text-ink-muted">{errorMessage(linked.error)}</p>
+          ) : !linked.data ? (
+            <div className="skeleton mt-2 h-14" aria-busy="true" />
+          ) : linked.data.length === 0 ? (
+            <p className="mt-2 text-sm text-ink-muted">Ningún usuario vinculado.</p>
+          ) : (
+            <ul className="mt-2 divide-y divide-line rounded-md border border-line text-sm">
+              {linked.data.map((u) => (
+                <li key={u.usu_id} className="flex items-center justify-between gap-3 p-3">
+                  <span>
+                    <span className="font-semibold">{u.nombre || `Usuario ${u.usu_id}`}</span>
+                    <Sub>
+                      {u.correo} · {CARGOS.find((c) => c.value === u.cargo)?.label ?? u.cargo}
+                    </Sub>
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="tertiary"
+                    loading={busy === String(u.usu_id)}
+                    onClick={() => act(String(u.usu_id), () => catalogApi.unlinkOperatorUser(operator.id, u.usu_id), 'Usuario desvinculado.')}
+                  >
+                    Desvincular
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="space-y-4 border-t border-line pt-4">
+          <h3 className="text-base">Vincular otro</h3>
+          <UserPicker label="Usuario" rol="OPERADOR" help="Debe tener el rol Operador: se lo das en Usuarios." value={usuId} onChange={setUsuId} />
+          <Select label="Cargo" value={cargo} onChange={(e) => setCargo(e.target.value as OperatorUser['cargo'])} options={CARGOS} />
+          <Button disabled={usuId === null} loading={busy === 'link'} onClick={() => act('link', () => catalogApi.linkOperatorUser(operator.id, usuId as number, cargo), 'Usuario vinculado.')}>
+            Vincular
+          </Button>
+        </section>
         {error !== null && <Alert tone="error">{errorMessage(error)}</Alert>}
       </div>
     </Modal>
