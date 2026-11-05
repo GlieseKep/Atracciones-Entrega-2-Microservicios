@@ -15,14 +15,16 @@ import {
 } from '@atracciones/platform';
 import type { DataSource } from 'typeorm';
 import { CancellationFlow } from './application/cancellation-flow';
+import { CheckinNotifier } from './application/checkin-notifier';
 import { CheckinService } from './application/checkin-service';
-import { parseIdempotencyKey, parsePurchase, parseSolicitante, parseText } from './application/input';
+import { parseAsistentes, parseIdempotencyKey, parsePurchase, parseSolicitante, parseText } from './application/input';
 import { Lifecycle } from './application/lifecycle';
 import { paymentEventHandler } from './application/payment-events';
 import { PurchaseFlow } from './application/purchase-flow';
 import { Remote } from './application/remote';
 import { ReservationService } from './application/reservation-service';
 import { EVENT_TYPES, type EventType } from './contract';
+import { CheckinNotificationRepository } from './persistence/checkin-notification-repository';
 import { EventRepository } from './persistence/event-repository';
 import { IdempotencyRepository } from './persistence/idempotency-repository';
 import { ReservationRepository } from './persistence/reservation-repository';
@@ -41,6 +43,8 @@ export interface MsBookingConfig {
   basePath: string;
   nodeId: string;
   nodeCode: string;
+  /** Cada cuánto se reintentan los avisos del check-in a Booking Central. */
+  checkinNotifyIntervalMs: number;
 }
 
 export function readMsBookingConfig(env: NodeJS.ProcessEnv = process.env): MsBookingConfig {
@@ -54,6 +58,7 @@ export function readMsBookingConfig(env: NodeJS.ProcessEnv = process.env): MsBoo
     basePath: env.BASE_PATH ?? '/api/v3',
     nodeId: env.NODE_ID ?? 'node-dilan-booking-01',
     nodeCode: env.NODE_CODE ?? 'DILAN_BOOKING',
+    checkinNotifyIntervalMs: Math.max(Number(env.CHECKIN_NOTIFY_INTERVAL_MS) || 60_000, 5_000),
   };
 }
 
@@ -67,6 +72,8 @@ export interface MsBookingService {
   implementation: grpc.UntypedServiceImplementation;
   onEvent: EventHandler;
   lifecycle: Lifecycle;
+  /** Reintentos del aviso del check-in a Booking Central. */
+  checkinNotifier: CheckinNotifier;
   events: EventRepository;
 }
 
@@ -84,7 +91,12 @@ export function createMsBookingService(config: MsBookingConfig, dataSource: Data
   const service = new ReservationService(reservations, remote, config.internalTokenSecret, config.basePath);
   const purchase = new PurchaseFlow(reservations, idempotency, remote, { internalToken: config.internalTokenSecret, voucher: config.voucherSecret }, config.basePath, logger);
   const cancellation = new CancellationFlow(reservations, idempotency, service, remote, config.internalTokenSecret);
-  const checkin = new CheckinService(reservations, idempotency, remote, { internalToken: config.internalTokenSecret, voucher: config.voucherSecret });
+  const notifications = new CheckinNotificationRepository(dataSource);
+  const checkinNotifier = new CheckinNotifier(notifications, remote, logger, config.checkinNotifyIntervalMs);
+  const checkin = new CheckinService(reservations, idempotency, remote, notifications, checkinNotifier, {
+    internalToken: config.internalTokenSecret,
+    voucher: config.voucherSecret,
+  });
 
   const definition = serviceConstructor(loadProto('internal/ms-booking.proto'), 'descubre.booking.BookingService').service;
   const rpc = (method: string, handler: (request: Message) => Promise<unknown>) => unary(method, handler, logger);
@@ -128,11 +140,13 @@ export function createMsBookingService(config: MsBookingConfig, dataSource: Data
         voucher: parseText(request.codigo_voucher_qr) || null,
         guiaCodigo: parseText(request.guia_codigo) || null,
         dispositivo: parseText(request.scanner_device_id) || null,
+        asistentes: parseAsistentes(request.asistentes_reales),
+        observaciones: parseText(request.observaciones) || null,
       });
     }),
     ListEvents: rpc('ListEvents', listEvents),
     ListReservations: rpc('ListReservations', (request) => service.list(request.todas === true, parseText(request.estado), Number(request.page ?? 0), Number(request.limit ?? 0))),
   };
 
-  return { definition, implementation, onEvent: paymentEventHandler(reservations, remote, logger), lifecycle: new Lifecycle(reservations, idempotency, remote, logger), events };
+  return { definition, implementation, onEvent: paymentEventHandler(reservations, remote, logger), lifecycle: new Lifecycle(reservations, idempotency, remote, logger), checkinNotifier, events };
 }

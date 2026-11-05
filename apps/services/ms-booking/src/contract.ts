@@ -6,6 +6,9 @@ export type EventType = (typeof EVENT_TYPES)[number];
 
 export type Solicitante = 'CLIENTE' | 'SAGA_ORCHESTRATOR' | 'ADMIN';
 
+/** Estado del aviso del check-in a Booking Central (extensión del contrato). */
+export type NotificacionBooking = 'NO_APLICA' | 'PENDIENTE' | 'ENVIADA' | 'FALLIDA';
+
 export interface CustomerInput {
   nombre: string;
   correo: string;
@@ -74,6 +77,12 @@ export interface ReservaResponse {
   reembolso_id: string;
   monto_reembolsado: number;
   _links: { self: string; checkin: string; cancel: string };
+  /** Extensiones: turista de `cliente_api` (vacío en compras web) y aviso del check-in a Booking Central. */
+  client_id: string;
+  notificacion_booking: NotificacionBooking;
+  /** Extensión: código público de la atracción (`atr_codigo`) y su nombre, para enlazar la reserva con su ficha. */
+  attraction_id: string;
+  attraction_name: string;
 }
 
 export interface CheckinResponse {
@@ -86,4 +95,5 @@ export interface CheckinResponse {
   punto_encuentro: string;
   hora_checkin: string;
   pase_abordar_qr: string;
+  notificacion_booking: NotificacionBooking;
 }

@@ -110,6 +110,25 @@ export class Remote {
     return (await this.esb.call<{ items?: Slot[] }>('inventory', 'getSlotsByIds', { dis_ids: ids })).items ?? [];
   }
 
+  /**
+   * Turista de `cliente_api` (Identity) para el titular de una compra de socio: lo reutiliza si ya existe (por correo o
+   * identificación) o lo registra. Nunca lo duplica.
+   */
+  async ensureClient(customer: { nombre: string; correo: string; documento: string; telefono: string }): Promise<number> {
+    const client = await this.esb.call<{ client_id: string }>('identity', 'ensureClient', {
+      nombre: customer.nombre,
+      email: customer.correo,
+      identificacion: customer.documento,
+      telefono: customer.telefono,
+    });
+    return Number(client.client_id);
+  }
+
+  /** `POST /api/v3/reservas/{external_order_id}/checkin` de Booking Central, por el ESB (con su `X-API-Key`). */
+  notifyCheckin(payload: object): Promise<unknown> {
+    return this.esb.call('bookingCore', 'notifyCheckin', payload, { timeoutMs: 10_000 });
+  }
+
   /** `null` si no hay un pago aprobado que devolver. */
   async refund(ordId: number, motivo: string, clave: string): Promise<Refund | null> {
     try {

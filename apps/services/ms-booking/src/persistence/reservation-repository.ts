@@ -25,6 +25,12 @@ export interface ReservationRow {
   res_monto_reembolsado: string | null;
   res_checkin_en: Date | null;
   res_creado_en: Date;
+  /** Turista de `cliente_api` (Identity); `null` en compras web. */
+  cla_id_cliente: string | null;
+  res_canal: 'WEB' | 'SOCIO';
+  /** Aviso del check-in a Booking Central (`null` si no hay aviso). */
+  nch_enviado_en: Date | null;
+  nch_intentos: number | null;
   pax_nombre: string;
   pax_tipo_documento: string;
   pax_documento: string;
@@ -34,10 +40,12 @@ export interface ReservationRow {
 
 const SELECT = `SELECT r.res_id, r.res_uuid, r.res_codigo, r.ord_numero, r.det_id, r.dis_id, r.gui_id, e.est_codigo, r.res_adultos, r.res_ninos, r.res_seniors,
     r.res_estudiantes, r.res_infantes, r.res_numero_tickets, r.res_precio_total, r.res_voucher_qr, r.res_reembolso_id, r.res_monto_reembolsado,
-    r.res_checkin_en, r.res_creado_en, p.pax_nombre, p.pax_tipo_documento, p.pax_documento, p.pax_correo, p.pax_telefono
+    r.res_checkin_en, r.res_creado_en, p.pax_nombre, p.pax_tipo_documento, p.pax_documento, p.pax_correo, p.pax_telefono,
+    r.cla_id_cliente, r.res_canal, n.nch_enviado_en, n.nch_intentos
   FROM reserva r
   JOIN estado e ON e.est_id = r.est_id
-  JOIN reserva_pasajero p ON p.res_id = r.res_id AND p.pax_es_titular`;
+  JOIN reserva_pasajero p ON p.res_id = r.res_id AND p.pax_es_titular
+  LEFT JOIN notificacion_checkin n ON n.res_id = r.res_id`;
 
 const estado = (codigo: ReservationState) => `(SELECT est_id FROM estado WHERE est_codigo = '${codigo}')`;
 
@@ -59,6 +67,8 @@ export interface NewReservation {
   requerimientos: string | null;
   voucher: string;
   customer: CustomerInput;
+  claIdCliente: number | null;
+  canal: 'WEB' | 'SOCIO';
 }
 
 export interface OutgoingEvent {
@@ -100,9 +110,9 @@ export class ReservationRepository {
       const tickets = data.adultos + data.ninos + data.seniors + data.infantes;
       const [row] = await m.query(
         `INSERT INTO reserva (res_uuid, res_codigo, ord_numero, det_id, dis_id, est_id, gui_id, res_saga_id, res_adultos, res_ninos, res_seniors, res_infantes,
-           res_numero_tickets, res_precio_total, res_requerimientos, res_voucher_qr)
-         VALUES ($1, $2, $3, $4, $5, ${estado('PENDING')}, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING res_id`,
-        [data.uuid, data.codigo, data.ordNumero, data.detId, data.disId, data.guiId, data.sagaId, data.adultos, data.ninos, data.seniors, data.infantes, tickets, data.total, data.requerimientos, data.voucher],
+           res_numero_tickets, res_precio_total, res_requerimientos, res_voucher_qr, cla_id_cliente, res_canal)
+         VALUES ($1, $2, $3, $4, $5, ${estado('PENDING')}, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) RETURNING res_id`,
+        [data.uuid, data.codigo, data.ordNumero, data.detId, data.disId, data.guiId, data.sagaId, data.adultos, data.ninos, data.seniors, data.infantes, tickets, data.total, data.requerimientos, data.voucher, data.claIdCliente, data.canal],
       );
       const c = data.customer;
       await m.query(
@@ -117,9 +127,17 @@ export class ReservationRepository {
 
   /**
    * Cambia de estado solo si la reserva sigue en uno de `from`, y escribe sus eventos en la misma transacción. Con `null`,
-   * otro proceso ya la cambió: así los consumidores son idempotentes.
+   * otro proceso ya la cambió: así los consumidores son idempotentes. `within` escribe más filas en la misma transacción
+   * (p. ej. el aviso del check-in a Booking Central).
    */
-  async transition(resId: string, from: ReservationState[], to: ReservationState, sets: Record<string, unknown>, events: (row: ReservationRow) => OutgoingEvent[]): Promise<ReservationRow | null> {
+  async transition(
+    resId: string,
+    from: ReservationState[],
+    to: ReservationState,
+    sets: Record<string, unknown>,
+    events: (row: ReservationRow) => OutgoingEvent[],
+    within?: (m: EntityManager, row: ReservationRow) => Promise<void>,
+  ): Promise<ReservationRow | null> {
     return this.db.transaction(async (m) => {
       const columns = Object.keys(sets);
       const assignments = [`est_id = ${estado(to)}`, ...columns.map((column, index) => `${column} = $${index + 3}`)];
@@ -130,8 +148,12 @@ export class ReservationRepository {
         ),
       );
       if (rows.length === 0) return null;
-      const [row] = await m.query(`${SELECT} WHERE r.res_id = $1`, [resId]);
+      let [row] = await m.query(`${SELECT} WHERE r.res_id = $1`, [resId]);
       for (const event of events(row)) await this.events.record(m, event.tipo, row.res_codigo, event.payload);
+      if (within) {
+        await within(m, row);
+        [row] = await m.query(`${SELECT} WHERE r.res_id = $1`, [resId]);
+      }
       return row;
     });
   }

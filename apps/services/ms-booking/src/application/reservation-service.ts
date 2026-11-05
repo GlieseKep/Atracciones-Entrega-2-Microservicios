@@ -39,10 +39,24 @@ export class ReservationService {
     return toResponse(row, slot, logistics, this.basePath);
   }
 
+  /**
+   * Consultar: el dueño o un `ADMIN`, y para el check-in también un `GUIA` o el `OPERADOR` de la atracción. Cancelar sigue
+   * usando solo `assertOwner`.
+   */
+  private async assertCanView(row: ReservationRow, principal: Principal): Promise<void> {
+    if (hasRole(principal, 'GUIA')) return;
+    try {
+      await this.assertOwner(row, principal);
+    } catch (error) {
+      if (!(error instanceof AppError && error.status === 403 && hasRole(principal, 'OPERADOR'))) throw error;
+      await this.remote.assertOperatorOf((await this.remote.slot(Number(row.dis_id))).atraccion_id);
+    }
+  }
+
   async get(id: string): Promise<ReservaResponse> {
     const principal = await this.principal();
     const row = await this.require(id);
-    await this.assertOwner(row, principal);
+    await this.assertCanView(row, principal);
     return this.present(row);
   }
 

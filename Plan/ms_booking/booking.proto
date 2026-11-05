@@ -125,6 +125,11 @@ message ReservaConfirmadaResponseV2 {
   string reembolso_id = 29;
   double monto_reembolsado = 30;
   Links _links = 31;
+  // Extensiones (no estan en el contrato v3): turista de cliente_api y estado del aviso del check-in a Booking Central.
+  string client_id = 32;
+  string notificacion_booking = 33;   // NO_APLICA | PENDIENTE | ENVIADA | FALLIDA
+  string attraction_id = 34;          // codigo publico de la atraccion (atr_codigo)
+  string attraction_name = 35;
 }
 
 message GetReservationRequest {
@@ -145,6 +150,9 @@ message CheckinRequest {
   string codigo_voucher_qr = 4;
   string guia_codigo = 5;
   string scanner_device_id = 6;
+  // Opcionales para el aviso a Booking Central: 0 = boletos de la reserva; vacio = texto por defecto.
+  int32 asistentes_reales = 7;
+  string observaciones = 8;
 }
 
 // Campos con los mismos nombres que CheckinResponse del contrato v3.
@@ -158,6 +166,7 @@ message CheckinResponse {
   string punto_encuentro = 7;
   string hora_checkin = 8;
   string pase_abordar_qr = 9;
+  string notificacion_booking = 10;   // extension: NO_APLICA | PENDIENTE | ENVIADA | FALLIDA
 }
 
 message ListEventsRequest {

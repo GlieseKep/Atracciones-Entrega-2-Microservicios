@@ -18,6 +18,7 @@ async function main() {
   await bus.subscribe(EVENT_QUEUE, EVENT_PATTERNS, booking.onEvent);
   new EventPublisher(dataSource, booking.events, bus, logger).start();
   booking.lifecycle.start();
+  booking.checkinNotifier.start();
 
   const app = createRpcHttpService({ service: 'ms-booking', definition: booking.definition, implementation: booking.implementation, serviceToken: config.serviceToken, dataSource, logger });
   const server = await listen(app, config.port);

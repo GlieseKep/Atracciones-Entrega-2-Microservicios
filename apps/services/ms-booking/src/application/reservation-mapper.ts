@@ -1,11 +1,19 @@
 import { timeLabel } from '@atracciones/platform';
-import type { ReservaResponse } from '../contract';
+import type { NotificacionBooking, ReservaResponse } from '../contract';
+import { MAX_NOTIFICATION_ATTEMPTS } from '../persistence/checkin-notification-repository';
 import type { ReservationRow } from '../persistence/reservation-repository';
 import type { Logistics, Slot } from './remote';
 
 const PENDING_GUIDE = 'Por asignar';
 
 export const guideName = (logistics: Logistics | null) => logistics?.guia?.nombre ?? PENDING_GUIDE;
+
+/** Sin fila de aviso: `NO_APLICA` (compra web o sin check-in todavía). */
+export function notificationStatus(row: ReservationRow): NotificacionBooking {
+  if (row.nch_intentos === null || row.nch_intentos === undefined) return 'NO_APLICA';
+  if (row.nch_enviado_en) return 'ENVIADA';
+  return row.nch_intentos >= MAX_NOTIFICATION_ATTEMPTS ? 'FALLIDA' : 'PENDIENTE';
+}
 
 /** `ReservaConfirmadaResponseV2`, con sus alias. La moneda es siempre USD. */
 export function toResponse(row: ReservationRow, slot: Slot, logistics: Logistics | null, basePath: string): ReservaResponse {
@@ -55,5 +63,9 @@ export function toResponse(row: ReservationRow, slot: Slot, logistics: Logistics
     reembolso_id: row.res_reembolso_id ?? '',
     monto_reembolsado: Number(row.res_monto_reembolsado ?? 0),
     _links: { self, checkin: `${self}/checkin`, cancel: `${self}/cancel` },
+    client_id: row.cla_id_cliente === null ? '' : String(row.cla_id_cliente),
+    notificacion_booking: notificationStatus(row),
+    attraction_id: slot.atraccion_id,
+    attraction_name: logistics?.nombre ?? '',
   };
 }

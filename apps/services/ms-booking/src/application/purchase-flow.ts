@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { errorFields, requirePrincipal, type Logger } from '@atracciones/platform';
+import { errorFields, requirePrincipal, type Logger, type Principal } from '@atracciones/platform';
 import type { PurchaseInput, ReservaResponse } from '../contract';
 import type { IdempotencyRepository, IdempotencySubject } from '../persistence/idempotency-repository';
 import { newReservationCode, type ReservationRepository, type ReservationRow } from '../persistence/reservation-repository';
@@ -47,12 +47,24 @@ export class PurchaseFlow {
   async run(input: PurchaseInput): Promise<ReservaResponse> {
     const principal = await requirePrincipal(this.secrets.internalToken);
     const subject: IdempotencySubject = { tipo: principal.tipo === 'USUARIO' ? 'USUARIO' : 'CLIENTE_API', id: Number(principal.id) };
-    return onceByKey(this.idempotency, input.idempotencyKey, subject, 'CreateReservation', input, () => this.purchase(input));
+    return onceByKey(this.idempotency, input.idempotencyKey, subject, 'CreateReservation', input, () => this.purchase(input, principal));
   }
 
-  private async purchase(input: PurchaseInput): Promise<ReservaResponse> {
+  /**
+   * Compra de un socio: el titular queda como turista en `cliente_api` (Identity), sin duplicarse. El RUC no identifica a
+   * una persona, así que esa compra sigue sin turista enlazado.
+   */
+  private async client(input: PurchaseInput, principal: Principal): Promise<{ claId: number | null; canal: 'WEB' | 'SOCIO' }> {
+    if (principal.tipo !== 'API_CLIENTE') return { claId: null, canal: 'WEB' };
+    if (input.customer.tipoDocumento === 'RUC') return { claId: null, canal: 'SOCIO' };
+    return { claId: await this.remote.ensureClient(input.customer), canal: 'SOCIO' };
+  }
+
+  private async purchase(input: PurchaseInput, principal: Principal): Promise<ReservaResponse> {
     const attraction = await this.remote.reference(input.attractionId);
     const logistics = await this.remote.logistics(attraction.id, null);
+    // Antes de la orden: si Identity rechaza al titular no hay nada que deshacer.
+    const client = await this.client(input, principal);
     const order = await this.remote.createOrder({
       // La clave del cliente protege la compra aquí. Un reintento tras un fallo necesita una orden nueva: la anterior quedó
       // cancelada, y con la misma clave Order la devolvería. Si Booking cae a mitad, Order cancela la huérfana a los 30 minutos.
@@ -82,7 +94,7 @@ export class PurchaseFlow {
     }
     let row: ReservationRow;
     try {
-      row = await this.save(input, order, seats, logistics);
+      row = await this.save(input, order, seats, logistics, client);
     } catch (error) {
       await this.undoSeatsAndOrder(order.ord_numero);
       throw error;
@@ -90,7 +102,13 @@ export class PurchaseFlow {
     return this.pay(input, row, logistics);
   }
 
-  private save(input: PurchaseInput, order: OrderSummary, seats: { dis_id: number; cupos_disponibles: number }, logistics: Logistics): Promise<ReservationRow> {
+  private save(
+    input: PurchaseInput,
+    order: OrderSummary,
+    seats: { dis_id: number; cupos_disponibles: number },
+    logistics: Logistics,
+    client: { claId: number | null; canal: 'WEB' | 'SOCIO' },
+  ): Promise<ReservationRow> {
     const uuid = randomUUID();
     const codigo = newReservationCode();
     const tickets = input.adultos + input.ninos + input.seniors + input.infantes;
@@ -112,6 +130,8 @@ export class PurchaseFlow {
         requerimientos: input.requerimientos,
         voucher: createVoucher({ reservationId: uuid, code: codigo, document: input.customer.documento }, this.secrets.voucher),
         customer: input.customer,
+        claIdCliente: client.claId,
+        canal: client.canal,
       },
       [
         { tipo: 'RESERVA_CREADA', payload: event },

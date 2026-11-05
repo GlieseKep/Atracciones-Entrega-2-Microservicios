@@ -98,3 +98,12 @@ export function parseSolicitante(value: unknown): Solicitante {
 }
 
 export const parseText = text;
+
+/** `asistentes_reales` del check-in: 0 o ausente = todos los boletos (`null`); si no, un entero positivo. */
+export function parseAsistentes(value: unknown): number | null {
+  if (value === undefined || value === null || value === 0) return null;
+  if (!Number.isInteger(value) || (value as number) < 1) {
+    throw AppError.validation("'asistentes_reales' debe ser un entero positivo.", [{ name: 'asistentes_reales', reason: 'Debe ser un entero positivo.' }]);
+  }
+  return value as number;
+}
