@@ -110,6 +110,7 @@ CREATE TABLE outbox (
     creado_en      TIMESTAMPTZ  NOT NULL DEFAULT now(),
     publicado_en   TIMESTAMPTZ,
     intentos       INT          NOT NULL DEFAULT 0 CONSTRAINT ck_outbox_intentos CHECK (intentos >= 0),
-    ultimo_error   VARCHAR(500)
+    ultimo_error   VARCHAR(500),
+    proximo_en     TIMESTAMPTZ   -- espera antes de reintentar un stock con ITEM_NOT_FOUND
 );
 CREATE INDEX ix_outbox_pendientes ON outbox (creado_en) WHERE publicado_en IS NULL;

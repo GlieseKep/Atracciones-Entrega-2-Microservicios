@@ -1,7 +1,7 @@
 import { AppError, addDays, returnedRows } from '@atracciones/platform';
 import type { DataSource, EntityManager } from 'typeorm';
 import type { BlockedDate, Schedule, Slot, SlotsGuideResult } from '../contract';
-import { recordNewSlotsStock, recordStock, type SlotStock } from './stock-outbox';
+import { recordNewSlotsStock, recordSlotsStock, recordStock, type SlotStock } from './stock-outbox';
 
 const SCHEDULE_COLUMNS = `hor_id, atr_codigo, hor_hora::text AS hor_hora, hor_cupo, hor_activo, gui_id`;
 
@@ -115,11 +115,12 @@ export class ScheduleRepository {
 
   /**
    * Cupo y guía del horario. Un guía nuevo pasa a los turnos desde `today` que aún tenían el guía anterior; los días
-   * que se cambiaron a mano conservan el suyo.
+   * que se cambiaron a mano conservan el suyo. Con el cupo pasa lo mismo: un cupo nuevo llega a los turnos desde `today`
+   * que aún tenían el anterior, nunca por debajo de lo reservado, y su saldo se deja en el outbox para Booking.
    */
   updateSchedule(id: number, cupo: number, guiId: number | null, today: string): Promise<Schedule> {
     return this.db.transaction(async (m) => {
-      const [before] = await m.query(`SELECT gui_id FROM horario WHERE hor_id = $1 FOR UPDATE`, [id]);
+      const [before] = await m.query(`SELECT gui_id, hor_cupo FROM horario WHERE hor_id = $1 FOR UPDATE`, [id]);
       if (!before) throw scheduleNotFound(id);
       const rows = returnedRows<ScheduleRow>(
         await m.query(`UPDATE horario SET hor_cupo = $2, gui_id = $3 WHERE hor_id = $1 RETURNING ${SCHEDULE_COLUMNS}`, [id, cupo, guiId]),
@@ -130,6 +131,17 @@ export class ScheduleRepository {
           `UPDATE disponibilidad SET gui_id = $2 WHERE hor_id = $1 AND dis_fecha >= $4::date AND gui_id IS NOT DISTINCT FROM $3::bigint`,
           [id, guiId, previous, today],
         );
+      }
+      if (before.hor_cupo !== cupo) {
+        const changed = returnedRows<{ dis_id: string }>(
+          await m.query(
+            `UPDATE disponibilidad SET dis_cupo_total = greatest($2::int, dis_cupo_reservado)
+             WHERE hor_id = $1 AND dis_fecha >= $4::date AND dis_cupo_total = $3::int RETURNING dis_id`,
+            [id, cupo, before.hor_cupo, today],
+          ),
+        );
+        const slots: SlotRow[] = await m.query(`${SLOT_SELECT} WHERE d.dis_id = ANY($1::bigint[])`, [changed.map((row) => row.dis_id)]);
+        await recordSlotsStock(m, slots.map(toStock));
       }
       return toSchedule(rows[0]);
     });
@@ -246,6 +258,15 @@ export class ScheduleRepository {
       );
       const slotIds = rows.map((row) => row.dis_slot_codigo).sort();
       return { actualizados: rows.length, slot_ids: slotIds, con_reservas: rows.filter((row) => row.reservado).length };
+    });
+  }
+
+  /** Deja en el outbox el saldo de los turnos desde `today`, o 0 si la atracción dejó de venderse. Devuelve cuántos. */
+  resendStock(codigo: string, today: string, cero: boolean): Promise<number> {
+    return this.db.transaction(async (m) => {
+      const rows: SlotRow[] = await m.query(`${SLOT_SELECT} WHERE d.atr_codigo = $1 AND d.dis_fecha >= $2::date`, [codigo, today]);
+      await recordSlotsStock(m, rows.map((row) => ({ ...toStock(row), disponibles: cero ? 0 : toStock(row).disponibles })));
+      return rows.length;
     });
   }
 

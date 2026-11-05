@@ -193,10 +193,11 @@ message ListEventsResponse {
 }
 
 message ListReservationsRequest {
-  bool todas = 1;                 // solo ADMIN
+  bool todas = 1;                 // ADMIN; GUIA y OPERADOR solo con q
   string estado = 2;
   int32 page = 3;
   int32 limit = 4;
+  string q = 5;                   // codigo, orden, documento o correo del titular
 }
 
 message ReservationPage {

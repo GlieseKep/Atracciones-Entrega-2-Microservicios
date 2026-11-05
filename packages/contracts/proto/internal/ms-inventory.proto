@@ -29,6 +29,7 @@ service InventoryService {
   // Guia de un turno (un dia) y de los turnos de un rango de fechas. gui_id = 0: vuelve al guia del horario.
   rpc SetSlotGuide (SetSlotGuideRequest) returns (Slot);
   rpc SetSlotsGuide (SetSlotsGuideRequest) returns (SlotsGuideResult);
+  rpc ResendStock (ResendStockRequest) returns (ResendStockResult);
   rpc ListBlockedDates (ListBlockedDatesRequest) returns (BlockedDateList);
   rpc BlockDate (BlockDateRequest) returns (BlockedDate);
   rpc UnblockDate (UnblockDateRequest) returns (Empty);
@@ -220,6 +221,15 @@ message SlotsGuideResult {
   int32 actualizados = 1;
   repeated string slot_ids = 2;
   int32 con_reservas = 3;         // turnos del rango que ya tienen reservas (conservan su guia)
+}
+
+message ResendStockRequest {
+  string atraccion_id = 1;
+  bool cero = 2;                  // true = enviar 0 cupos (atraccion retirada o eliminada)
+}
+
+message ResendStockResult {
+  int32 enviados = 1;             // turnos que quedaron en el outbox
 }
 
 message BlockedDate {

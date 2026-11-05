@@ -1,68 +1,80 @@
 import { Link } from 'react-router-dom';
-import { adminApi } from '@/api/admin';
-import { ErrorState } from '@/components/common/Feedback';
+import { catalogApi, operationsApi, supportApi, systemHealth, usersApi } from '@/api/admin';
+import { Badge } from '@/components/common/Badge';
 import { useAsync } from '@/hooks/useAsync';
-import { formatMoney } from '@/utils/formatters';
 import { ADMIN_SECTIONS } from './AdminLayout';
 
-const sum = (counts: Record<string, number>, ...keys: string[]) => keys.reduce((s, k) => s + (counts[k] ?? 0), 0);
+const one = { page: 1, limit: 1 };
 
-/** Indicadores generales del negocio y accesos a cada sección. */
+/** Total de un listado; `null` si ese servicio no respondió (el resto del tablero sigue funcionando). */
+const countOf = (load: Promise<{ total: number }>) => load.then((r) => r.total).catch(() => null);
+
+const show = (value: number | null) => (value === null ? 'No disponible' : value.toLocaleString('es-EC'));
+
+/** Indicadores con los totales de cada servicio: no hay un servicio de agregados. */
 export default function AdminDashboardPage() {
-  const summary = useAsync((signal) => adminApi.summary(signal), []);
-  const s = summary.data;
-  const occupancy = s && s.upcoming.capacity ? Math.round((s.upcoming.reserved / s.upcoming.capacity) * 100) : 0;
+  const counts = useAsync(
+    async (signal) => {
+      const [users, published, confirmed, cancelled, paidOrders, createdOrders, approved, rejected, pending, unread] = await Promise.all([
+        countOf(usersApi.list(one, signal)),
+        countOf(catalogApi.list({ ...one, estado: 'PUBLICADA' }, signal)),
+        countOf(operationsApi.reservations({ ...one, estado: 'CONFIRMED' }, signal)),
+        countOf(operationsApi.reservations({ ...one, estado: 'CANCELLED' }, signal)),
+        countOf(operationsApi.orders({ ...one, estado: 'PAGADA' }, signal)),
+        countOf(operationsApi.orders({ ...one, estado: 'CREADA' }, signal)),
+        countOf(operationsApi.payments({ ...one, estado: 'APROBADO' }, signal)),
+        countOf(operationsApi.payments({ ...one, estado: 'RECHAZADO' }, signal)),
+        countOf(operationsApi.payments({ ...one, estado: 'PENDIENTE' }, signal)),
+        countOf(supportApi.list({ ...one, leido: 'false' }, signal)),
+      ]);
+      return { users, published, confirmed, cancelled, paidOrders, createdOrders, approved, rejected, pending, unread };
+    },
+    [],
+  );
+  const health = useAsync((signal) => systemHealth(signal), []);
+  const c = counts.data;
 
-  const stats = s
+  const stats = c
     ? [
-        { label: 'Ingresos cobrados', value: s.revenue.length ? s.revenue.map((r) => formatMoney(r.amount, r.currency)).join(' · ') : formatMoney(0), to: '/admin/reportes' },
-        { label: 'Clientes registrados', value: s.customers.toLocaleString('es-EC'), hint: `${s.activeUsers} activos`, to: '/admin/clientes' },
-        {
-          label: 'Reservas confirmadas',
-          value: sum(s.reservationsByStatus, 'CONFIRMED').toLocaleString('es-EC'),
-          hint: `${sum(s.reservationsByStatus, 'CANCELLED')} canceladas`,
-          to: '/admin/reservas',
-        },
-        {
-          label: 'Pedidos pagados',
-          value: sum(s.ordersByStatus, 'PAID', 'FULFILLED').toLocaleString('es-EC'),
-          hint: `${sum(s.ordersByStatus, 'PENDING_PAYMENT')} pendientes de pago`,
-          to: '/admin/pedidos',
-        },
-        {
-          label: 'Pagos rechazados o fallidos',
-          value: sum(s.paymentsByStatus, 'REJECTED', 'FAILED').toLocaleString('es-EC'),
-          hint: `${sum(s.paymentsByStatus, 'SETTLED', 'AUTHORIZED')} aprobados`,
-          to: '/admin/pagos',
-        },
-        {
-          label: 'Ocupación (próximos 30 días)',
-          value: `${occupancy}%`,
-          hint: `${s.upcoming.reserved.toLocaleString('es-EC')} de ${s.upcoming.capacity.toLocaleString('es-EC')} cupos`,
-          to: '/admin/disponibilidad',
-        },
-        { label: 'Atracciones publicadas', value: s.attractions.toLocaleString('es-EC'), to: '/admin/catalogo' },
+        { label: 'Usuarios registrados', value: show(c.users), to: '/admin/usuarios' },
+        { label: 'Atracciones publicadas', value: show(c.published), to: '/admin/catalogo' },
+        { label: 'Reservas confirmadas', value: show(c.confirmed), hint: `${show(c.cancelled)} canceladas`, to: '/admin/reservas' },
+        { label: 'Pedidos pagados', value: show(c.paidOrders), hint: `${show(c.createdOrders)} sin pagar`, to: '/admin/pedidos' },
+        { label: 'Pagos aprobados', value: show(c.approved), hint: `${show(c.rejected)} rechazados · ${show(c.pending)} pendientes`, to: '/admin/pagos' },
+        { label: 'Mensajes sin leer', value: show(c.unread), to: '/admin/mensajes' },
       ]
     : [];
+
+  const down = health.data?.services.filter((s) => s.status !== 'UP') ?? [];
 
   return (
     <div>
       <h1 className="text-3xl">Dashboard</h1>
-      {summary.status === 'error' ? (
-        <ErrorState error={summary.error} onRetry={summary.retry} className="mt-6" />
-      ) : (
-        <dl className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {!s
-            ? Array.from({ length: 7 }, (_, i) => <div key={i} className="skeleton h-28" aria-busy="true" />)
-            : stats.map((st) => (
-                <Link key={st.label} to={st.to} className="card-surface block p-5 hover:shadow-card">
-                  <dt className="text-sm text-ink-soft">{st.label}</dt>
-                  <dd className="mt-1 text-2xl font-extrabold">{st.value}</dd>
-                  {st.hint && <dd className="mt-1 text-xs text-ink-muted">{st.hint}</dd>}
-                </Link>
-              ))}
-        </dl>
-      )}
+      <dl className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {!c
+          ? Array.from({ length: 6 }, (_, i) => <div key={i} className="skeleton h-28" aria-busy="true" />)
+          : stats.map((st) => (
+              <Link key={st.label} to={st.to} className="card-surface block p-5 hover:shadow-card">
+                <dt className="text-sm text-ink-soft">{st.label}</dt>
+                <dd className="mt-1 text-2xl font-extrabold">{st.value}</dd>
+                {st.hint && <dd className="mt-1 text-xs text-ink-muted">{st.hint}</dd>}
+              </Link>
+            ))}
+        <Link to="/admin/observabilidad" className="card-surface block p-5 hover:shadow-card">
+          <dt className="text-sm text-ink-soft">Estado del sistema</dt>
+          <dd className="mt-2">
+            {health.status === 'error' ? (
+              <Badge tone="danger">No disponible</Badge>
+            ) : !health.data ? (
+              <span className="skeleton inline-block h-6 w-24" />
+            ) : (
+              <Badge tone={health.data.status === 'UP' ? 'success' : health.data.status === 'DOWN' ? 'danger' : 'warning'}>{health.data.status}</Badge>
+            )}
+          </dd>
+          {down.length > 0 && <dd className="mt-2 text-xs text-danger">Con problemas: {down.map((s) => s.service).join(', ')}</dd>}
+        </Link>
+      </dl>
+
       <h2 className="mt-10 text-xl">Secciones</h2>
       <ul className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {ADMIN_SECTIONS.slice(1).map(({ to, label, icon: Icon }) => (

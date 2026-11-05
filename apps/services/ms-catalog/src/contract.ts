@@ -45,6 +45,8 @@ export interface PaginationMetadata {
 }
 
 export interface GuiaDto {
+  /** ID del guía: Inventory lo guarda en horarios y turnos. */
+  gui_id: number;
   codigo: string;
   nombre: string;
   credencial_mintur: string;

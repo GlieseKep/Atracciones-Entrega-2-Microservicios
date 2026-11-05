@@ -99,6 +99,7 @@ export class PurchaseFlow {
       // que asignó Catalog (el primer guía activo del operador).
       if (seats.gui_id) assigned = (await this.remote.logisticsOrNull(attraction.id, seats.gui_id)) ?? logistics;
       row = await this.save(input, order, seats, assigned, client);
+      this.logger.info('RESERVA_CREADA', { reservation_code: row.res_codigo, external_order_id: row.ord_numero, canal: row.res_canal, status: row.est_codigo });
     } catch (error) {
       await this.undoSeatsAndOrder(order.ord_numero);
       throw error;

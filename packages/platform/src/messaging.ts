@@ -20,6 +20,9 @@ export interface EventEnvelope {
 
 export type EventHandler = (event: EventEnvelope) => Promise<void>;
 
+/** `IN_MEMORY`: sin `RABBITMQ_URL`, un solo proceso. */
+export type EventBusStatus = 'CONNECTED' | 'DISCONNECTED' | 'IN_MEMORY';
+
 /**
  * Bus de eventos (plan D5). Clave de enrutamiento `<servicio>.<TipoEvento>`; cada consumidor tiene su propia cola y
  * recibe los eventos de los patrones a los que se suscribe (`#` = todos, `booking.*` = los de Booking).
@@ -28,6 +31,7 @@ export interface EventBus {
   publish(routingKey: string, event: EventEnvelope): Promise<void>;
   subscribe(queue: string, patterns: string[], handler: EventHandler): Promise<void>;
   close(): Promise<void>;
+  status(): EventBusStatus;
 }
 
 /** `booking.*`, `#`, `inventory.DisponibilidadActualizada` → expresión regular sobre la clave de enrutamiento. */
@@ -61,6 +65,10 @@ export class InMemoryEventBus implements EventBus {
   private readonly subscriptions: { queue: string; matchers: RegExp[]; handler: EventHandler; chain: Promise<void> }[] = [];
   readonly deadLetters: { queue: string; event: EventEnvelope; error: string }[] = [];
   private readonly logger = createLogger('event-bus');
+
+  status(): EventBusStatus {
+    return 'IN_MEMORY';
+  }
 
   async publish(routingKey: string, event: EventEnvelope): Promise<void> {
     for (const sub of this.subscriptions) {
@@ -104,11 +112,24 @@ const DLX = `${PREFIX}atracciones.events.dlx`;
 
 /** RabbitMQ: exchange topic durable, una cola durable por consumidor y su DLQ (`<cola>.dlq`). */
 export class RabbitMqEventBus implements EventBus {
+  private connected = true;
+
   private constructor(
     private readonly connection: amqp.ChannelModel,
     private readonly channel: amqp.ConfirmChannel,
     private readonly logger: Logger,
-  ) {}
+  ) {
+    connection.on('close', () => {
+      this.connected = false;
+      this.logger.error('se perdió la conexión con RabbitMQ');
+    });
+    // Sin este oyente, un error de la conexión terminaría el proceso; después siempre llega `close`.
+    connection.on('error', (error: unknown) => this.logger.error('error en la conexión con RabbitMQ', errorFields(error)));
+  }
+
+  status(): EventBusStatus {
+    return this.connected ? 'CONNECTED' : 'DISCONNECTED';
+  }
 
   static async connect(url: string, logger: Logger = createLogger('event-bus')): Promise<RabbitMqEventBus> {
     const connection = await amqp.connect(url);

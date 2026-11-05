@@ -26,6 +26,11 @@ export function recordStock(m: EntityManager, slot: SlotStock, modo: StockPayloa
   return recordEvent(m, { tipoEvento: STOCK_EVENT, agregadoId: slot.atr_codigo, payload: { ...stockPayload(slot, modo, delta) } });
 }
 
+/** El saldo de varios turnos en una sola consulta. */
+export function recordSlotsStock(m: EntityManager, slots: SlotStock[]): Promise<string[]> {
+  return recordEvents(m, slots.map((slot) => ({ tipoEvento: STOCK_EVENT, agregadoId: slot.atr_codigo, payload: { ...stockPayload(slot, 'push', 0) } })));
+}
+
 /** Varios turnos nuevos en una sola consulta: el delta de cada uno es su cupo total. */
 export function recordNewSlotsStock(m: EntityManager, slots: (SlotStock & { dis_cupo_total: number })[]): Promise<string[]> {
   return recordEvents(m, slots.map((slot) => ({ tipoEvento: STOCK_EVENT, agregadoId: slot.atr_codigo, payload: { ...stockPayload(slot, 'stream', slot.dis_cupo_total) } })));

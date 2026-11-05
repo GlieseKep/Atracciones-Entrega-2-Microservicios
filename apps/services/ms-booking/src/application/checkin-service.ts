@@ -1,4 +1,4 @@
-import { AppError, hasRole, requirePrincipal, type Principal } from '@atracciones/platform';
+import { AppError, hasRole, requirePrincipal, type Logger, type Principal } from '@atracciones/platform';
 import type { CheckinResponse } from '../contract';
 import type { CheckinNotificationPayload, CheckinNotificationRepository } from '../persistence/checkin-notification-repository';
 import type { IdempotencyRepository, IdempotencySubject } from '../persistence/idempotency-repository';
@@ -33,6 +33,7 @@ export class CheckinService {
     private readonly notifications: CheckinNotificationRepository,
     private readonly notifier: CheckinNotifier,
     private readonly secrets: { internalToken: string; voucher: string },
+    private readonly logger: Logger,
   ) {}
 
   async run(input: CheckinInput): Promise<CheckinResponse> {
@@ -93,6 +94,12 @@ export class CheckinService {
       },
     );
     if (!updated) throw AppError.conflict('RESERVATION_NOT_CONFIRMED', 'La reserva cambió de estado.');
+    this.logger.info('CHECKIN_EJECUTADO', {
+      reservation_code: row.res_codigo,
+      external_order_id: row.ord_numero,
+      guia_codigo: input.guiaCodigo,
+      asistentes_reales: input.asistentes ?? row.res_numero_tickets,
+    });
     const logistics = await this.remote.logisticsOrNull(slot.atraccion_id, row.gui_id === null ? null : Number(row.gui_id));
     return {
       reserva_id: row.res_uuid,

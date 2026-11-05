@@ -55,13 +55,15 @@ src/
   components/   common, layout, attractions, search, reservation, purchase, profile, ui
   features/     auth (sesión, rutas protegidas), attractions (filtros, selección de compra), content (FAQ, fotos de portada)
   hooks/        useAuth, useAttractions, useReservations, usePagination, useAsync
-  pages/        una carpeta por página; AuthPages (acceso y recuperación); admin/ es el panel (auditoría aparte)
+  pages/        una carpeta por página; AuthPages (acceso y recuperación); admin/ es el panel de administración
   stores/       Zustand: sesión y UI
   utils/        formato, fechas, validación (zod), errores, idempotencia
 ```
 
-El panel administrativo (`src/pages/admin`) aún usa endpoints del monolito anterior (`pages/admin/legacy.ts`,
-`api/admin.ts`), salvo el check-in; tiene su propia auditoría pendiente.
+El panel administrativo (`src/pages/admin`, rol `ADMIN`) usa GraphQL por `src/api/admin.ts`: usuarios y roles, catálogo,
+tarifas, guías y operadores, horarios y turnos, reservas, pedidos, pagos, facturas, cupones, reseñas, mensajes, socios,
+reportes y observabilidad. El check-in (`/admin/checkin`) también lo usan `OPERADOR` y `GUIA`.
+Detalle y pendientes en [AUDITORIA_PANEL_ADMIN.md](../Plan/AUDITORIA_PANEL_ADMIN.md).
 
 ## Docker
 

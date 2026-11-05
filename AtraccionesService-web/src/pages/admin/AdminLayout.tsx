@@ -1,16 +1,38 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { Activity, BarChart3, CalendarRange, ClipboardList, CreditCard, LayoutDashboard, Map, Receipt, ScanLine, UserCog, Users } from 'lucide-react';
+import {
+  Activity,
+  BarChart3,
+  CalendarRange,
+  ClipboardList,
+  CreditCard,
+  FileText,
+  Handshake,
+  LayoutDashboard,
+  Mail,
+  Map,
+  MessageSquare,
+  Receipt,
+  ScanLine,
+  TicketPercent,
+  UserRound,
+  Users,
+} from 'lucide-react';
 
 export const ADMIN_SECTIONS = [
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
+  { to: '/admin/usuarios', label: 'Usuarios', icon: Users },
   { to: '/admin/catalogo', label: 'Catálogo', icon: Map },
+  { to: '/admin/guias', label: 'Guías y operadores', icon: UserRound },
   { to: '/admin/disponibilidad', label: 'Disponibilidad', icon: CalendarRange },
   { to: '/admin/reservas', label: 'Reservas', icon: ClipboardList },
   { to: '/admin/checkin', label: 'Check-in', icon: ScanLine },
   { to: '/admin/pedidos', label: 'Pedidos', icon: Receipt },
   { to: '/admin/pagos', label: 'Pagos', icon: CreditCard },
-  { to: '/admin/clientes', label: 'Clientes', icon: Users },
-  { to: '/admin/usuarios', label: 'Usuarios y roles', icon: UserCog },
+  { to: '/admin/facturas', label: 'Facturas', icon: FileText },
+  { to: '/admin/cupones', label: 'Cupones', icon: TicketPercent },
+  { to: '/admin/resenas', label: 'Reseñas', icon: MessageSquare },
+  { to: '/admin/mensajes', label: 'Mensajes', icon: Mail },
+  { to: '/admin/socios', label: 'Socios', icon: Handshake },
   { to: '/admin/reportes', label: 'Reportes', icon: BarChart3 },
   { to: '/admin/observabilidad', label: 'Observabilidad', icon: Activity },
 ];

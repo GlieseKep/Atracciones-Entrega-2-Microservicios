@@ -1,4 +1,4 @@
-import { AppError, errorFields, type Logger } from '@atracciones/platform';
+import { AppError, errorFields, newCorrelationId, runWithContext, type Logger } from '@atracciones/platform';
 import { MAX_NOTIFICATION_ATTEMPTS, type CheckinNotificationRepository, type PendingNotification } from '../persistence/checkin-notification-repository';
 import type { Remote } from './remote';
 
@@ -36,23 +36,31 @@ export class CheckinNotifier {
     }
   }
 
-  private async deliver(notification: PendingNotification): Promise<void> {
+  /** Cada intento, también los reintentos, lleva el `X-Correlation-Id` del check-in que lo originó. */
+  private deliver(notification: PendingNotification): Promise<void> {
+    return runWithContext({ correlationId: notification.nch_correlation_id ?? newCorrelationId() }, () => this.attempt(notification));
+  }
+
+  private async attempt(notification: PendingNotification): Promise<void> {
     const external = notification.nch_payload.external_order_id;
+    const intento = notification.nch_intentos + 1;
     try {
       await this.remote.notifyCheckin(notification.nch_payload);
       await this.notifications.markSent(notification.res_id);
-      this.logger.info('check-in avisado a Booking', { external_order_id: external });
+      this.logger.info('CHECKIN_AVISO_ENVIADO', { external_order_id: external, intentos: intento });
     } catch (error) {
+      const status = error instanceof AppError ? error.status : null;
       // Booking ya tenía registrado el check-in: el aviso cumplió su objetivo.
-      if (error instanceof AppError && error.status === 409) {
+      if (status === 409) {
         await this.notifications.markSent(notification.res_id);
+        this.logger.info('CHECKIN_AVISO_ENVIADO', { external_order_id: external, http_status: status, intentos: intento });
         return;
       }
       const message = error instanceof Error ? error.message : String(error);
       const intentos = await this.notifications.markFailed(notification.res_id, message);
-      const fields = { external_order_id: external, intentos, ...errorFields(error) };
-      if (intentos >= MAX_NOTIFICATION_ATTEMPTS) this.logger.error('el aviso del check-in a Booking agotó sus reintentos', fields);
-      else this.logger.warn('Booking no confirmó el aviso del check-in; se reintentará', fields);
+      const fields = { external_order_id: external, http_status: status, intentos, agotado: intentos >= MAX_NOTIFICATION_ATTEMPTS, ...errorFields(error) };
+      if (fields.agotado) this.logger.error('CHECKIN_AVISO_FALLIDO', fields);
+      else this.logger.warn('CHECKIN_AVISO_FALLIDO', fields);
     }
   }
 

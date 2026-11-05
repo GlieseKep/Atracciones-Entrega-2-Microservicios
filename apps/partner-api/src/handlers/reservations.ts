@@ -1,4 +1,4 @@
-import { AppError, type EsbClient } from '@atracciones/platform';
+import { AppError, type EsbClient, type Logger } from '@atracciones/platform';
 import type { Request, Response } from 'express';
 import type { ContractRequest } from '../request';
 
@@ -20,7 +20,7 @@ const selfLink = (body: ReservationResponse) => {
  * Reservas del contrato v3. Booking aplica las reglas del contrato (alias, turno, fecha, pasajeros e idempotencia) y
  * orquesta la compra con Order, Inventory, Payment y Refund; la Partner API solo enruta y fija los códigos HTTP.
  */
-export function reservationHandlers(esb: EsbClient) {
+export function reservationHandlers(esb: EsbClient, logger: Logger) {
   return {
     /** POST /atracciones/reservas: 201 con `Location`, o 409 `OUT_OF_STOCK` para que Booking compense. */
     async create(req: Request, res: Response) {
@@ -31,6 +31,13 @@ export function reservationHandlers(esb: EsbClient) {
           { name: 'idempotency_key', reason: 'Debe coincidir con la cabecera Idempotency-Key.' },
         ]);
       }
+      const count = (field: string) => (typeof body[field] === 'number' ? (body[field] as number) : 0);
+      logger.info('RESERVA_RECIBIDA', {
+        attraction_id: body.attraction_id,
+        slot_id: body.slot_id,
+        boletos: count('adult_count') + count('child_count') + count('senior_count') + count('infant_count'),
+        saga_id: body.saga_id ?? null,
+      });
       const reserva = await esb.call<ReservationResponse>('booking', 'createReservation', { ...body, idempotency_key: key }, { idempotencyKey: key });
       const location = selfLink(reserva);
       if (location) res.location(location);

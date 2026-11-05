@@ -210,6 +210,12 @@ export function toAdmin(row: AttractionRow, city: string, children: AttractionCh
     estado: row.atr_estado,
     tipo: row.atr_tipo,
     ciu_id: row.ciu_id,
+    // Valores tal como se guardan, para que el editor del panel no los mezcle (la ficha une dirección y punto de encuentro).
+    operador: row.ope_codigo,
+    short_description: row.atr_descripcion_corta,
+    duration_hours: Number(row.atr_duracion_horas),
+    address: row.atr_direccion,
+    meeting_point: row.atr_punto_encuentro,
     destacada: row.atr_destacada,
     categorias: children.categorias.map((item) => item.cat_codigo),
     idiomas: children.idiomas.map((item) => item.idi_codigo),

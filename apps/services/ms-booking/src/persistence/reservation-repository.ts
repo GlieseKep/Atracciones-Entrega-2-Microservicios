@@ -76,6 +76,12 @@ export interface OutgoingEvent {
   payload: Record<string, unknown>;
 }
 
+/** `exact` compara el texto completo; si no, basta con que lo contenga. */
+export interface ReservationSearch {
+  q: string;
+  exact: boolean;
+}
+
 export class ReservationRepository {
   constructor(
     private readonly db: DataSource,
@@ -97,10 +103,24 @@ export class ReservationRepository {
     return this.db.query(`${SELECT} WHERE r.ord_numero = ANY($1::varchar[]) ORDER BY r.res_creado_en DESC`, [numeros]);
   }
 
-  async list(estadoFiltro: string | null, page: number, limit: number): Promise<{ total: number; rows: ReservationRow[] }> {
-    const where = `WHERE ($1::varchar IS NULL OR e.est_codigo = $1)`;
-    const [{ total }] = await this.db.query(`SELECT count(*)::int AS total FROM reserva r JOIN estado e ON e.est_id = r.est_id ${where}`, [estadoFiltro]);
-    const rows = await this.db.query(`${SELECT} ${where} ORDER BY r.res_creado_en DESC, r.res_id DESC LIMIT $2 OFFSET $3`, [estadoFiltro, limit, (page - 1) * limit]);
+  /** `search` busca en código, orden, UUID, documento y correo del titular, sin distinguir mayúsculas. */
+  async list(estadoFiltro: string | null, page: number, limit: number, search: ReservationSearch | null = null): Promise<{ total: number; rows: ReservationRow[] }> {
+    const params: unknown[] = [estadoFiltro];
+    let where = `WHERE ($1::varchar IS NULL OR e.est_codigo = $1)`;
+    if (search) {
+      params.push(search.exact ? search.q : `%${search.q.replace(/[\\%_]/g, '\\$&')}%`);
+      where += search.exact
+        ? ` AND (upper(r.res_codigo) = upper($2) OR upper(r.ord_numero) = upper($2) OR r.res_uuid::text = lower($2) OR p.pax_documento = upper($2) OR lower(p.pax_correo) = lower($2))`
+        : ` AND (r.res_codigo ILIKE $2 OR r.ord_numero ILIKE $2 OR r.res_uuid::text ILIKE $2 OR p.pax_documento ILIKE $2 OR p.pax_correo ILIKE $2)`;
+    }
+    const [{ total }] = await this.db.query(
+      `SELECT count(*)::int AS total FROM reserva r JOIN estado e ON e.est_id = r.est_id JOIN reserva_pasajero p ON p.res_id = r.res_id AND p.pax_es_titular ${where}`,
+      params,
+    );
+    const rows = await this.db.query(
+      `${SELECT} ${where} ORDER BY r.res_creado_en DESC, r.res_id DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
+      [...params, limit, (page - 1) * limit],
+    );
     return { total, rows };
   }
 

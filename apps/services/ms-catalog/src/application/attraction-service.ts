@@ -1,5 +1,5 @@
 import { randomInt } from 'node:crypto';
-import { AppError, type EsbClient } from '@atracciones/platform';
+import { AppError, errorFields, type EsbClient, type Logger } from '@atracciones/platform';
 import type { DataSource, EntityManager } from 'typeorm';
 import type { AttractionInput, AttractionState, LogisticaReserva, ReferenciaAtraccion } from '../contract';
 import type { AdminFilters, AttractionRepository, AttractionRow } from '../persistence/attraction-repository';
@@ -27,6 +27,7 @@ export class AttractionService {
     private readonly locations: Locations,
     private readonly permissions: Permissions,
     private readonly esb: EsbClient,
+    private readonly logger: Logger,
   ) {}
 
   // Consulta -------------------------------------------------------------------
@@ -157,11 +158,29 @@ export class AttractionService {
     const row = await this.owned(id, staff);
     if (estado === 'PUBLICADA') await this.assertPublishable(row.atr_codigo, this.dataSource);
     await this.attractions.setState(row.atr_id, estado);
-    return this.toAdminDto((await this.attractions.findByPublicId(row.atr_codigo)) as AttractionRow);
+    const dto = await this.toAdminDto((await this.attractions.findByPublicId(row.atr_codigo)) as AttractionRow);
+    // Solo si cambia lo que Booking puede vender: publicar envía el saldo real, y dejar de publicar, 0 cupos.
+    const changesSales = (estado === 'PUBLICADA') !== (row.atr_estado === 'PUBLICADA');
+    const synced = changesSales ? await this.resendStock(row.atr_codigo, estado !== 'PUBLICADA') : true;
+    return { ...dto, stock_sincronizado: synced };
   }
 
+  /** El aviso va antes de borrar: Inventory comprueba en Catalog que el operador sea dueño de la atracción. */
   async remove(id: string, staff: Staff): Promise<void> {
-    await this.attractions.softDelete((await this.owned(id, staff)).atr_id);
+    const row = await this.owned(id, staff);
+    if (row.atr_estado === 'PUBLICADA') await this.resendStock(row.atr_codigo, true);
+    await this.attractions.softDelete(row.atr_id);
+  }
+
+  /** Si Inventory no responde, el cambio de estado no se revierte: se registra y el panel avisa. */
+  private async resendStock(codigo: string, cero: boolean): Promise<boolean> {
+    try {
+      await this.esb.call('inventory', 'resendStock', { atraccion_id: codigo, cero });
+      return true;
+    } catch (error) {
+      this.logger.error('no se pudo reenviar el stock de la atracción', { atraccion_id: codigo, cero, ...errorFields(error) });
+      return false;
+    }
   }
 
   /** Comprueba que un usuario exista en Identity. */

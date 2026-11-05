@@ -101,15 +101,19 @@ async function graphql<T>(kind: 'query' | 'mutation', field: string, input: obje
   const variables = `$input: JSON${idempotent ? ', $idempotencyKey: ID!' : ''}`;
   const args = `input: $input${idempotent ? ', idempotencyKey: $idempotencyKey' : ''}`;
   const query = `${kind} ${field[0].toUpperCase()}${field.slice(1)}(${variables}) { ${field}(${args}) }`;
+  return execute<T>(query, { input: input ?? {}, ...(idempotent ? { idempotencyKey: options.idempotencyKey } : {}) }, field, options.signal);
+}
 
+/** Envía un documento GraphQL y devuelve `data[field]`, con los errores traducidos a `ApiError`. */
+async function execute<T>(query: string, variables: Record<string, unknown>, field: string, signal?: AbortSignal): Promise<T> {
   const { response, hadToken } = await send(
     env.graphqlUrl,
     {
       method: 'POST',
       headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, variables: { input: input ?? {}, ...(idempotent ? { idempotencyKey: options.idempotencyKey } : {}) } }),
+      body: JSON.stringify({ query, variables }),
     },
-    options.signal,
+    signal,
   );
   const body = (await readJson(response)) as { data?: Record<string, unknown> | null; errors?: GraphqlError[] } | ProblemDetails | undefined;
 
@@ -137,4 +141,6 @@ async function graphql<T>(kind: 'query' | 'mutation', field: string, input: obje
 export const gql = {
   query: <T>(field: string, input?: object, options?: GraphqlOptions) => graphql<T>('query', field, input, options),
   mutation: <T>(field: string, input?: object, options?: GraphqlOptions) => graphql<T>('mutation', field, input, options),
+  /** Campos con tipo propio (no JSON), como `systemHealth`: el documento completo lo escribe quien llama. */
+  document: <T>(query: string, field: string, signal?: AbortSignal) => execute<T>(query, {}, field, signal),
 };

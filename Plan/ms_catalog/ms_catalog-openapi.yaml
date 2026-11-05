@@ -1042,7 +1042,7 @@ paths:
       tags:
         - Administración
       summary: Cambiar el estado
-      description: 'Publicar exige al menos una categoría, una foto y una tarifa.'
+      description: 'Publicar exige al menos una categoría, una foto y una tarifa. La respuesta añade `stock_sincronizado`: `false` si Inventory no pudo dejar los cupos en cola para Booking (el estado no se revierte).'
       parameters:
         - $ref: '#/components/parameters/XCorrelationIdHeader'
         - name: id
@@ -2009,12 +2009,17 @@ components:
     Guia:
       type: object
       required:
+        - gui_id
         - codigo
         - nombre
         - credencial_mintur
         - operador
         - activo
       properties:
+        gui_id:
+          type: integer
+          format: int64
+          description: 'ID del guía; Inventory lo guarda en horarios y turnos (`gui_id`).'
         codigo:
           type: string
           example: GUIA-CARLOS-01
@@ -2320,6 +2325,22 @@ components:
               type: string
             ciu_id:
               type: integer
+            operador:
+              type: string
+              description: Código del operador (el mismo que `proveedor.id`).
+            short_description:
+              type: string
+              nullable: true
+            duration_hours:
+              type: number
+            address:
+              type: string
+              nullable: true
+              description: Dirección tal como se guardó (la ficha la mezcla con el punto de encuentro).
+            meeting_point:
+              type: string
+              nullable: true
+              description: Punto de encuentro tal como se guardó.
             destacada:
               type: boolean
             categorias:

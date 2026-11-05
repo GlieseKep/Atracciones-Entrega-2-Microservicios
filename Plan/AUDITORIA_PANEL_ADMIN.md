@@ -7,6 +7,25 @@
 | Fuera de alcance | Portal público (ya migrado según `AUDITORIA_FRONTEND.md`) y el check-in (`AdminCheckinPage`), que ya usa `bookingGetReservation` y `bookingCheckIn` |
 | Backend de referencia | Gateway `https://tourgirls-gateway-mm.azurewebsites.net` → GraphQL `/graphql` (operaciones de `apps/graphql/src/operations.ts`) |
 
+> **Estado (2026-11-05): panel reprogramado sobre GraphQL** (puntos 1 a 7 de §6 y la interfaz de los planes de bitácora y
+> de guías). Compila con `tsc` y `vite build`; no se ha probado contra el backend desplegado. Este documento describe el
+> estado de partida.
+>
+> **Sin hacer:**
+> - Turistas de socios en el panel (§4.5): falta su operación en GraphQL.
+> - Revocar las sesiones al quitar un rol (§4.4): el token vigente conserva el rol hasta vencer.
+> - Reservas y órdenes por usuario en el detalle de Usuarios (§4.1): Booking y Order no filtran por usuario.
+> - Selector de usuario para vincular guías y operadores: se escribe el ID.
+>
+> **Diferencias con lo propuesto:**
+> - El detalle de pedidos no muestra pagos ni reembolsos: `paymentListOrderPayments` solo acepta `X-Service-Token` y
+>   `refundListRefunds` filtra por pago, no por orden. Los pagos se consultan en la sección Pagos.
+> - Reportes: ingresos por día con facturas pagadas (`invoicingListInvoices`) y ventas por experiencia con reservas
+>   (`bookingListReservations`), porque el resumen de órdenes no trae fecha ni líneas. Suma hasta 20 páginas y avisa si no alcanza.
+> - Alta de usuarios: opción A de §4.3 (registro con contraseña temporal).
+> - ms-catalog añade `gui_id` a los guías y, en la ficha de administración, `operador`, `short_description`,
+>   `duration_hours`, `address` y `meeting_point`, sin los que el panel no podía editar sin perder datos.
+
 ## 1. Resumen
 
 1. **Ninguna pantalla del panel funciona**, salvo el check-in. Todas llaman a `/admin/*` y `/atracciones` (CRUD) del monolito

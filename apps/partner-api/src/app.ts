@@ -65,6 +65,7 @@ export interface PartnerApi {
   app: Express;
   esb: EsbClient;
   cache: Cache;
+  nodeHealth: NodeHealth;
   /** Invalida el read model del catálogo cuando cambia una atracción, el acuerdo de promociones o una tarifa. */
   invalidateOn(bus: EventBus): Promise<void>;
 }
@@ -98,8 +99,13 @@ export function createPartnerApi(config: PartnerApiConfig): PartnerApi {
   });
 
   app.use(principalMiddleware(config.internalTokenSecret));
+  // La guía de socios de Booking reserva en `${baseUrlRest}/reservas`; el contrato, en `/atracciones/reservas`. Se aceptan las dos.
+  app.post('/api/v3/reservas', (req, _res, next) => {
+    req.url = req.url.replace('/api/v3/reservas', '/api/v3/atracciones/reservas');
+    next();
+  });
   // Módulo de clientes pedido por Booking: no está en el contrato v3, así que va antes de su validador.
-  for (const base of BASE_PATHS) app.use(base, clientRoutes(esb));
+  for (const base of BASE_PATHS) app.use(base, clientRoutes(esb, logger));
   // GET /eventos no documenta 400: un `limit` mayor que el máximo del contrato (200) se acota en vez de rechazarse.
   app.use(/^\/api\/v3\/atracciones\/eventos$/, (req, _res, next) => {
     const limit = Number(req.query.limit);
@@ -120,6 +126,8 @@ export function createPartnerApi(config: PartnerApiConfig): PartnerApi {
   app.use(
     OpenApiValidator.middleware({
       apiSpec: openApiContractPath(),
+      // Por defecto busca la operación en `originalUrl`, que no ve el alias de /api/v3/reservas.
+      useRequestUrl: true,
       validateRequests: { allowUnknownQueryParameters: false },
       validateResponses: config.validateResponses,
       validateFormats: true,
@@ -144,6 +152,7 @@ export function createPartnerApi(config: PartnerApiConfig): PartnerApi {
     app,
     esb,
     cache,
+    nodeHealth,
     invalidateOn: (bus) =>
       bus.subscribe('partner-api.cache', ['catalog.*', 'pricing.*', 'review.*'], async () => {
         await cache.deletePrefix('detalle:');

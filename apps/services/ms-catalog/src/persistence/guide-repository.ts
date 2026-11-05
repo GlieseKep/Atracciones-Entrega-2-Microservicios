@@ -18,6 +18,7 @@ const SELECT = `SELECT g.gui_id, g.ope_id, o.ope_codigo, g.usu_id, g.gui_codigo,
   FROM guia g JOIN operador o ON o.ope_id = g.ope_id`;
 
 const toDto = (row: GuideRow): GuiaDto => ({
+  gui_id: Number(row.gui_id),
   codigo: row.gui_codigo,
   nombre: row.gui_nombre,
   credencial_mintur: row.gui_credencial_mintur,

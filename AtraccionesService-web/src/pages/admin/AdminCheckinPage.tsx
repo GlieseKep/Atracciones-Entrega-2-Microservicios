@@ -1,15 +1,16 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { Camera, CameraOff, QrCode, Search, UserCheck } from 'lucide-react';
-import { checkIn, getReservation } from '@/api/bookings';
+import { Camera, CameraOff, QrCode, Search } from 'lucide-react';
+import { operationsApi } from '@/api/admin';
+import { getReservation } from '@/api/bookings';
 import { Badge } from '@/components/common/Badge';
 import { Button } from '@/components/common/Button';
 import { Alert } from '@/components/common/Feedback';
-import { Input, TextArea } from '@/components/common/Input';
-import { ReservationStatusBadge } from '@/components/profile/StatusBadge';
+import { Input } from '@/components/common/Input';
+import { adminReservationStatusLabel, AdminReservationStatusBadge } from '@/components/profile/StatusBadge';
 import { useAuth } from '@/hooks/useAuth';
 import type { BookingNotificationStatus, CheckinResult, Reservation } from '@/types/booking';
-import { errorMessage, isApiError } from '@/utils/api';
 import { formatDate } from '@/utils/dates';
+import { CheckinForm, checkinMessage } from './CheckinForm';
 
 /** `BarcodeDetector` (Chrome, Edge, Android) todavía no está en los tipos de TypeScript. */
 interface DetectedBarcode {
@@ -48,16 +49,6 @@ function NotificationBadge({ status }: { status?: BookingNotificationStatus }) {
   const [label, tone] = NOTIFICATION[status ?? 'NO_APLICA'];
   return <Badge tone={tone}>{label}</Badge>;
 }
-
-const CHECKIN_MESSAGES: Record<string, string> = {
-  DOCUMENT_MISMATCH: 'El documento no coincide con el del titular de la reserva.',
-  INVALID_VOUCHER: 'El código QR no es válido para esta reserva.',
-  RESERVATION_NOT_CONFIRMED: 'La reserva no está confirmada: no se puede hacer el check-in.',
-  CHECKIN_OUT_OF_WINDOW: 'El check-in solo se puede hacer el día de la actividad.',
-  RESERVATION_NOT_FOUND: 'No existe una reserva con ese código.',
-};
-
-const message = (error: unknown) => (isApiError(error) && error.code && CHECKIN_MESSAGES[error.code]) || errorMessage(error);
 
 /** Escanea el QR con la cámara mientras está abierta; devuelve el primer valor leído. */
 function QrScanner({ onRead, onClose }: { onRead: (value: string) => void; onClose: () => void }) {
@@ -104,7 +95,7 @@ function QrScanner({ onRead, onClose }: { onRead: (value: string) => void; onClo
 }
 
 /**
- * Check-in presencial en el punto de encuentro: el guía escanea el QR (o escribe el código), comprueba el documento del
+ * Check-in presencial en el punto de encuentro: el guía escanea el QR (o busca por código, cédula o correo), comprueba el documento del
  * titular y confirma la asistencia. Si la compra vino de Booking, ms-booking le avisa a Booking Central.
  */
 export default function AdminCheckinPage() {
@@ -118,31 +109,36 @@ export default function AdminCheckinPage() {
   const [lookupError, setLookupError] = useState<string | null>(null);
   const [searching, setSearching] = useState(false);
 
-  const [documento, setDocumento] = useState('');
-  const [asistentes, setAsistentes] = useState('');
-  const [observaciones, setObservaciones] = useState('');
-  const [guiaCodigo, setGuiaCodigo] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [checkinError, setCheckinError] = useState<string | null>(null);
+  const [matches, setMatches] = useState<Reservation[]>([]);
+  const [refreshError, setRefreshError] = useState<string | null>(null);
   const [result, setResult] = useState<CheckinResult | null>(null);
-  // La misma clave en los reintentos de una confirmación: Booking devuelve el pase ya emitido sin duplicar.
-  const idempotencyKey = useRef<string>(crypto.randomUUID());
 
+  function select(found: Reservation, scannedVoucher: string | null) {
+    setReservation(found);
+    setVoucher(scannedVoucher);
+    setMatches([]);
+  }
+
+  /** Con un QR, la reserva es esa; con texto, puede haber varias del mismo titular y se elige una. */
   async function lookup(value: string, scannedVoucher: string | null) {
     setLookupError(null);
     setReservation(null);
+    setMatches([]);
     setResult(null);
-    setCheckinError(null);
+    setRefreshError(null);
     if (!value.trim()) return;
     setSearching(true);
     try {
-      const found = await getReservation(value.trim());
-      setReservation(found);
-      setVoucher(scannedVoucher);
-      setAsistentes(String(found.ticket_count));
-      idempotencyKey.current = crypto.randomUUID();
+      if (scannedVoucher) {
+        select(await getReservation(value.trim()), scannedVoucher);
+        return;
+      }
+      const { items } = await operationsApi.reservations({ q: value.trim(), page: 1, limit: 20 });
+      if (items.length === 0) setLookupError('No encontramos reservas con ese código, cédula o correo.');
+      else if (items.length === 1) select(items[0], null);
+      else setMatches(items);
     } catch (error) {
-      setLookupError(message(error));
+      setLookupError(checkinMessage(error));
     } finally {
       setSearching(false);
     }
@@ -161,36 +157,9 @@ export default function AdminCheckinPage() {
     void lookup(read.code, read.voucher);
   }
 
-  async function onConfirm(event: FormEvent) {
-    event.preventDefault();
-    if (!reservation) return;
-    setCheckinError(null);
-    const count = Number(asistentes);
-    if (!Number.isInteger(count) || count < 1 || count > reservation.ticket_count) {
-      setCheckinError(`Los asistentes deben ser entre 1 y ${reservation.ticket_count}.`);
-      return;
-    }
-    setSubmitting(true);
-    try {
-      const response = await checkIn(
-        {
-          id: reservation.reservation_id,
-          documento_identidad: documento.trim().toUpperCase(),
-          ...(voucher ? { codigo_voucher_qr: voucher } : {}),
-          ...(guiaCodigo.trim() ? { guia_codigo: guiaCodigo.trim() } : {}),
-          scanner_device_id: 'portal-web',
-          asistentes_reales: count,
-          ...(observaciones.trim() ? { observaciones: observaciones.trim() } : {}),
-        },
-        idempotencyKey.current,
-      );
-      setResult(response);
-      setReservation({ ...reservation, status: response.estado, notificacion_booking: response.notificacion_booking });
-    } catch (error) {
-      setCheckinError(message(error));
-    } finally {
-      setSubmitting(false);
-    }
+  function onCheckedIn(response: CheckinResult) {
+    setResult(response);
+    setReservation((current) => current && { ...current, status: response.estado, notificacion_booking: response.notificacion_booking });
   }
 
   /** El aviso a Booking sale en segundo plano: se vuelve a leer la reserva para ver si ya se envió. */
@@ -199,7 +168,7 @@ export default function AdminCheckinPage() {
     try {
       setReservation(await getReservation(reservation.reservation_id));
     } catch (error) {
-      setCheckinError(message(error));
+      setRefreshError(checkinMessage(error));
     }
   }
 
@@ -216,7 +185,7 @@ export default function AdminCheckinPage() {
       <header>
         <p className="text-sm font-semibold uppercase tracking-wider text-brand-500">Punto de encuentro</p>
         <h1 className="mt-1 text-2xl">Check-in de turistas</h1>
-        <p className="mt-1 text-sm text-ink-soft">Escanee el QR del voucher o escriba el código de la reserva, y compruebe el documento del titular.</p>
+        <p className="mt-1 text-sm text-ink-soft">Escanee el QR del voucher o busque por código, cédula o correo, y compruebe el documento del titular.</p>
       </header>
 
       <section className="card-surface p-6" aria-labelledby="lookup-title">
@@ -224,7 +193,7 @@ export default function AdminCheckinPage() {
           <QrCode size={18} aria-hidden="true" /> Reserva
         </h2>
         <form className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end" onSubmit={onSearch}>
-          <Input label="Código de reserva o QR" value={code} onChange={(e) => setCode(e.target.value)} placeholder="DEC-XXXXXX" className="flex-1" />
+          <Input label="Código, cédula, correo o QR" value={code} onChange={(e) => setCode(e.target.value)} placeholder="DEC-XXXXXX" className="flex-1" />
           <Button type="submit" loading={searching} disabled={!code.trim()}>
             <Search size={16} aria-hidden="true" /> Buscar
           </Button>
@@ -240,6 +209,23 @@ export default function AdminCheckinPage() {
             {lookupError}
           </Alert>
         )}
+        {matches.length > 0 && (
+          <ul className="mt-4 divide-y divide-line rounded-md border border-line">
+            {matches.map((match) => (
+              <li key={match.reservation_id} className="flex flex-wrap items-center justify-between gap-3 p-3 text-sm">
+                <span>
+                  <span className="font-semibold">{match.reservation_code}</span> · {match.customer.full_name} · {formatDate(match.date)} · {match.time}
+                  <span className="mt-1 block">
+                    <AdminReservationStatusBadge status={match.status} />
+                  </span>
+                </span>
+                <Button size="sm" variant="secondary" onClick={() => select(match, null)}>
+                  Elegir
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       {reservation && (
@@ -248,7 +234,7 @@ export default function AdminCheckinPage() {
             <h2 id="detail-title" className="text-lg">
               {reservation.reservation_code}
             </h2>
-            <ReservationStatusBadge status={reservation.status} />
+            <AdminReservationStatusBadge status={reservation.status} />
           </div>
           <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
             <div>
@@ -257,7 +243,9 @@ export default function AdminCheckinPage() {
             </div>
             <div>
               <dt className="text-ink-muted">Documento esperado</dt>
-              <dd>{reservation.customer.document_type}</dd>
+              <dd>
+                {reservation.customer.document_type} {reservation.customer.document_id}
+              </dd>
             </div>
             <div>
               <dt className="text-ink-muted">Visita</dt>
@@ -282,42 +270,10 @@ export default function AdminCheckinPage() {
           </dl>
           {voucher && <p className="mt-3 text-xs text-success">QR leído: se validará la firma del voucher.</p>}
 
-          {reservation.status === 'CONFIRMED' && !result && (
-            <form className="mt-6 grid gap-4 border-t border-line pt-5 sm:grid-cols-2" onSubmit={onConfirm}>
-              <Input label="Documento que presenta el turista" value={documento} onChange={(e) => setDocumento(e.target.value)} required autoComplete="off" />
-              <Input
-                label="Asistentes reales"
-                type="number"
-                min={1}
-                max={reservation.ticket_count}
-                value={asistentes}
-                onChange={(e) => setAsistentes(e.target.value)}
-                required
-              />
-              <Input label="Código del guía (opcional)" value={guiaCodigo} onChange={(e) => setGuiaCodigo(e.target.value)} maxLength={30} />
-              <TextArea
-                label="Observaciones (opcional)"
-                value={observaciones}
-                onChange={(e) => setObservaciones(e.target.value)}
-                maxLength={500}
-                rows={2}
-                className="sm:col-span-2"
-              />
-              {checkinError && (
-                <Alert tone="error" className="sm:col-span-2">
-                  {checkinError}
-                </Alert>
-              )}
-              <div className="sm:col-span-2">
-                <Button type="submit" loading={submitting} disabled={!documento.trim()}>
-                  <UserCheck size={16} aria-hidden="true" /> Confirmar asistencia
-                </Button>
-              </div>
-            </form>
-          )}
+          {reservation.status === 'CONFIRMED' && !result && <CheckinForm key={reservation.reservation_id} reservation={reservation} voucher={voucher} onDone={onCheckedIn} />}
           {reservation.status !== 'CONFIRMED' && !result && (
             <Alert tone="info" className="mt-4">
-              Esta reserva está en estado {reservation.status}: solo una reserva confirmada admite el check-in.
+              Esta reserva está en estado {adminReservationStatusLabel(reservation.status)}: solo una reserva pendiente de asistencia admite el check-in.
             </Alert>
           )}
         </section>
@@ -350,6 +306,11 @@ export default function AdminCheckinPage() {
               </Button>
             )}
           </div>
+          {refreshError && (
+            <Alert tone="error" className="mt-3">
+              {refreshError}
+            </Alert>
+          )}
         </section>
       )}
     </div>

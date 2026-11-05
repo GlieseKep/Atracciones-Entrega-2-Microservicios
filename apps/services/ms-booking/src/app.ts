@@ -96,7 +96,7 @@ export function createMsBookingService(config: MsBookingConfig, dataSource: Data
   const checkin = new CheckinService(reservations, idempotency, remote, notifications, checkinNotifier, {
     internalToken: config.internalTokenSecret,
     voucher: config.voucherSecret,
-  });
+  }, logger);
 
   const definition = serviceConstructor(loadProto('internal/ms-booking.proto'), 'descubre.booking.BookingService').service;
   const rpc = (method: string, handler: (request: Message) => Promise<unknown>) => unary(method, handler, logger);
@@ -145,7 +145,7 @@ export function createMsBookingService(config: MsBookingConfig, dataSource: Data
       });
     }),
     ListEvents: rpc('ListEvents', listEvents),
-    ListReservations: rpc('ListReservations', (request) => service.list(request.todas === true, parseText(request.estado), Number(request.page ?? 0), Number(request.limit ?? 0))),
+    ListReservations: rpc('ListReservations', (request) => service.list(request.todas === true, parseText(request.estado), Number(request.page ?? 0), Number(request.limit ?? 0), parseText(request.q))),
   };
 
   return { definition, implementation, onEvent: paymentEventHandler(reservations, remote, logger), lifecycle: new Lifecycle(reservations, idempotency, remote, logger), checkinNotifier, events };

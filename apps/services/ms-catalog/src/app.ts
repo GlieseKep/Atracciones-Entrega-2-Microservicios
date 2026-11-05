@@ -119,7 +119,7 @@ export function createMsCatalogService(config: MsCatalogConfig, dataSource: Data
   const locations = new Locations(esb, logger);
   const permissions = new Permissions(config.internalTokenSecret, operators);
   const search = new AttractionSearch(attractions, locations, esb);
-  const service = new AttractionService(dataSource, attractions, operators, guides, locations, permissions, esb);
+  const service = new AttractionService(dataSource, attractions, operators, guides, locations, permissions, esb, logger);
   const internal = requireServiceToken(config.serviceToken);
 
   /** Servicios internos con `X-Service-Token`, o cualquier usuario autenticado. */

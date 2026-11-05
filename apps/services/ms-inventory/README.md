@@ -28,7 +28,9 @@ La administración es para `ADMIN`, u `OPERADOR` de la atracción. Para un `OPER
 - **Bus:** `inventory.CupoBloqueado` e `inventory.CupoLiberado`, por `OutboxRelay`.
 - **Booking Prototipo:** filas `STOCK_BOOKING` del mismo outbox, que entrega `BookingStockSync` por `POST /api/v3/inventory/stock` con `X-API-Key`. No van al bus, para que una caída de Booking no frene los eventos.
 - `PushStockUpdate` para cada venta, cancelación o cambio de aforo; `StreamInventoryChanges` para los lotes del generador.
-- `STALE_TIMESTAMP_IGNORED` cuenta como entregado. `ITEM_NOT_FOUND` e `INVALID_SLOT` se registran y no se reintentan.
+- `STALE_TIMESTAMP_IGNORED` cuenta como entregado. `ITEM_NOT_FOUND` (Booking aún no conoce la atracción) se reintenta cada minuto durante 30 minutos, sin frenar a las demás atracciones. `INVALID_SLOT` se registra y no se reintenta.
+- Editar el cupo de un horario lo aplica a los turnos futuros que aún tenían el anterior. Catalog pide `ResendStock` al publicar (saldo real) y al retirar o eliminar (0 cupos).
+- Cada envío deja en el log `STOCK_EMITIDO` o `STOCK_FALLIDO`, con `transporte: rest`.
 
 ## Comunicación con otros servicios
 

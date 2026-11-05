@@ -1,4 +1,4 @@
-import { returnedRows } from '@atracciones/platform';
+import { currentCorrelationId, returnedRows } from '@atracciones/platform';
 import type { DataSource, EntityManager } from 'typeorm';
 
 /** Se deja de reintentar a los 15 intentos (queda `FALLIDA`). */
@@ -22,6 +22,8 @@ export interface PendingNotification {
   res_id: string;
   nch_payload: CheckinNotificationPayload;
   nch_intentos: number;
+  /** `null` en los avisos anteriores a esta columna. */
+  nch_correlation_id: string | null;
 }
 
 /** Avisos del check-in a Booking Central (`notificacion_checkin`), con reintentos. */
@@ -30,7 +32,7 @@ export class CheckinNotificationRepository {
 
   /** Dentro de la transacción del check-in. */
   async insert(m: EntityManager, resId: string, payload: CheckinNotificationPayload): Promise<void> {
-    await m.query(`INSERT INTO notificacion_checkin (res_id, nch_payload) VALUES ($1, $2::jsonb) ON CONFLICT (res_id) DO NOTHING`, [resId, JSON.stringify(payload)]);
+    await m.query(`INSERT INTO notificacion_checkin (res_id, nch_payload, nch_correlation_id) VALUES ($1, $2::jsonb, $3) ON CONFLICT (res_id) DO NOTHING`, [resId, JSON.stringify(payload), currentCorrelationId()]);
   }
 
   /** Toma avisos vencidos y sin enviar (todos, o solo el de `resId`) y los reserva unos minutos. */
@@ -43,7 +45,7 @@ export class CheckinNotificationRepository {
            ORDER BY nch_proximo_en
            LIMIT $2
            FOR UPDATE SKIP LOCKED)
-        RETURNING res_id, nch_payload, nch_intentos`,
+        RETURNING res_id, nch_payload, nch_intentos, nch_correlation_id`,
       [MAX_NOTIFICATION_ATTEMPTS, limit, resId],
     ));
   }

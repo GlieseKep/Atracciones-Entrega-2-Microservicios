@@ -4,6 +4,8 @@ import type { ReservationRepository, ReservationRow } from '../persistence/reser
 import { toResponse } from './reservation-mapper';
 import type { Remote } from './remote';
 
+const MIN_STAFF_SEARCH = 3;
+
 const notFound = (id: string) => AppError.notFound(`No existe la reserva ${id}.`, 'RESERVATION_NOT_FOUND');
 
 /** Consulta de reservas y control del dueño. La reserva no guarda usuario: el dueño está en la orden. */
@@ -60,13 +62,40 @@ export class ReservationService {
     return this.present(row);
   }
 
-  /** Cada quien ve las suyas, a partir de sus órdenes; `todas` es solo para `ADMIN`. */
-  async list(todas: boolean, estado: string, page: number, limit: number) {
+  /** La atracción de cada reserva está en Inventory, y su dueño en Catalog: se filtra después de buscar. */
+  private async ofOperator(rows: ReservationRow[]): Promise<ReservationRow[]> {
+    const own = await Promise.all(rows.map(async (row) => {
+      try {
+        await this.remote.assertOperatorOf((await this.remote.slot(Number(row.dis_id))).atraccion_id);
+        return true;
+      } catch (error) {
+        if (error instanceof AppError && (error.status === 403 || error.status === 404)) return false;
+        throw error;
+      }
+    }));
+    return rows.filter((_row, index) => own[index]);
+  }
+
+  /** Búsqueda del check-in: un guía o un operador deben escribir el dato completo, nunca listan todas las reservas. */
+  private async searchAsStaff(principal: Principal, estado: string, page: number, size: number, q: string) {
+    const operator = !hasRole(principal, 'GUIA');
+    if (operator && !hasRole(principal, 'OPERADOR')) throw AppError.forbidden('Ver todas las reservas requiere el rol ADMIN.');
+    if (q.length < MIN_STAFF_SEARCH) {
+      throw AppError.validation(`Escriba al menos ${MIN_STAFF_SEARCH} caracteres para buscar.`, [{ name: 'q', reason: 'Demasiado corto.' }]);
+    }
+    const { total, rows } = await this.reservations.list(estado || null, page, size, { q, exact: true });
+    const visible = operator ? await this.ofOperator(rows) : rows;
+    return { total_results: operator ? visible.length : total, items: await Promise.all(visible.map((row) => this.present(row))) };
+  }
+
+  /** Cada quien ve las suyas, a partir de sus órdenes; `todas` es para `ADMIN`, y con `q` también para el personal del check-in. */
+  async list(todas: boolean, estado: string, page: number, limit: number, q = '') {
     const principal = await this.principal();
     const size = Math.min(limit || 20, 50);
+    const text = q.trim().slice(0, 100);
     if (todas) {
-      if (!hasRole(principal, 'ADMIN')) throw AppError.forbidden('Ver todas las reservas requiere el rol ADMIN.');
-      const { total, rows } = await this.reservations.list(estado || null, page || 1, size);
+      if (!hasRole(principal, 'ADMIN')) return this.searchAsStaff(principal, estado, page || 1, size, text);
+      const { total, rows } = await this.reservations.list(estado || null, page || 1, size, text ? { q: text, exact: false } : null);
       return { total_results: total, items: await Promise.all(rows.map((row) => this.present(row))) };
     }
     const orders = await this.remote.myOrders(page || 1, size);

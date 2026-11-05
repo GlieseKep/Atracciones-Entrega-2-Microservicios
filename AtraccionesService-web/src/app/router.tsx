@@ -23,7 +23,13 @@ const AdminLayout = lazy(() => import('@/pages/admin/AdminLayout'));
 const AdminDashboardPage = lazy(() => import('@/pages/admin/AdminDashboardPage'));
 const AdminCatalogPage = lazy(() => import('@/pages/admin/AdminCatalogPage'));
 const AdminAvailabilityPage = lazy(() => import('@/pages/admin/AdminAvailabilityPage'));
-const AdminCustomersPage = lazy(() => import('@/pages/admin/AdminCustomersPage'));
+const AdminUsersPage = lazy(() => import('@/pages/admin/AdminUsersPage'));
+const AdminGuidesPage = lazy(() => import('@/pages/admin/AdminGuidesPage'));
+const AdminReviewsPage = lazy(() => import('@/pages/admin/AdminModulesPages').then((m) => ({ default: m.AdminReviewsPage })));
+const AdminCouponsPage = lazy(() => import('@/pages/admin/AdminModulesPages').then((m) => ({ default: m.AdminCouponsPage })));
+const AdminMessagesPage = lazy(() => import('@/pages/admin/AdminModulesPages').then((m) => ({ default: m.AdminMessagesPage })));
+const AdminInvoicesPage = lazy(() => import('@/pages/admin/AdminModulesPages').then((m) => ({ default: m.AdminInvoicesPage })));
+const AdminPartnersPage = lazy(() => import('@/pages/admin/AdminModulesPages').then((m) => ({ default: m.AdminPartnersPage })));
 const AdminReportsPage = lazy(() => import('@/pages/admin/AdminReportsPage'));
 const AdminObservabilityPage = lazy(() => import('@/pages/admin/AdminObservabilityPage'));
 const AdminReservationsPage = lazy(() => import('@/pages/admin/AdminOperationsPages').then((m) => ({ default: m.AdminReservationsPage })));
@@ -74,8 +80,13 @@ export const router = createBrowserRouter([
           { path: 'reservas', element: <AdminReservationsPage /> },
           { path: 'pedidos', element: <AdminOrdersPage /> },
           { path: 'pagos', element: <AdminPaymentsPage /> },
-          { path: 'clientes', element: <AdminCustomersPage key="clientes" /> },
-          { path: 'usuarios', element: <AdminCustomersPage key="usuarios" manageRoles /> },
+          { path: 'usuarios', element: <AdminUsersPage /> },
+          { path: 'guias', element: <AdminGuidesPage /> },
+          { path: 'facturas', element: <AdminInvoicesPage /> },
+          { path: 'cupones', element: <AdminCouponsPage /> },
+          { path: 'resenas', element: <AdminReviewsPage /> },
+          { path: 'mensajes', element: <AdminMessagesPage /> },
+          { path: 'socios', element: <AdminPartnersPage /> },
           { path: 'reportes', element: <AdminReportsPage /> },
           { path: 'observabilidad', element: <AdminObservabilityPage /> },
         ],

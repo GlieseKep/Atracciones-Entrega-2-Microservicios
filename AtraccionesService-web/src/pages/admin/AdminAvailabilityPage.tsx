@@ -1,57 +1,137 @@
-import { useState } from 'react';
-import { Pencil, Plus } from 'lucide-react';
-import { adminApi, type AdminSlot } from '@/api/admin';
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { CalendarRange, Plus, UserRound, Users } from 'lucide-react';
+import { catalogApi, collectPages, inventoryApi, pageOf } from '@/api/admin';
 import { Badge } from '@/components/common/Badge';
 import { Button } from '@/components/common/Button';
-import { Alert } from '@/components/common/Feedback';
-import { IconButton } from '@/components/common/IconButton';
+import { Alert, EmptyState, ErrorState } from '@/components/common/Feedback';
 import { Input } from '@/components/common/Input';
 import { Modal } from '@/components/common/Modal';
 import { Select } from '@/components/common/Select';
 import { useAsync } from '@/hooks/useAsync';
 import { useUiStore } from '@/stores/uiStore';
+import type { AdminAttraction, BlockedDate, Guide, Schedule, Slot } from '@/types/admin';
 import { errorMessage } from '@/utils/api';
-import { formatDate, isValidLocalTime, today } from '@/utils/dates';
-import { listAttractions } from './legacy';
-import { AdminTable, Sub, type Column } from './AdminTable';
+import { addDays, formatDate, today } from '@/utils/dates';
+import { AdminTable, Sub, useRowAction, type Column } from './AdminTable';
 
-const MAX_CAPACITY = 10_000;
+const TABS = [
+  { id: 'turnos', label: 'Turnos' },
+  { id: 'horarios', label: 'Horarios' },
+  { id: 'bloqueos', label: 'Días bloqueados' },
+] as const;
 
-function Occupancy({ slot }: { slot: AdminSlot }) {
-  const pct = slot.capacity ? Math.round((slot.reserved / slot.capacity) * 100) : 100;
-  const full = slot.reserved >= slot.capacity;
+/** Los turnos se generan 90 días hacia adelante (ms-inventory). */
+const WINDOW_DAYS = 90;
+const WEEKDAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+
+const shortTime = (hora: string) => hora.slice(0, 5);
+
+function guideText(guiId: number | null, guides: Guide[]) {
+  if (guiId === null || guiId === 0) return <span className="text-ink-muted">Sin guía</span>;
+  const guide = guides.find((g) => g.gui_id === guiId);
+  if (!guide) return <span className="text-ink-muted">Guía {guiId}</span>;
+  return guide.activo ? guide.nombre : <span className="text-danger">{guide.nombre} (inactivo)</span>;
+}
+
+/**
+ * Horarios y turnos de ms-inventory. El horario guarda el guía por defecto; cada turno puede tener otro, por día o por
+ * rango de fechas (`Plan/PLAN_GUIA_POR_HORARIO.md`).
+ */
+export default function AdminAvailabilityPage() {
+  const [params, setParams] = useSearchParams();
+  const selectedId = params.get('atraccion') ?? '';
+  const [tab, setTab] = useState<(typeof TABS)[number]['id']>('turnos');
+  const attractions = useAsync((signal) => collectPages((page) => catalogApi.list({ page, limit: 50 }, signal)), []);
+  const items = useMemo(() => attractions.data?.items ?? [], [attractions.data]);
+  const attraction = items.find((a) => a.id === selectedId) ?? null;
+  const guides = useAsync((signal) => catalogApi.guides({ operador: attraction?.operador }, signal), [attraction?.operador], !!attraction);
+
+  useEffect(() => {
+    if (!selectedId && items[0]) setParams({ atraccion: items[0].id }, { replace: true });
+  }, [items, selectedId, setParams]);
+
   return (
-    <div className="min-w-[140px]">
-      <div className="flex justify-between text-xs">
-        <span>{slot.reserved} / {slot.capacity}</span>
-        {full ? <Badge tone="danger">Agotada</Badge> : <span className="text-ink-muted">{slot.capacity - slot.reserved} libres</span>}
-      </div>
-      <div className="mt-1 h-1.5 rounded-full bg-surface" aria-hidden="true">
-        <div className={`h-1.5 rounded-full ${full ? 'bg-danger' : 'bg-brand-500'}`} style={{ width: `${Math.min(pct, 100)}%` }} />
-      </div>
+    <div>
+      <h1 className="text-3xl">Disponibilidad</h1>
+      {attractions.status === 'error' ? (
+        <ErrorState error={attractions.error} onRetry={attractions.retry} className="mt-6" />
+      ) : !attractions.data ? (
+        <div className="skeleton mt-6 h-72" aria-busy="true" />
+      ) : items.length === 0 ? (
+        <EmptyState title="Todavía no hay atracciones">Crea una en Catálogo para definir sus horarios.</EmptyState>
+      ) : (
+        <>
+          <div className="mt-5 max-w-xl">
+            <Select
+              label="Atracción"
+              value={selectedId}
+              onChange={(e) => setParams({ atraccion: e.target.value })}
+              options={items.map((a) => ({ value: a.id, label: `${a.name}${a.estado === 'PUBLICADA' ? '' : ` (${a.estado.toLowerCase()})`}` }))}
+            />
+          </div>
+          <div role="tablist" className="mt-5 flex gap-2">
+            {TABS.map((t) => (
+              <button
+                key={t.id}
+                role="tab"
+                type="button"
+                aria-selected={tab === t.id}
+                onClick={() => setTab(t.id)}
+                className={`rounded-full px-4 py-2 text-sm font-semibold ${tab === t.id ? 'bg-ink text-white' : 'border border-line hover:border-ink'}`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+          {attraction && (
+            <div className="mt-2" key={attraction.id}>
+              {tab === 'turnos' && <SlotsTab attraction={attraction} guides={guides.data ?? []} />}
+              {tab === 'horarios' && <SchedulesTab attraction={attraction} guides={guides.data ?? []} />}
+              {tab === 'bloqueos' && <BlockedTab attraction={attraction} />}
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }
 
-/** Franjas por atracción y fecha: ocupación, ajuste de capacidad (nunca por debajo de lo reservado) y alta de franjas. */
-export default function AdminAvailabilityPage() {
-  const attractions = useAsync((signal) => listAttractions(100, 0, signal), []);
-  const [attractionId, setAttractionId] = useState('');
-  const [editing, setEditing] = useState<AdminSlot | null>(null);
-  const [creating, setCreating] = useState(false);
-  const [reloadKey, setReloadKey] = useState(0);
-  const options = (attractions.data?.data ?? []).map((a) => ({ value: a.id, label: a.name }));
+function SlotsTab({ attraction, guides }: { attraction: AdminAttraction; guides: Guide[] }) {
+  const notify = useUiStore((s) => s.notify);
+  const [reload, setReload] = useState(0);
+  const [capacity, setCapacity] = useState<Slot | null>(null);
+  const [guideFor, setGuideFor] = useState<Slot | null>(null);
+  const [range, setRange] = useState(false);
+  const refresh = () => setReload((n) => n + 1);
+  const { busy, run } = useRowAction(refresh, notify);
 
-  const columns: Column<AdminSlot>[] = [
-    { header: 'Atracción', cell: (s) => <span className="font-semibold">{s.attractionName}</span> },
-    { header: 'Fecha', cell: (s) => <>{formatDate(s.date)}<Sub>{s.date}</Sub></> },
-    { header: 'Hora', cell: (s) => s.time },
-    { header: 'Ocupación', cell: (s) => <Occupancy slot={s} /> },
+  const columns: Column<Slot>[] = [
+    { header: 'Fecha', cell: (s) => <span className="font-semibold">{formatDate(s.fecha)}<Sub>{s.slot_id}</Sub></span> },
+    { header: 'Hora', cell: (s) => shortTime(s.hora) },
+    { header: 'Cupos', cell: (s) => <span>{s.cupo_reservado} / {s.cupo_total}<Sub>{s.cupo_total - s.cupo_reservado} libres</Sub></span> },
+    { header: 'Guía', cell: (s) => guideText(s.gui_id, guides) },
+    { header: 'Estado', cell: (s) => <Badge tone={s.cerrada ? 'danger' : 'success'}>{s.cerrada ? 'Cerrado' : 'Abierto'}</Badge> },
     {
-      header: 'Acciones',
+      header: '',
       align: 'right',
       cell: (s) => (
-        <IconButton aria-label={`Cambiar capacidad del ${s.date} a las ${s.time}`} icon={<Pencil size={16} aria-hidden="true" />} onClick={() => setEditing(s)} />
+        <span className="inline-flex gap-1">
+          <Button size="sm" variant="tertiary" onClick={() => setGuideFor(s)} aria-label={`Cambiar guía del ${s.fecha}`}>
+            <UserRound size={15} aria-hidden="true" />
+          </Button>
+          <Button size="sm" variant="tertiary" onClick={() => setCapacity(s)} aria-label={`Cambiar cupo del ${s.fecha}`}>
+            <Users size={15} aria-hidden="true" />
+          </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            loading={busy === s.slot_id}
+            onClick={() => run(s.slot_id, () => inventoryApi.setClosed(attraction.id, s.slot_id, !s.cerrada), s.cerrada ? 'Turno abierto.' : 'Turno cerrado.')}
+          >
+            {s.cerrada ? 'Abrir' : 'Cerrar'}
+          </Button>
+        </span>
       ),
     },
   ];
@@ -59,75 +139,44 @@ export default function AdminAvailabilityPage() {
   return (
     <>
       <AdminTable
-        title="Disponibilidad"
-        load={adminApi.availability}
+        title="Turnos"
+        hideTitle
+        load={(p, signal) => inventoryApi.slots({ page: p.page, limit: p.limit, atraccion_id: attraction.id, desde: p.from ?? today(), hasta: p.to }, signal)}
         columns={columns}
-        rowKey={(s) => s.id}
-        searchPlaceholder="Nombre de la atracción"
-        statuses={[
-          { value: 'AVAILABLE', label: 'Con cupos' },
-          { value: 'FULL', label: 'Agotadas' },
-        ]}
+        rowKey={(s) => s.slot_id}
         dateLabel="Fecha"
-        extraFilters={
-          <Select
-            label="Atracción"
-            value={attractionId}
-            onChange={(e) => setAttractionId(e.target.value)}
-            options={[{ value: '', label: 'Todas' }, ...options]}
-          />
-        }
-        extraParams={attractionId ? { attractionId } : undefined}
-        reloadKey={reloadKey}
-        pageSize={20}
+        reloadKey={reload}
         actions={
-          <Button onClick={() => setCreating(true)} disabled={!options.length}>
-            <Plus size={18} aria-hidden="true" /> Nueva franja
+          <Button variant="secondary" onClick={() => setRange(true)}>
+            <CalendarRange size={16} aria-hidden="true" /> Asignar guía a un rango
           </Button>
         }
       />
-      {editing && (
-        <CapacityDialog
-          slot={editing}
-          onClose={() => setEditing(null)}
-          onSaved={() => {
-            setEditing(null);
-            setReloadKey((n) => n + 1);
-          }}
-        />
-      )}
-      {creating && (
-        <NewSlotDialog
-          attractions={options}
-          defaultAttraction={attractionId}
-          onClose={() => setCreating(false)}
-          onSaved={() => {
-            setCreating(false);
-            setReloadKey((n) => n + 1);
-          }}
-        />
-      )}
+      {capacity && <CapacityDialog slot={capacity} onClose={() => setCapacity(null)} onSaved={() => { setCapacity(null); refresh(); }} />}
+      {guideFor && <SlotGuideDialog slot={guideFor} guides={guides} onClose={() => setGuideFor(null)} onSaved={() => { setGuideFor(null); refresh(); }} />}
+      {range && <RangeGuideDialog attraction={attraction} guides={guides} onClose={() => setRange(false)} onSaved={() => { setRange(false); refresh(); }} />}
     </>
   );
 }
 
-function CapacityDialog({ slot, onClose, onSaved }: { slot: AdminSlot; onClose: () => void; onSaved: () => void }) {
+function CapacityDialog({ slot, onClose, onSaved }: { slot: Slot; onClose: () => void; onSaved: () => void }) {
   const notify = useUiStore((s) => s.notify);
-  const [capacity, setCapacity] = useState(String(slot.capacity));
-  const [error, setError] = useState<string | null>(null);
+  const [value, setValue] = useState(String(slot.cupo_total));
   const [busy, setBusy] = useState(false);
-  const value = Number(capacity);
-  const invalid = !Number.isInteger(value) || value < slot.reserved || value > MAX_CAPACITY;
+  const [error, setError] = useState<unknown>(null);
+  const cupo = Number(value);
+  const valid = Number.isInteger(cupo) && cupo >= Math.max(1, slot.cupo_reservado);
 
   const save = async () => {
     setBusy(true);
     setError(null);
     try {
-      await adminApi.updateCapacity(slot.id, value);
-      notify('Capacidad actualizada.', 'success');
+      await inventoryApi.setCapacity(slot.atraccion_id, slot.slot_id, cupo);
+      notify('Cupo actualizado.', 'success');
       onSaved();
     } catch (e) {
-      setError(errorMessage(e));
+      setError(e);
+    } finally {
       setBusy(false);
     }
   };
@@ -136,61 +185,51 @@ function CapacityDialog({ slot, onClose, onSaved }: { slot: AdminSlot; onClose: 
     <Modal
       open
       size="sm"
-      title="Cambiar capacidad"
       onClose={onClose}
+      title={`Cupo del ${formatDate(slot.fecha)}, ${shortTime(slot.hora)}`}
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>Cancelar</Button>
-          <Button onClick={save} disabled={busy || invalid}>Guardar</Button>
+          <Button variant="tertiary" onClick={onClose}>Cancelar</Button>
+          <Button loading={busy} disabled={!valid} onClick={save}>Guardar</Button>
         </>
       }
     >
-      <p className="text-sm text-ink-soft">
-        {slot.attractionName} · {formatDate(slot.date)} · {slot.time}
-      </p>
-      {error && <Alert tone="error" className="mt-3">{error}</Alert>}
-      <Input
-        className="mt-4"
-        label="Capacidad"
-        type="number"
-        min={slot.reserved}
-        max={MAX_CAPACITY}
-        value={capacity}
-        onChange={(e) => setCapacity(e.target.value)}
-        help={`Ya hay ${slot.reserved} cupos reservados: la capacidad no puede ser menor.`}
-        error={capacity !== '' && invalid ? `Debe ser un entero entre ${slot.reserved} y ${MAX_CAPACITY}.` : undefined}
-      />
+      <div className="space-y-4">
+        <Input
+          label="Cupo total"
+          inputMode="numeric"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          help={`Ya hay ${slot.cupo_reservado} reservados: no puede ser menor.`}
+          error={valid ? undefined : `Debe ser un entero de ${Math.max(1, slot.cupo_reservado)} o más.`}
+        />
+        {error !== null && <Alert tone="error">{errorMessage(error)}</Alert>}
+      </div>
     </Modal>
   );
 }
 
-interface NewSlotProps {
-  attractions: { value: string; label: string }[];
-  defaultAttraction: string;
-  onClose: () => void;
-  onSaved: () => void;
-}
+const activeGuideOptions = (guides: Guide[], none: string) => [
+  { value: '0', label: none },
+  ...guides.filter((g) => g.activo).map((g) => ({ value: String(g.gui_id), label: `${g.nombre} (${g.codigo})` })),
+];
 
-function NewSlotDialog({ attractions, defaultAttraction, onClose, onSaved }: NewSlotProps) {
+function SlotGuideDialog({ slot, guides, onClose, onSaved }: { slot: Slot; guides: Guide[]; onClose: () => void; onSaved: () => void }) {
   const notify = useUiStore((s) => s.notify);
-  const [attractionId, setAttractionId] = useState(defaultAttraction || attractions[0]?.value || '');
-  const [date, setDate] = useState(today());
-  const [time, setTime] = useState('10:00');
-  const [capacity, setCapacity] = useState('20');
-  const [error, setError] = useState<string | null>(null);
+  const [guide, setGuide] = useState(slot.gui_id ? String(slot.gui_id) : '0');
   const [busy, setBusy] = useState(false);
-  const cap = Number(capacity);
-  const invalid = !attractionId || date < today() || !isValidLocalTime(time) || !Number.isInteger(cap) || cap < 0 || cap > MAX_CAPACITY;
+  const [error, setError] = useState<unknown>(null);
 
   const save = async () => {
     setBusy(true);
     setError(null);
     try {
-      await adminApi.addSlot({ attractionId, date, time, capacity: cap });
-      notify('Franja creada.', 'success');
+      await inventoryApi.setSlotGuide(slot.atraccion_id, slot.slot_id, Number(guide));
+      notify('Guía del turno actualizado.', 'success');
       onSaved();
     } catch (e) {
-      setError(errorMessage(e));
+      setError(e);
+    } finally {
       setBusy(false);
     }
   };
@@ -198,22 +237,317 @@ function NewSlotDialog({ attractions, defaultAttraction, onClose, onSaved }: New
   return (
     <Modal
       open
-      title="Nueva franja"
+      size="sm"
       onClose={onClose}
+      title={`Guía del ${formatDate(slot.fecha)}, ${shortTime(slot.hora)}`}
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>Cancelar</Button>
-          <Button onClick={save} disabled={busy || invalid}>Crear franja</Button>
+          <Button variant="tertiary" onClick={onClose}>Cancelar</Button>
+          <Button loading={busy} onClick={save}>Guardar</Button>
         </>
       }
     >
-      {error && <Alert tone="error" className="mb-3">{error}</Alert>}
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Select className="sm:col-span-2" label="Atracción" value={attractionId} onChange={(e) => setAttractionId(e.target.value)} options={attractions} />
-        <Input label="Fecha" type="date" min={today()} value={date} onChange={(e) => setDate(e.target.value)} />
-        <Input label="Hora" type="time" value={time} onChange={(e) => setTime(e.target.value)} />
-        <Input label="Capacidad" type="number" min={0} max={MAX_CAPACITY} value={capacity} onChange={(e) => setCapacity(e.target.value)} />
+      <div className="space-y-4">
+        <Select label="Guía" value={guide} onChange={(e) => setGuide(e.target.value)} options={activeGuideOptions(guides, 'Volver al guía del horario')} />
+        {slot.cupo_reservado > 0 && <Alert>Este turno ya tiene {slot.cupo_reservado} cupos reservados: esas reservas conservan su guía actual.</Alert>}
+        {error !== null && <Alert tone="error">{errorMessage(error)}</Alert>}
       </div>
     </Modal>
+  );
+}
+
+function RangeGuideDialog({ attraction, guides, onClose, onSaved }: { attraction: AdminAttraction; guides: Guide[]; onClose: () => void; onSaved: () => void }) {
+  const notify = useUiStore((s) => s.notify);
+  const schedules = useAsync((signal) => inventoryApi.schedules(attraction.id, signal), [attraction.id]);
+  const [guide, setGuide] = useState('0');
+  const [desde, setDesde] = useState(today());
+  const [hasta, setHasta] = useState(addDays(today(), 30));
+  const [horId, setHorId] = useState('0');
+  const [dias, setDias] = useState<number[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<unknown>(null);
+  const limit = addDays(today(), WINDOW_DAYS);
+  const valid = !!desde && !!hasta && desde >= today() && desde <= hasta && hasta <= limit;
+  const scheduleHour = schedules.data?.find((s) => String(s.hor_id) === horId)?.hora;
+
+  // Vista previa: qué turnos cambiarán y cuántos ya tienen reservas.
+  const filterKey = `${desde}|${hasta}|${horId}|${dias.join(',')}`;
+  const preview = useAsync(
+    async (signal) => {
+      const slots: Slot[] = [];
+      for (let page = 1; ; page++) {
+        const result = await inventoryApi.slots({ page, limit: 200, atraccion_id: attraction.id, desde, hasta }, signal);
+        slots.push(...result.items);
+        if (slots.length >= result.total || result.items.length === 0) break;
+      }
+      const matches = slots.filter((s) => {
+        const iso = ((new Date(`${s.fecha}T12:00:00`).getDay() + 6) % 7) + 1;
+        return (dias.length === 0 || dias.includes(iso)) && (!scheduleHour || s.hora === scheduleHour);
+      });
+      return { total: matches.length, reserved: matches.filter((s) => s.cupo_reservado > 0).length };
+    },
+    [filterKey, scheduleHour],
+    valid,
+  );
+
+  const save = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await inventoryApi.setSlotsGuide({ atraccion_id: attraction.id, desde, hasta, hor_id: Number(horId), dias_semana: dias, gui_id: Number(guide) });
+      notify(`${result.actualizados} turnos actualizados.${result.con_reservas ? ` ${result.con_reservas} tienen reservas, que conservan su guía.` : ''}`, 'success');
+      onSaved();
+    } catch (e) {
+      setError(e);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title="Asignar guía a un rango"
+      footer={
+        <>
+          <Button variant="tertiary" onClick={onClose}>Cancelar</Button>
+          <Button loading={busy} disabled={!valid} onClick={save}>Asignar</Button>
+        </>
+      }
+    >
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Select label="Guía" value={guide} onChange={(e) => setGuide(e.target.value)} options={activeGuideOptions(guides, 'Volver al guía de cada horario')} />
+        <Select
+          label="Horario"
+          value={horId}
+          onChange={(e) => setHorId(e.target.value)}
+          options={[{ value: '0', label: 'Todos' }, ...(schedules.data ?? []).map((s) => ({ value: String(s.hor_id), label: shortTime(s.hora) }))]}
+        />
+        <Input label="Desde" type="date" min={today()} max={limit} value={desde} onChange={(e) => setDesde(e.target.value)} />
+        <Input label="Hasta" type="date" min={desde} max={limit} value={hasta} onChange={(e) => setHasta(e.target.value)} help={`Hay turnos hasta el ${formatDate(limit)}.`} />
+        <fieldset className="sm:col-span-2">
+          <legend className="field-label">Días de la semana (ninguno = todos)</legend>
+          <div className="flex flex-wrap gap-3">
+            {WEEKDAYS.map((label, i) => (
+              <label key={label} className="flex items-center gap-1.5 text-sm">
+                <input
+                  type="checkbox"
+                  className="h-[18px] w-[18px] accent-[#C94D6B]"
+                  checked={dias.includes(i + 1)}
+                  onChange={(e) => setDias((list) => (e.target.checked ? [...list, i + 1] : list.filter((d) => d !== i + 1)))}
+                />
+                {label}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        <div className="space-y-3 sm:col-span-2">
+          {!valid ? (
+            <Alert tone="error">Revisa las fechas: desde hoy hasta {formatDate(limit)}, y «Desde» no puede ser posterior a «Hasta».</Alert>
+          ) : preview.data ? (
+            <Alert>
+              Cambiarán {preview.data.total} turnos.
+              {preview.data.reserved > 0 && ` ${preview.data.reserved} ya tienen reservas: esas reservas conservan su guía actual.`} Los cambios hechos a días sueltos dentro del rango se reemplazan.
+            </Alert>
+          ) : null}
+          {error !== null && <Alert tone="error">{errorMessage(error)}</Alert>}
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+function SchedulesTab({ attraction, guides }: { attraction: AdminAttraction; guides: Guide[] }) {
+  const notify = useUiStore((s) => s.notify);
+  const [reload, setReload] = useState(0);
+  const [editing, setEditing] = useState<Schedule | 'new' | null>(null);
+  const refresh = () => setReload((n) => n + 1);
+  const { busy, run } = useRowAction(refresh, notify);
+
+  const columns: Column<Schedule>[] = [
+    { header: 'Hora', cell: (s) => <strong>{shortTime(s.hora)}</strong> },
+    { header: 'Cupo', cell: (s) => s.cupo },
+    { header: 'Guía por defecto', cell: (s) => guideText(s.gui_id, guides) },
+    { header: 'Estado', cell: (s) => <Badge tone={s.activo ? 'success' : 'neutral'}>{s.activo ? 'Activo' : 'Inactivo'}</Badge> },
+    {
+      header: '',
+      align: 'right',
+      cell: (s) => (
+        <span className="inline-flex gap-2">
+          <Button size="sm" variant="tertiary" onClick={() => setEditing(s)}>
+            Editar
+          </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            loading={busy === String(s.hor_id)}
+            onClick={() =>
+              run(
+                String(s.hor_id),
+                () => inventoryApi.setScheduleActive(s.hor_id, !s.activo),
+                s.activo ? 'Horario desactivado: no se generan más turnos; los existentes siguen.' : 'Horario activado. Los turnos nuevos nacen con el guía del horario.',
+              )
+            }
+          >
+            {s.activo ? 'Desactivar' : 'Activar'}
+          </Button>
+        </span>
+      ),
+    },
+  ];
+
+  return (
+    <>
+      <AdminTable
+        title="Horarios"
+        hideTitle
+        load={async (p, signal) => pageOf(await inventoryApi.schedules(attraction.id, signal), p.page, p.limit)}
+        columns={columns}
+        rowKey={(s) => String(s.hor_id)}
+        reloadKey={reload}
+        actions={
+          <Button onClick={() => setEditing('new')}>
+            <Plus size={16} aria-hidden="true" /> Nuevo horario
+          </Button>
+        }
+      />
+      {editing && (
+        <ScheduleDialog
+          attraction={attraction}
+          schedule={editing === 'new' ? null : editing}
+          guides={guides}
+          onClose={() => setEditing(null)}
+          onSaved={() => {
+            setEditing(null);
+            refresh();
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+function ScheduleDialog({
+  attraction,
+  schedule,
+  guides,
+  onClose,
+  onSaved,
+}: {
+  attraction: AdminAttraction;
+  schedule: Schedule | null;
+  guides: Guide[];
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const notify = useUiStore((s) => s.notify);
+  const [hora, setHora] = useState(schedule ? shortTime(schedule.hora) : '09:00');
+  const [cupo, setCupo] = useState(String(schedule?.cupo ?? 20));
+  const [guide, setGuide] = useState(schedule?.gui_id ? String(schedule.gui_id) : '0');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<unknown>(null);
+  const cupoValue = Number(cupo);
+  const valid = /^([01]\d|2[0-3]):[0-5]\d$/.test(hora) && Number.isInteger(cupoValue) && cupoValue > 0;
+
+  const save = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await inventoryApi.saveSchedule({ hor_id: schedule?.hor_id ?? 0, atraccion_id: attraction.id, hora: `${hora}:00`, cupo: cupoValue, gui_id: Number(guide) });
+      notify(schedule ? 'Horario actualizado.' : 'Horario creado: se generaron sus turnos para los próximos 90 días.', 'success');
+      onSaved();
+    } catch (e) {
+      setError(e);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal
+      open
+      size="sm"
+      onClose={onClose}
+      title={schedule ? `Horario de las ${shortTime(schedule.hora)}` : 'Nuevo horario'}
+      footer={
+        <>
+          <Button variant="tertiary" onClick={onClose}>Cancelar</Button>
+          <Button loading={busy} disabled={!valid} onClick={save}>Guardar</Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <Input
+          label="Hora"
+          type="time"
+          disabled={!!schedule}
+          value={hora}
+          onChange={(e) => setHora(e.target.value)}
+          help={schedule ? 'La hora no cambia: crea otro horario y desactiva este.' : undefined}
+        />
+        <Input label="Cupo por turno" inputMode="numeric" value={cupo} onChange={(e) => setCupo(e.target.value)} help={schedule ? 'Rige para los turnos nuevos; cada turno se ajusta aparte.' : undefined} />
+        <Select
+          label="Guía por defecto"
+          value={guide}
+          onChange={(e) => setGuide(e.target.value)}
+          options={activeGuideOptions(guides, 'Sin guía (el primero activo del operador)')}
+        />
+        {schedule && <p className="text-xs text-ink-muted">Un guía nuevo pasa a los turnos futuros que tenían el anterior; los días cambiados a mano se respetan.</p>}
+        {error !== null && <Alert tone="error">{errorMessage(error)}</Alert>}
+      </div>
+    </Modal>
+  );
+}
+
+function BlockedTab({ attraction }: { attraction: AdminAttraction }) {
+  const notify = useUiStore((s) => s.notify);
+  const [reload, setReload] = useState(0);
+  const [fecha, setFecha] = useState('');
+  const [motivo, setMotivo] = useState('');
+  const refresh = () => setReload((n) => n + 1);
+  const { busy, run } = useRowAction(refresh, notify);
+
+  const columns: Column<BlockedDate>[] = [
+    { header: 'Fecha', cell: (b) => <strong>{formatDate(b.fecha)}</strong> },
+    { header: 'Motivo', cell: (b) => b.motivo },
+    {
+      header: '',
+      align: 'right',
+      cell: (b) => (
+        <Button size="sm" variant="secondary" loading={busy === b.fecha} onClick={() => run(b.fecha, () => inventoryApi.unblockDate(attraction.id, b.fecha), 'Fecha desbloqueada: sus turnos se reabrieron.')}>
+          Desbloquear
+        </Button>
+      ),
+    },
+  ];
+
+  return (
+    <div>
+      <form
+        className="card-surface mt-4 grid gap-3 p-4 sm:grid-cols-[180px_1fr_auto] sm:items-end"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          await run('new', () => inventoryApi.blockDate(attraction.id, fecha, motivo.trim()), 'Fecha bloqueada: sus turnos quedaron cerrados.');
+          setFecha('');
+          setMotivo('');
+        }}
+      >
+        <Input label="Fecha" type="date" min={today()} value={fecha} onChange={(e) => setFecha(e.target.value)} />
+        <Input label="Motivo" maxLength={200} value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="Feriado, clima, mantenimiento…" />
+        <Button type="submit" loading={busy === 'new'} disabled={!fecha || !motivo.trim()}>
+          Bloquear
+        </Button>
+      </form>
+      <p className="mt-2 text-xs text-ink-muted">Cierra los turnos del día; las reservas existentes siguen vigentes.</p>
+      <AdminTable
+        title="Días bloqueados"
+        hideTitle
+        load={async (p, signal) => pageOf(await inventoryApi.blockedDates(attraction.id, signal), p.page, p.limit)}
+        columns={columns}
+        rowKey={(b) => b.fecha}
+        reloadKey={reload}
+      />
+    </div>
   );
 }

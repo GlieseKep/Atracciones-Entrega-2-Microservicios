@@ -174,6 +174,8 @@ export function createMsInventoryService(config: MsInventoryConfig, dataSource: 
       ),
     ),
 
+    ResendStock: rpc('ResendStock', (request) => service.resendStock(parseCode(request.atraccion_id), request.cero === true)),
+
     ListBlockedDates: rpc('ListBlockedDates', async (request) => {
       const codigo = parseCode(request.atraccion_id);
       await service.requireStaff(codigo);

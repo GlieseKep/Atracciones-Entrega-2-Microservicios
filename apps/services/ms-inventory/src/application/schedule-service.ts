@@ -91,6 +91,12 @@ export class ScheduleService {
     return this.schedules.setSlotCapacity(codigo, slotCode, cupoTotal);
   }
 
+  /** Catalog lo pide al publicar (saldo real) y al retirar o eliminar (`cero`), para que Booking no siga vendiendo. */
+  async resendStock(codigo: string, cero: boolean): Promise<{ enviados: number }> {
+    await this.requireStaff(codigo);
+    return { enviados: await this.schedules.resendStock(codigo, todayIn(), cero) };
+  }
+
   /** Reabre los turnos del día y crea los que el generador saltó mientras estaba bloqueado. */
   async unblock(codigo: string, fecha: string): Promise<void> {
     await this.requireStaff(codigo);

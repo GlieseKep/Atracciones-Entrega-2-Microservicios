@@ -1,6 +1,6 @@
 import { Badge, type BadgeTone } from '@/components/common/Badge';
 
-/** Etiquetas de estado. Aceptan cualquier texto: el panel administrativo aún usa los estados del monolito. */
+/** Etiquetas de los estados de cada servicio. Un estado desconocido se muestra con su código. */
 
 const RESERVATION: Record<string, [string, BadgeTone]> = {
   PENDING: ['Pendiente de pago', 'warning'],
@@ -16,29 +16,32 @@ const ORDER: Record<string, [string, BadgeTone]> = {
   PAGADA: ['Pagada', 'success'],
   CANCELADA: ['Cancelada', 'danger'],
   REEMBOLSADA: ['Reembolsada', 'neutral'],
-  PENDING_PAYMENT: ['Pendiente de pago', 'warning'],
-  PAID: ['Pagado', 'success'],
-  FULFILLED: ['Completado', 'success'],
-  CANCELLED: ['Cancelado', 'danger'],
-  PARTIALLY_REFUNDED: ['Reembolso parcial', 'neutral'],
-  REFUNDED: ['Reembolsado', 'neutral'],
 };
 
 const PAYMENT: Record<string, [string, BadgeTone]> = {
-  PENDING: ['Pendiente', 'warning'],
-  AUTHORIZED: ['Autorizado', 'success'],
-  SETTLED: ['Liquidado', 'success'],
-  REJECTED: ['Rechazado', 'danger'],
-  FAILED: ['Fallido', 'danger'],
-  CANCELLED: ['Cancelado', 'danger'],
-  PARTIALLY_REFUNDED: ['Reembolso parcial', 'neutral'],
-  REFUNDED: ['Reembolsado', 'neutral'],
+  PENDIENTE: ['Pendiente', 'warning'],
+  APROBADO: ['Aprobado', 'success'],
+  RECHAZADO: ['Rechazado', 'danger'],
+  FALLIDO: ['Fallido', 'danger'],
 };
 
 export const reservationStatusLabel = (s: string) => RESERVATION[s]?.[0] ?? s;
 
 export function ReservationStatusBadge({ status }: { status: string }) {
   const [label, tone] = RESERVATION[status] ?? [status, 'neutral'];
+  return <Badge tone={tone}>{label}</Badge>;
+}
+
+/** En el panel los nombres son los que pidió Booking para el Flujo 2. La API y el portal del cliente no cambian. */
+const ADMIN_RESERVATION: Record<string, [string, BadgeTone]> = {
+  CONFIRMED: ['RESERVADO · pendiente de asistencia', 'warning'],
+  CHECKED_IN: ['CONFIRMADO_ASISTIDO', 'success'],
+};
+
+export const adminReservationStatusLabel = (s: string) => ADMIN_RESERVATION[s]?.[0] ?? reservationStatusLabel(s);
+
+export function AdminReservationStatusBadge({ status }: { status: string }) {
+  const [label, tone] = ADMIN_RESERVATION[status] ?? RESERVATION[status] ?? [status, 'neutral'];
   return <Badge tone={tone}>{label}</Badge>;
 }
 

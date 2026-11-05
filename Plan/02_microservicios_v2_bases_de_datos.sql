@@ -1136,6 +1136,8 @@ CREATE TABLE reserva_pasajero (
         ON UPDATE CASCADE ON DELETE CASCADE
 );
 CREATE INDEX ix_reserva_pasajero_res_id ON reserva_pasajero (res_id);
+CREATE INDEX ix_reserva_pasajero_documento ON reserva_pasajero (pax_documento);
+CREATE INDEX ix_reserva_pasajero_correo ON reserva_pasajero (lower(pax_correo));
 -- Un solo titular por reserva.
 CREATE UNIQUE INDEX ux_reserva_pasajero_titular
     ON reserva_pasajero (res_id) WHERE pax_es_titular;
@@ -1208,6 +1210,7 @@ CREATE TABLE notificacion_checkin (
     nch_proximo_en    TIMESTAMPTZ  NOT NULL DEFAULT now(),
     nch_enviado_en    TIMESTAMPTZ,
     nch_creado_en     TIMESTAMPTZ  NOT NULL DEFAULT now(),
+    nch_correlation_id VARCHAR(100),                     -- para seguir los reintentos en los logs
     CONSTRAINT notificacion_checkin_intentos_validos CHECK (nch_intentos >= 0)
 );
 CREATE INDEX ix_notificacion_checkin_pendiente ON notificacion_checkin (nch_proximo_en) WHERE nch_enviado_en IS NULL;
