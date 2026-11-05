@@ -29,6 +29,11 @@ export interface RestRoute {
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   path: string;
   timeoutMs?: number;
+  /**
+   * Credencial de la llamada. `service-token` (por defecto) para los servicios internos. `partner-api-key` para un
+   * sistema externo: se envía su `X-API-Key` y no se reenvían el `X-Service-Token` ni el principal interno.
+   */
+  auth?: 'service-token' | 'partner-api-key';
 }
 
 /** SOAP 1.1: la entrada son los parámetros de la operación; la salida, el contenido de `<operacionResponse>`. */
@@ -47,7 +52,7 @@ export type Route = RestRoute | SoapRoute;
 /** Destinos: URL base para REST y URL del endpoint para SOAP. */
 export type TargetName =
   | 'identity' | 'location' | 'catalog' | 'billing' | 'pricing' | 'inventory' | 'review' | 'coupon' | 'cart' | 'payment'
-  | 'order' | 'booking' | 'refund' | 'invoicing' | 'support' | 'audit' | 'sri_recepcion' | 'sri_autorizacion';
+  | 'order' | 'booking' | 'refund' | 'invoicing' | 'support' | 'audit' | 'sri_recepcion' | 'sri_autorizacion' | 'booking_core';
 
 export const ROUTES: Record<string, Route> = {
   ...MS_IDENTITY_ROUTES,
@@ -66,6 +71,11 @@ export const ROUTES: Record<string, Route> = {
   ...MS_INVOICING_ROUTES,
   ...MS_SUPPORT_ROUTES,
   ...MS_AUDIT_ROUTES,
+
+  // Booking Central (externo): Booking lo llama después del check-in presencial para cerrar la asistencia en su plataforma.
+  'bookingCore.notifyCheckin': {
+    protocol: 'rest', target: 'booking_core', method: 'POST', path: '/api/v3/reservas/:external_order_id/checkin', auth: 'partner-api-key', timeoutMs: 8000,
+  },
 
   // SRI del Ecuador (SOAP, comprobantes electrónicos offline): Invoicing los llama a través del ESB.
   'sri.validarComprobante': { protocol: 'soap', target: 'sri_recepcion', namespace: 'http://ec.gob.sri.ws.recepcion', operation: 'validarComprobante', timeoutMs: 15_000 },

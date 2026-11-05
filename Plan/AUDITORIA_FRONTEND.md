@@ -144,7 +144,7 @@ separado, "cliente" local) y tampoco coinciden con ms-order, ms-payment y ms-ide
 | Comprobante | ms-invoicing emite la factura y el pedido no la muestra (`invoicingGetOrderInvoice`) |
 | Recuperar contraseña y verificar correo | ms-identity los tiene; el portal no tiene esas pantallas |
 | Pruebas | `src/test/*` simulan el API viejo; habrá que reescribirlas con el cliente nuevo |
-| Marca | El portal dice "TourGirls"; el backend y la documentación, "Descubre EC". Decidir un solo nombre |
+| Marca | El portal dice "TourGirls"; el backend y la documentación, "TourGirls". Decidir un solo nombre |
 
 ---
 

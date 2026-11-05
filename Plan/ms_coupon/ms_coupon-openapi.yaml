@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: ms_coupon · Coupon & Promotions Service (Descubre EC)
+  title: ms_coupon · Coupon & Promotions Service (TourGirls)
   version: 1.0.0
   description: >-
     Contrato propio del microservicio **9 · Coupon & Promotions Service** (REST), derivado de
@@ -326,7 +326,7 @@ components:
           example: proveedor-atracciones-dilan
         nombre_comercial:
           type: string
-          example: Descubre EC
+          example: TourGirls
         permite_promociones:
           type: boolean
           description: Autorización formal para que Booking Prototipo arme paquetes combinados.
@@ -407,7 +407,7 @@ components:
             email:
               type: string
               format: email
-              example: dilan.mendoza@descubreec.com
+              example: dilan.mendoza@tourgirls.com
             telefono:
               type: string
               example: '+593998765432'
@@ -643,7 +643,7 @@ components:
           example: DILAN_ATRACCIONES
         url_base:
           type: string
-          example: 'https://descubreec.com/api/v1'
+          example: 'https://tourgirls.com/api/v1'
         version:
           type: string
           example: 2.0.0

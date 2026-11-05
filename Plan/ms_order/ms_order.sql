@@ -1,5 +1,5 @@
 -- ============================================================================
---  DESCUBRE EC  ·  ms_order  ·  Order Management Service (gRPC)
+--  TOURGIRLS  ·  ms_order  ·  Order Management Service (gRPC)
 --  Base de datos propia del microservicio 10.
 --  Plan: Plan/ms_order/PLAN_IMPLEMENTACION.md
 --  Origen: Plan/02_microservicios_v2_bases_de_datos.sql (seccion 10)

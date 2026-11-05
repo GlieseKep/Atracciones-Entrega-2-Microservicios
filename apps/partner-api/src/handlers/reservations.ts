@@ -55,15 +55,19 @@ export function reservationHandlers(esb: EsbClient) {
 
     /** POST /reservas/{id}/checkin: identidad, voucher y fecha los valida Booking (idempotente por cabecera). */
     async checkIn(req: Request, res: Response) {
-      const body = (req.body ?? {}) as Record<string, string | undefined>;
+      const body = (req.body ?? {}) as Record<string, unknown>;
+      const text = (value: unknown) => (typeof value === 'string' ? value : '');
       const key = idempotencyKey(req);
       res.json(await esb.call<unknown>('booking', 'checkIn', {
         idempotency_key: key,
         id: String(req.params.id),
-        documento_identidad: body.documento_identidad ?? '',
-        codigo_voucher_qr: body.codigo_voucher_qr ?? '',
-        guia_codigo: body.guia_codigo ?? '',
-        scanner_device_id: body.scanner_device_id ?? '',
+        documento_identidad: text(body.documento_identidad),
+        codigo_voucher_qr: text(body.codigo_voucher_qr),
+        guia_codigo: text(body.guia_codigo),
+        scanner_device_id: text(body.scanner_device_id),
+        // Opcionales (no están en el contrato): van en el aviso a Booking Central.
+        asistentes_reales: Number.isInteger(body.asistentes_reales) ? body.asistentes_reales : 0,
+        observaciones: text(body.observaciones),
       }, { idempotencyKey: key }));
     },
   };

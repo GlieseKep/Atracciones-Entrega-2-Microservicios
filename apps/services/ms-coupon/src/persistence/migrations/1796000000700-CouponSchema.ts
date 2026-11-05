@@ -77,7 +77,7 @@ INSERT INTO acuerdo_promocion
     (apr_proveedor_codigo, apr_nombre_comercial, apr_permite_promociones,
      apr_porcentaje_descuento_max, apr_vigencia_hasta)
 VALUES
-    ('proveedor-atracciones-dilan', 'Descubre EC', FALSE, 0,
+    ('proveedor-atracciones-dilan', 'TourGirls', FALSE, 0,
      (CURRENT_DATE + INTERVAL '1 year')::date);`;
 
 const DOWN = [

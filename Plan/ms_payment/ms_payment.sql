@@ -1,5 +1,5 @@
 -- ============================================================================
---  DESCUBRE EC  ·  ms_payment  ·  Payment Service (REST)
+--  TOURGIRLS  ·  ms_payment  ·  Payment Service (REST)
 --  Base de datos propia del microservicio 12.
 --  Plan: Plan/ms_payment/PLAN_IMPLEMENTACION.md
 --  Origen: Plan/02_microservicios_v2_bases_de_datos.sql (seccion 12)

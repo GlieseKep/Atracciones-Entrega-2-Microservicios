@@ -1,5 +1,5 @@
 -- ============================================================================
---  DESCUBRE EC  ·  ms_pricing  ·  Pricing Service (gRPC)
+--  TOURGIRLS  ·  ms_pricing  ·  Pricing Service (gRPC)
 --  Base de datos propia del microservicio 6.
 --  Plan: Plan/ms_pricing/PLAN_IMPLEMENTACION.md
 --  Contrato: Plan/ms_pricing/pricing.proto

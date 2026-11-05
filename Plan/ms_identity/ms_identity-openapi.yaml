@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: ms_identity · Identity & Access Service (Descubre EC)
+  title: ms_identity · Identity & Access Service (TourGirls)
   version: 1.0.0
   description: >-
     Contrato propio del microservicio **1 · Identity & Access Service** (REST), derivado de la base `ms_identity`
@@ -521,6 +521,7 @@ paths:
       tags:
         - Usuarios
       summary: Quitar un rol
+      description: Un administrador no puede quitarse su propio rol `ADMIN` (409 `CANNOT_REMOVE_OWN_ADMIN`).
       parameters:
         - $ref: '#/components/parameters/XCorrelationIdHeader'
         - name: id
@@ -548,6 +549,8 @@ paths:
           $ref: '#/components/responses/ProblemDetails403'
         '404':
           $ref: '#/components/responses/ProblemDetails404'
+        '409':
+          $ref: '#/components/responses/ProblemDetails409'
         '500':
           $ref: '#/components/responses/ProblemDetails500'
   /roles:
@@ -1115,7 +1118,7 @@ components:
           example: DILAN_ATRACCIONES
         url_base:
           type: string
-          example: 'https://descubreec.com/api/v1'
+          example: 'https://tourgirls.com/api/v1'
         version:
           type: string
           example: 2.0.0

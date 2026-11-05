@@ -1,4 +1,4 @@
-# DESPLIEGUE_AZURE_MICROSERVICIOS — Subir Descubre EC a Azure paso a paso
+# DESPLIEGUE_AZURE_MICROSERVICIOS — Subir TourGirls a Azure paso a paso
 
 > **Obsoleta (2026-10-31).** El despliegue de 20 apps se reemplazó por una sola App Service: ver
 > [PLAN_DESPLIEGUE_UNA_APP.md](PLAN_DESPLIEGUE_UNA_APP.md).
@@ -110,7 +110,7 @@ git push -u origin main
 ### Paso 2 — Grupo de recursos
 
 1. Buscador → **Grupos de recursos** → **+ Crear**.
-2. Nombre: **`rg-descubre-ec`** · Región: **West US 3**.
+2. Nombre: **`rg-tourgirls`** · Región: **West US 3**.
 3. **Revisar y crear** → **Crear**.
 
 ### Paso 3 — RabbitMQ en CloudAMQP
@@ -120,7 +120,7 @@ git push -u origin main
 
    | Campo | Valor |
    |-------|-------|
-   | Name | `descubre-ec` |
+   | Name | `tourgirls` |
    | Plan | **Little Lemur (Free)** |
    | Region | la más cercana a West US 3 |
 
@@ -140,7 +140,7 @@ git push -u origin main
 
    | Campo | Valor |
    |-------|-------|
-   | Nombre del servidor | `descubre-ec-db-<iniciales>` |
+   | Nombre del servidor | `tourgirls-db-<iniciales>` |
    | Región | **Brazil South**: esta suscripción no permite crear B1ms en West US 3 (`SkuNotAvailable`) |
    | Versión de PostgreSQL | **16** |
    | Tipo de carga de trabajo | **Desarrollo** |
@@ -161,7 +161,7 @@ Desde tu PC, con el proyecto compilado:
 
 ```powershell
 npm run build
-$env:SERVICES_DATABASE_URL = "postgres://dbadmin:<contraseña-codificada>@descubre-ec-db-<iniciales>.postgres.database.azure.com:5432/"
+$env:SERVICES_DATABASE_URL = "postgres://dbadmin:<contraseña-codificada>@tourgirls-db-<iniciales>.postgres.database.azure.com:5432/"
 $env:DATABASE_SSL = "true"
 npm run db:migrate -- ms-identity ms-location ms-billing-profile ms-catalog ms-review ms-pricing ms-inventory ms-cart ms-coupon ms-order ms-booking ms-payment ms-refund ms-invoicing ms-support ms-audit
 ```
@@ -169,7 +169,7 @@ npm run db:migrate -- ms-identity ms-location ms-billing-profile ms-catalog ms-r
 Crea el primer administrador con la misma conexión:
 
 ```powershell
-$env:DATABASE_URL = "postgres://dbadmin:<contraseña-codificada>@descubre-ec-db-<iniciales>.postgres.database.azure.com:5432/ms_identity"
+$env:DATABASE_URL = "postgres://dbadmin:<contraseña-codificada>@tourgirls-db-<iniciales>.postgres.database.azure.com:5432/ms_identity"
 $env:ADMIN_EMAIL = "correo@ejemplo.com"
 $env:ADMIN_PASSWORD = "<contraseña>"
 node tools/create-admin.mjs
@@ -188,27 +188,27 @@ Inventory y Pricing van en App Service (paso 11). Las llamadas internas usan HTT
 
    | Campo | Valor |
    |-------|-------|
-   | Nombre | `descubre-gateway` |
+   | Nombre | `tourgirls-gateway` |
    | Publicar | **Código** |
    | Pila del entorno de ejecución | **Node 22 LTS** |
    | Sistema operativo | **Linux** |
-   | Plan de Linux | **Crear nuevo** → `asp-descubre-ec` |
+   | Plan de Linux | **Crear nuevo** → `asp-tourgirls` |
    | Plan de precios | **Basic B2** |
 
-2. Repite con el **mismo plan** para: `descubre-graphql`, `descubre-partner-api`, `descubre-esb`, `descubre-ms-identity`,
-   `descubre-ms-location`, `descubre-ms-billing-profile`, `descubre-ms-catalog`, `descubre-ms-review`, `descubre-ms-cart`,
-   `descubre-ms-coupon`, `descubre-ms-payment`, `descubre-ms-refund`, `descubre-ms-invoicing`, `descubre-ms-support` y
-   `descubre-ms-audit`.
+2. Repite con el **mismo plan** para: `tourgirls-graphql`, `tourgirls-partner-api`, `tourgirls-esb`, `tourgirls-ms-identity`,
+   `tourgirls-ms-location`, `tourgirls-ms-billing-profile`, `tourgirls-ms-catalog`, `tourgirls-ms-review`, `tourgirls-ms-cart`,
+   `tourgirls-ms-coupon`, `tourgirls-ms-payment`, `tourgirls-ms-refund`, `tourgirls-ms-invoicing`, `tourgirls-ms-support` y
+   `tourgirls-ms-audit`.
 
    Para no repetir el formulario 16 veces, usa **Cloud Shell** en modo Bash. Crea el plan en **West US 3** y agrega un
    sufijo, porque los nombres son únicos en todo Azure:
 
    ```bash
-   RG=<grupo-de-recursos>; PLAN=asp-descubre-ec; SUF=<sufijo>
+   RG=<grupo-de-recursos>; PLAN=asp-tourgirls; SUF=<sufijo>
    az appservice plan create -g $RG -n $PLAN --is-linux --sku B2 --location westus3
    for app in gateway graphql partner-api esb ms-identity ms-location ms-billing-profile ms-catalog ms-review ms-cart ms-coupon ms-payment ms-refund ms-invoicing ms-support ms-audit ms-booking ms-order ms-inventory ms-pricing; do
-     az webapp create -g $RG -p $PLAN -n descubre-$app-$SUF --runtime "NODE:22-lts" --output none && \
-     az webapp config set -g $RG -n descubre-$app-$SUF --always-on true --output none && \
+     az webapp create -g $RG -p $PLAN -n tourgirls-$app-$SUF --runtime "NODE:22-lts" --output none && \
+     az webapp config set -g $RG -n tourgirls-$app-$SUF --always-on true --output none && \
      echo "OK $app"
    done
    ```
@@ -239,7 +239,7 @@ Van **solo** en la configuración de Azure, nunca en el repositorio.
 
    | Campo | Valor |
    |-------|-------|
-   | Nombre | `descubre-ec-web` |
+   | Nombre | `tourgirls-web` |
    | Tipo de plan | **Free** |
    | Origen de la implementación | **GitHub** → el repositorio nuevo, rama **`main`** |
    | Ubicación de la aplicación |primero escojer react **`/AtraccionesService-web`** |
@@ -264,7 +264,7 @@ en Cloud Shell con `az webapp config appsettings set`, que pida los secretos con
 | `RABBITMQ_URL` | la URL `amqps://` del paso 3, en los servicios con eventos |
 | `INTERNAL_TOKEN_SECRET` | el del paso 8 |
 | `SERVICE_TOKEN` | el del paso 8 |
-| `ESB_URL` | la URL de `descubre-esb` |
+| `ESB_URL` | la URL de `tourgirls-esb` |
 | `SCM_DO_BUILD_DURING_DEPLOYMENT` | `false` |
 
 **Variables propias:**
@@ -274,12 +274,12 @@ en Cloud Shell con `az webapp config appsettings set`, que pida los secretos con
 | `ms-identity` | `JWT_SECRET` | el del paso 8 |
 | `ms-identity` | `PORTAL_URL` | la URL de la Static Web App |
 | `ms-payment` | `WEBHOOK_SECRET` | el del paso 8 |
-| `ms-payment` | `PAYMENT_WEBHOOK_URL` | `https://<descubre-ms-payment>.azurewebsites.net/api/v3/webhooks/simulada` |
+| `ms-payment` | `PAYMENT_WEBHOOK_URL` | `https://<tourgirls-ms-payment>.azurewebsites.net/api/v3/webhooks/simulada` |
 | `esb` | `IDENTITY_URL`, `CATALOG_URL`, `CART_URL`, `PAYMENT_URL`, `INVOICING_URL`, `AUDIT_URL` y los demás REST | la URL de cada app |
 | `esb` | `BOOKING_URL`, `ORDER_URL`, `INVENTORY_URL`, `PRICING_URL` | la URL de cada app (paso 11) |
 | `gateway` | `CORS_ORIGINS` | la URL de la Static Web App, sin `/` al final |
 | `gateway` | `ESB_URL`, `GRAPHQL_URL`, `PARTNER_API_URL`, `IDENTITY_URL` | la URL de cada app |
-| `partner-api` | `PUBLIC_BASE_URL` | `https://<descubre-gateway>.azurewebsites.net/api/v3` |
+| `partner-api` | `PUBLIC_BASE_URL` | `https://<tourgirls-gateway>.azurewebsites.net/api/v3` |
 
 Comando de inicio de cada app: `node apps/services/<servicio>/dist/main.js`, o `node apps/<app>/dist/main.js` para Gateway, GraphQL,
 Partner API y ESB. Activa **Siempre activo (Always On)** en todas.

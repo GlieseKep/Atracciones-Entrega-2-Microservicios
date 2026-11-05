@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: ms_payment · Payment Service (Descubre EC)
+  title: ms_payment · Payment Service (TourGirls)
   version: 1.0.0
   description: >-
     Contrato propio del microservicio **12 · Payment Service** (REST), derivado de la base `ms_payment`
@@ -587,7 +587,7 @@ components:
           example: DILAN_ATRACCIONES
         url_base:
           type: string
-          example: 'https://descubreec.com/api/v1'
+          example: 'https://tourgirls.com/api/v1'
         version:
           type: string
           example: 2.0.0

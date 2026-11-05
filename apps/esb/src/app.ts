@@ -1,5 +1,5 @@
 import CircuitBreaker from 'opossum';
-import { AppError, createHttpService, createLogger, httpJson, requireServiceToken, type Logger } from '@atracciones/platform';
+import { AppError, createHttpService, createLogger, currentContext, fromProblem, HEADERS, httpJson, requireServiceToken, type Logger } from '@atracciones/platform';
 import type { Express } from 'express';
 import { ROUTES, type RestRoute, type Route, type SoapRoute, type TargetName } from './routes';
 import { parseSoapResponse, soapEnvelope } from './soap';
@@ -13,6 +13,8 @@ export interface EsbConfig {
   /** Multiplica el plazo de cada ruta. En Azure la base está en otra región y las consultas tardan más. */
   timeoutFactor: number;
   breaker: { errorThresholdPercentage: number; resetTimeoutMs: number; volumeThreshold: number };
+  /** `X-API-Key` que Booking Central nos registró (rutas con `auth: 'partner-api-key'`). */
+  bookingCoreApiKey: string;
   /** Envía el `correlation_id` en el SOAP Header (desactivable si el servicio externo lo rechaza). */
   soapCorrelationHeader?: boolean;
 }
@@ -41,7 +43,11 @@ export function readEsbConfig(env: NodeJS.ProcessEnv = process.env): EsbConfig {
       // Ambiente de pruebas del SRI: https://celcer.sri.gob.ec/comprobantes-electronicos-ws/...; en local, el mock (apps/sri-mock).
       sri_recepcion: env.SRI_RECEPCION_URL ?? 'http://127.0.0.1:4091/comprobantes-electronicos-ws/RecepcionComprobantesOffline',
       sri_autorizacion: env.SRI_AUTORIZACION_URL ?? 'http://127.0.0.1:4091/comprobantes-electronicos-ws/AutorizacionComprobantesOffline',
+      // Booking Central: https://booking-core-api.azurewebsites.net; en local, el mock (apps/booking-mock).
+      booking_core: env.BOOKING_CORE_URL ?? 'http://127.0.0.1:4090',
     },
+    // La X-API-Key que Booking nos registró; por defecto, la misma que usa Inventory (`BOOKING_API_KEY`).
+    bookingCoreApiKey: env.BOOKING_CORE_API_KEY ?? env.BOOKING_API_KEY ?? '',
     timeoutFactor: Math.max(Number(env.ESB_TIMEOUT_FACTOR) || 1, 1),
     soapCorrelationHeader: (env.SOAP_CORRELATION_HEADER ?? 'true') === 'true',
     breaker: {
@@ -130,6 +136,7 @@ export class EsbRouter {
   }
 
   private async rest(route: RestRoute, input: Input): Promise<unknown> {
+    if (route.auth === 'partner-api-key') return this.external(route, input);
     const { path, rest } = fillPath(route.path, input);
     const withQuery = route.method === 'GET' || route.method === 'DELETE';
     const { body } = await httpJson(`${this.target(route).replace(/\/$/, '')}${path}${withQuery ? queryString(rest) : ''}`, {
@@ -139,6 +146,45 @@ export class EsbRouter {
       timeoutMs: (route.timeoutMs ?? 5000) * this.config.timeoutFactor,
     });
     return body ?? null;
+  }
+
+  /**
+   * REST hacia un sistema externo con su `X-API-Key`. Solo viaja el `X-Correlation-Id`: el principal interno y el
+   * `X-Service-Token` no salen de la red propia. Un 4xx conserva su estado; un 5xx o un fallo de red es 503.
+   */
+  private async external(route: RestRoute, input: Input): Promise<unknown> {
+    const { path, rest } = fillPath(route.path, input);
+    const apiKey = this.config.bookingCoreApiKey;
+    if (!apiKey) throw AppError.unavailable(`La X-API-Key de '${route.target}' no está configurada en el ESB.`);
+    const withQuery = route.method === 'GET' || route.method === 'DELETE';
+    const correlationId = currentContext()?.correlationId;
+    let response: Response;
+    try {
+      response = await fetch(`${this.target(route).replace(/\/$/, '')}${path}${withQuery ? queryString(rest) : ''}`, {
+        method: route.method,
+        headers: {
+          accept: 'application/json',
+          'x-api-key': apiKey,
+          ...(withQuery ? {} : { 'content-type': 'application/json' }),
+          ...(correlationId ? { [HEADERS.correlationId]: correlationId } : {}),
+        },
+        // Booking Central pide los parámetros de la ruta también en el cuerpo (`external_order_id`).
+        body: withQuery ? undefined : JSON.stringify(input),
+        signal: AbortSignal.timeout((route.timeoutMs ?? 8000) * this.config.timeoutFactor),
+      });
+    } catch {
+      throw AppError.unavailable(`El servicio externo '${route.target}' no responde.`);
+    }
+    const text = await response.text();
+    let body: unknown = null;
+    try {
+      body = text ? JSON.parse(text) : null;
+    } catch {
+      body = text;
+    }
+    if (response.status >= 500) throw AppError.unavailable(`El servicio externo '${route.target}' respondió HTTP ${response.status}.`);
+    if (!response.ok) throw fromProblem(body, response.status);
+    return body;
   }
 
   /** Adaptador SOAP 1.1: JSON → sobre SOAP (con el correlation_id en el Header) → respuesta XML → JSON. */

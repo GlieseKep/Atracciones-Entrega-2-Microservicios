@@ -1,4 +1,4 @@
-# Arranca la cadena completa de microservicios de Descubre EC, una ventana por proceso.
+# Arranca la cadena completa de microservicios de TourGirls, una ventana por proceso.
 # Requisitos (Plan/GUIA_LOCAL_TAILSCALE.md):
 #   paso 2: docker compose -f infra/docker-compose.yml up -d   (PostgreSQL, RabbitMQ, Redis)
 #   paso 3: npm run build  y  npm run db:migrate
@@ -20,8 +20,8 @@ $common = @{
 # Proceso => archivo y variables propias. Orden: servicios, luego ESB, Partner API, GraphQL y Gateway.
 $apps = [ordered]@{
   'sri-mock'     = @{ file = 'apps/sri-mock/dist/main.js'; env = @{} }
-  'booking-mock' = @{ file = 'apps/booking-mock/dist/main.js'; env = @{} }   # solo para probar sin Booking
-  'identity'     = @{ file = 'apps/services/identity/dist/main.js'; env = @{ ADMIN_EMAIL = 'admin@descubreec.test'; ADMIN_PASSWORD = 'Admin-Local-2026' } }
+  'booking-mock' = @{ file = 'apps/booking-mock/dist/main.js'; env = @{ BOOKING_CORE_API_KEY = 'booking-core-key-local' } }   # solo para probar sin Booking
+  'identity'     = @{ file = 'apps/services/identity/dist/main.js'; env = @{ ADMIN_EMAIL = 'admin@tourgirls.test'; ADMIN_PASSWORD = 'Admin-Local-2026' } }
   'ms-identity'  = @{ file = 'apps/services/ms-identity/dist/main.js'; env = @{ JWT_SECRET = 'jwt-secret-local-ms-identity-solo-desarrollo' } }
   'ms-catalog'   = @{ file = 'apps/services/ms-catalog/dist/main.js'; env = @{} }
   'ms-inventory' = @{ file = 'apps/services/ms-inventory/dist/main.js'; env = @{} }
@@ -44,7 +44,8 @@ $apps = [ordered]@{
   'audit'        = @{ file = 'apps/services/audit/dist/main.js'; env = @{} }
   'ms-audit'     = @{ file = 'apps/services/ms-audit/dist/main.js'; env = @{} }
   'ms-support'   = @{ file = 'apps/services/ms-support/dist/main.js'; env = @{} }
-  'esb'          = @{ file = 'apps/esb/dist/main.js'; env = @{} }
+  # Booking Central simulado: el aviso del check-in va al booking-mock (puerto 4090) con esta X-API-Key.
+  'esb'          = @{ file = 'apps/esb/dist/main.js'; env = @{ BOOKING_CORE_URL = 'http://127.0.0.1:4090'; BOOKING_CORE_API_KEY = 'booking-core-key-local' } }
   'partner-api'  = @{ file = 'apps/partner-api/dist/main.js'; env = @{ PUBLIC_BASE_URL = 'http://localhost:3000/api/v2' } }
   'graphql'      = @{ file = 'apps/graphql/dist/main.js'; env = @{} }
   'gateway'      = @{ file = 'apps/gateway/dist/main.js'; env = @{ GRAPHQL_URL = 'http://127.0.0.1:3200' } }

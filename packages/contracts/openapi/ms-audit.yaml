@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: ms_audit · Audit Service (Descubre EC)
+  title: ms_audit · Audit Service (TourGirls)
   version: 1.0.0
   description: >-
     Contrato de consulta del microservicio **16 · Audit Service**, derivado de la base `ms_audit`
@@ -265,7 +265,7 @@ components:
           example: DILAN_ATRACCIONES
         url_base:
           type: string
-          example: 'https://descubreec.com/api/v1'
+          example: 'https://tourgirls.com/api/v1'
         version:
           type: string
           example: 2.0.0

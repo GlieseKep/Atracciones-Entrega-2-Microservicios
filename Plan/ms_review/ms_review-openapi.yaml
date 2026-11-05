@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: ms_review · Review Service (Descubre EC)
+  title: ms_review · Review Service (TourGirls)
   version: 1.0.0
   description: >-
     Contrato propio del microservicio **5 · Review Service** (REST), derivado de la base `ms_review`
@@ -574,7 +574,7 @@ components:
           example: DILAN_ATRACCIONES
         url_base:
           type: string
-          example: 'https://descubreec.com/api/v1'
+          example: 'https://tourgirls.com/api/v1'
         version:
           type: string
           example: 2.0.0

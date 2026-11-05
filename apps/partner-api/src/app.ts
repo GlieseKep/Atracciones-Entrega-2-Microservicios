@@ -14,6 +14,7 @@ import {
 import { ContractStatuses } from './contract';
 import type { PartnerApiConfig } from './config';
 import { contractErrorHandler } from './errors';
+import { clientRoutes } from './handlers/clients';
 import { NodeHealth } from './health';
 import type { ContractRequest } from './request';
 import { registerRoutes } from './routes';
@@ -97,6 +98,8 @@ export function createPartnerApi(config: PartnerApiConfig): PartnerApi {
   });
 
   app.use(principalMiddleware(config.internalTokenSecret));
+  // Módulo de clientes pedido por Booking: no está en el contrato v3, así que va antes de su validador.
+  for (const base of BASE_PATHS) app.use(base, clientRoutes(esb));
   // GET /eventos no documenta 400: un `limit` mayor que el máximo del contrato (200) se acota en vez de rechazarse.
   app.use(/^\/api\/v3\/atracciones\/eventos$/, (req, _res, next) => {
     const limit = Number(req.query.limit);

@@ -1,5 +1,5 @@
 -- ============================================================================
---  DESCUBRE EC  ·  ms_inventory  ·  Inventory & Availability Service (gRPC)
+--  TOURGIRLS  ·  ms_inventory  ·  Inventory & Availability Service (gRPC)
 --  Base de datos propia del microservicio 7.
 --  Plan: Plan/ms_inventory/PLAN_IMPLEMENTACION.md
 --  Origen: Plan/02_microservicios_v2_bases_de_datos.sql (seccion 7)

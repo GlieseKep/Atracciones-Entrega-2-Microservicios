@@ -28,6 +28,9 @@ export const MS_BILLING_ROUTES = {
 
   // Uso interno (`X-Service-Token`): Invoicing.
   'billing.getPrincipal': route('GET', '/internal/usuarios/:usuId/datos-facturacion/principal'),
+  // Turistas de un socio: Identity los registra al crear el cliente; Invoicing puede leer el principal.
+  'billing.ensurePrincipalForClient': route('POST', '/internal/clientes/:claId/datos-facturacion/principal'),
+  'billing.getPrincipalForClient': route('GET', '/internal/clientes/:claId/datos-facturacion/principal'),
 } as const satisfies Record<string, BillingRestRoute>;
 
 export type BillingRouteKey = keyof typeof MS_BILLING_ROUTES;

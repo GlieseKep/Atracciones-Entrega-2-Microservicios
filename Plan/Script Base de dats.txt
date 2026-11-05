@@ -1,5 +1,5 @@
 -- ============================================================================
---  DESCUBRE EC  ·  MODELO RELACIONAL DE BASE DE DATOS
+--  TOURGIRLS  ·  MODELO RELACIONAL DE BASE DE DATOS
 --  Ecommerce de atracciones turisticas con pagos
 --  Motor: PostgreSQL 14+   |   Codificacion: UTF-8
 -- ============================================================================
@@ -41,7 +41,7 @@
 --
 --  EJECUCION
 --  ---------------------------------------------------------------------------
---     psql -U postgres -d descubre_ec -f 01_esquema.sql
+--     psql -U postgres -d tourgirls -f 01_esquema.sql
 --  (La API lo aplica sola: backend/src/database/sql/001_modelo_relacional.sql
 --   es una copia exacta y un test verifica que no se separen.)
 --

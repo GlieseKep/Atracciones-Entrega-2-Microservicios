@@ -1,5 +1,5 @@
 /** Tipos del contrato `Plan/ms_identity/ms_identity-openapi.yaml`. */
-export const ROLES = ['ADMIN', 'OPERADOR', 'CLIENTE'] as const;
+export const ROLES = ['ADMIN', 'OPERADOR', 'CLIENTE', 'GUIA'] as const;
 export type RolNombre = (typeof ROLES)[number];
 
 export interface RolDto {
@@ -93,4 +93,25 @@ export interface ClienteApiDto {
 export interface ClienteApiCreadoDto extends ClienteApiDto {
   /** Se muestra una sola vez. */
   api_key: string;
+}
+
+/** Turista que registra un socio (`cliente_api` con `cla_tipo = 'TURISTA'`). `client_id` es `cla_id` como texto. */
+export interface ClienteDto {
+  client_id: string;
+  nombre: string;
+  email: string;
+  identificacion: string;
+  telefono: string | null;
+}
+
+export interface ClienteRequest {
+  nombre: string;
+  email: string;
+  identificacion: string;
+  telefono: string | null;
+}
+
+export interface ClienteFiltros {
+  email: string | null;
+  identificacion: string | null;
 }

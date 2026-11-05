@@ -1,5 +1,5 @@
 -- ============================================================================
---  DESCUBRE EC (SISTEMA DE ATRACCIONES TURÍSTICAS DEL ECUADOR)
+--  TOURGIRLS (SISTEMA DE ATRACCIONES TURÍSTICAS DEL ECUADOR)
 --  MODELO DE BASE DE DATOS REESTRUCTURADO PARA ARQUITECTURA DE MICROSERVICIOS
 --  Basado en: Contrato OpenAPI v2.0.0 (contracts/atracciones-openapi-v2.yaml)
 --  Motor: PostgreSQL 14+   |   Codificación: UTF-8
@@ -549,7 +549,7 @@ CREATE INDEX ix_outbox_pendientes ON outbox_evento (evt_publicado) WHERE NOT evt
 CREATE TABLE acuerdo_promocion_b2b (
     prb_id                      INTEGER      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     prb_proveedor_id            VARCHAR(60)  NOT NULL UNIQUE, -- Ej: "proveedor-atracciones-dilan"
-    prb_nombre_comercial        VARCHAR(120) NOT NULL DEFAULT 'Descubre EC Tours & Experiences',
+    prb_nombre_comercial        VARCHAR(120) NOT NULL DEFAULT 'TourGirls Tours & Experiences',
     prb_permite_promociones     BOOLEAN      NOT NULL DEFAULT TRUE,
     prb_porcentaje_descuento_maximo NUMERIC(5,2) NOT NULL DEFAULT 15.00,
     prb_destinos_habilitados    JSONB        NOT NULL DEFAULT '["Quito", "Baños", "Cuenca", "Galápagos"]'::jsonb,
@@ -557,7 +557,7 @@ CREATE TABLE acuerdo_promocion_b2b (
     prb_vigencia_hasta          DATE         NOT NULL DEFAULT '2027-12-31',
     prb_condiciones_combo       TEXT         DEFAULT 'Aplica en paquetes multidominio combinados con al menos 48h de anticipación.',
     prb_contacto_nombre         VARCHAR(120) DEFAULT 'Dilan Mendoza',
-    prb_contacto_email          dom_correo   DEFAULT 'dilan.mendoza@descubreec.com',
+    prb_contacto_email          dom_correo   DEFAULT 'dilan.mendoza@tourgirls.com',
     prb_contacto_telefono       dom_telefono DEFAULT '+593998765432',
     prb_actualizado_en          TIMESTAMPTZ  NOT NULL DEFAULT now(),
     CONSTRAINT prb_descuento_valido CHECK (prb_porcentaje_descuento_maximo BETWEEN 0 AND 50)
@@ -757,7 +757,7 @@ INSERT INTO ciudad (ciu_nombre, ciu_codigo, prov_id) VALUES
 
 -- Operador oficial de Dilan Mendoza
 INSERT INTO operador (ope_codigo, ope_nombre, ope_ruc, ope_correo, ope_telefono, prov_id) VALUES
-    (101, 'Descubre EC Tours & Experiences', '1792348123001', 'soporte@descubreec.com', '+593991234567',
+    (101, 'TourGirls Tours & Experiences', '1792348123001', 'soporte@tourgirls.com', '+593991234567',
      (SELECT prov_id FROM provincia WHERE prov_nombre='Pichincha'));
 
 -- Categorías con BANDERAS OBLIGATORIAS de cátedra
@@ -805,7 +805,7 @@ INSERT INTO atraccion (
     'Boulevard Naciones Unidas y Av. Shyris, Quito',
     'Boulevard Naciones Unidas y Av. Shyris (Parada Quinde)',
     -0.178652, -78.483120,
-    'Presentarse con 15 minutos de anticipación junto al totem informativo rojo de Descubre EC.',
+    'Presentarse con 15 minutos de anticipación junto al totem informativo rojo de TourGirls.',
     'https://maps.google.com/?q=-0.178652,-78.483120',
     7.00,
     (SELECT prov_id FROM provincia WHERE prov_nombre='Pichincha'),
@@ -848,7 +848,7 @@ INSERT INTO acuerdo_promocion_b2b (
     prb_porcentaje_descuento_maximo, prb_destinos_habilitados, prb_vigencia_hasta
 ) VALUES (
     'proveedor-atracciones-dilan',
-    'Descubre EC',
+    'TourGirls',
     TRUE,
     15.00,
     '["Quito", "Baños", "Cuenca", "Galápagos"]'::jsonb,

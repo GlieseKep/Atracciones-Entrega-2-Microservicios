@@ -1,5 +1,5 @@
 -- ============================================================================
---  DESCUBRE EC  ·  ms_audit  ·  Audit Service (REST, consumidor de eventos)
+--  TOURGIRLS  ·  ms_audit  ·  Audit Service (REST, consumidor de eventos)
 --  Base de datos propia del microservicio 16.
 --  Plan: Plan/ms_audit/PLAN_IMPLEMENTACION.md
 --  Origen: Plan/02_microservicios_v2_bases_de_datos.sql (seccion 16)

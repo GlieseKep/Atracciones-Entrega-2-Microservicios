@@ -30,7 +30,7 @@ try {
     correo,
     password,
     nombre: process.env.ADMIN_NOMBRE ?? 'Administrador',
-    apellido: process.env.ADMIN_APELLIDO ?? 'Descubre EC',
+    apellido: process.env.ADMIN_APELLIDO ?? 'TourGirls',
   });
   console.log(`Administrador creado: ${admin.correo} (usu_id ${admin.id}).`);
 } finally {

@@ -1,5 +1,5 @@
 -- ============================================================================
---  DESCUBRE EC  ·  ms_booking  ·  Booking Service (gRPC + REST /atracciones/reservas)
+--  TOURGIRLS  ·  ms_booking  ·  Booking Service (gRPC + REST /atracciones/reservas)
 --  Base de datos propia del microservicio 11.
 --  Plan: Plan/ms_booking/PLAN_IMPLEMENTACION.md
 --  Origen: Plan/02_microservicios_v2_bases_de_datos.sql (seccion 11)
@@ -202,3 +202,23 @@ INSERT INTO estado (est_codigo, est_nombre, est_final) VALUES
     ('COMPLETED',  'Reserva completada',            TRUE),
     ('CANCELLED',  'Reserva cancelada',             TRUE),
     ('EXPIRED',    'Reserva expirada',              TRUE);
+
+-- Turista de la reserva (cliente_api de Identity, solo compras de un socio),
+-- canal de compra y aviso del check-in a Booking Central (con reintentos).
+ALTER TABLE reserva ADD COLUMN cla_id_cliente BIGINT;   -- ID logico (Identity, cliente_api TURISTA); NULL en compras web
+ALTER TABLE reserva ADD COLUMN res_canal VARCHAR(10) NOT NULL DEFAULT 'WEB'
+    CONSTRAINT reserva_canal_valido CHECK (res_canal IN ('WEB', 'SOCIO'));
+CREATE INDEX ix_reserva_cla_id_cliente ON reserva (cla_id_cliente);
+
+CREATE TABLE notificacion_checkin (
+    res_id            BIGINT       PRIMARY KEY
+        CONSTRAINT fk_notificacion_checkin_reserva REFERENCES reserva (res_id) ON DELETE CASCADE,
+    nch_payload       JSONB        NOT NULL,             -- cuerpo de POST /api/v3/reservas/{external_order_id}/checkin
+    nch_intentos      INTEGER      NOT NULL DEFAULT 0,
+    nch_ultimo_error  VARCHAR(500),
+    nch_proximo_en    TIMESTAMPTZ  NOT NULL DEFAULT now(),
+    nch_enviado_en    TIMESTAMPTZ,
+    nch_creado_en     TIMESTAMPTZ  NOT NULL DEFAULT now(),
+    CONSTRAINT notificacion_checkin_intentos_validos CHECK (nch_intentos >= 0)
+);
+CREATE INDEX ix_notificacion_checkin_pendiente ON notificacion_checkin (nch_proximo_en) WHERE nch_enviado_en IS NULL;

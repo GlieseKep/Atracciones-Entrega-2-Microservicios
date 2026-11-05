@@ -35,8 +35,8 @@ export function readInvoicingConfig(env: NodeJS.ProcessEnv = process.env): Invoi
     emisor: {
       ambiente: env.SRI_AMBIENTE === '2' ? '2' : '1',
       ruc: env.SRI_RUC ?? '1792348123001',
-      razonSocial: env.SRI_RAZON_SOCIAL ?? 'DESCUBRE EC TOURS & EXPERIENCES',
-      nombreComercial: env.SRI_NOMBRE_COMERCIAL ?? 'Descubre EC',
+      razonSocial: env.SRI_RAZON_SOCIAL ?? 'TOURGIRLS TOURS & EXPERIENCES',
+      nombreComercial: env.SRI_NOMBRE_COMERCIAL ?? 'TourGirls',
       dirMatriz: env.SRI_DIR_MATRIZ ?? 'Quito, Ecuador',
       dirEstablecimiento: env.SRI_DIR_ESTABLECIMIENTO ?? 'Quito, Ecuador',
       establecimiento: env.SRI_ESTABLECIMIENTO ?? '001',

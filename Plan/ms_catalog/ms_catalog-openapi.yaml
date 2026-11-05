@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: ms_catalog · Catalog & Attractions Service (Descubre EC)
+  title: ms_catalog · Catalog & Attractions Service (TourGirls)
   version: 1.0.0
   description: >-
     Contrato propio del microservicio **4 · Catalog & Attractions Service** (REST), derivado de la base `ms_catalog`
@@ -1790,7 +1790,7 @@ components:
           example: -78.48312
         arrival_instructions:
           type: string
-          example: Presentarse con 15 minutos de anticipación junto al totem informativo rojo de Descubre EC.
+          example: Presentarse con 15 minutos de anticipación junto al totem informativo rojo de TourGirls.
         google_maps_url:
           type: string
           example: 'https://maps.google.com/?q=-0.178652,-78.483120'
@@ -1813,7 +1813,7 @@ components:
         instrucciones_llegada:
           type: string
           description: Alias canónico en español para pautas de encuentro.
-          example: Presentarse con 15 minutos de anticipación junto al totem informativo rojo de Descubre EC.
+          example: Presentarse con 15 minutos de anticipación junto al totem informativo rojo de TourGirls.
     AccessibilityAttributes:
       type: object
       properties:
@@ -1877,7 +1877,7 @@ components:
           example: proveedor-atracciones-dilan
         nombre_comercial:
           type: string
-          example: Descubre EC Tours & Experiences
+          example: TourGirls Tours & Experiences
         ruc:
           type: string
           example: '1792348123001'
@@ -1886,7 +1886,7 @@ components:
           example: '+593991234567'
         email_soporte:
           type: string
-          example: soporte@descubreec.com
+          example: soporte@tourgirls.com
     NodeHealthResponse:
       type: object
       required:
@@ -1913,7 +1913,7 @@ components:
           example: DILAN_ATRACCIONES
         url_base:
           type: string
-          example: 'https://descubreec.com/api/v1'
+          example: 'https://tourgirls.com/api/v1'
         version:
           type: string
           example: 2.0.0
@@ -2363,7 +2363,7 @@ components:
           schema:
             $ref: '#/components/schemas/ProblemDetails'
           example:
-            type: 'https://descubreec.com/errors/unauthorized'
+            type: 'https://tourgirls.com/errors/unauthorized'
             title: No Autorizado
             status: 401
             detail: 'El token JWT no fue provisto, ha expirado o la firma criptográfica es inválida.'
@@ -2378,7 +2378,7 @@ components:
           schema:
             $ref: '#/components/schemas/ProblemDetails'
           example:
-            type: 'https://descubreec.com/errors/forbidden'
+            type: 'https://tourgirls.com/errors/forbidden'
             title: Acceso Prohibido
             status: 403
             detail: No cuenta con el rol de administración o credenciales de socio requeridas para esta acción.

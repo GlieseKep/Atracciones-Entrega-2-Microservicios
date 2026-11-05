@@ -17,7 +17,9 @@ export interface DatoFacturacionInput {
 
 export interface DatoFacturacionDto {
   id: number;
-  usu_id: number;
+  /** Dueño: un usuario web (`usu_id`) o un turista de un socio (`cla_id`); el otro es `null`. */
+  usu_id: number | null;
+  cla_id: number | null;
   tipo_identificacion: TipoIdentificacion;
   identificacion: string;
   razon_social: string;

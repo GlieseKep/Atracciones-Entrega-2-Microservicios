@@ -5,7 +5,9 @@ import {
   createHttpService,
   createLogger,
   currentContext,
+  EsbClient,
   requireServiceToken,
+  verifyInternalPrincipal,
   type DatabaseSettings,
   type Logger,
 } from '@atracciones/platform';
@@ -13,9 +15,12 @@ import { Router, type Express, type Request } from 'express';
 import type { DataSource } from 'typeorm';
 import { ApiClientService } from './application/api-client-service';
 import { AuthService, type ClientInfo } from './application/auth-service';
+import { ClientService } from './application/client-service';
 import { CredentialValidator, type Authenticated } from './application/credential-validator';
 import {
   parseActivo,
+  parseCliente,
+  parseClienteFiltros,
   parseClienteApi,
   parseCorreo,
   parseId,
@@ -48,6 +53,8 @@ export interface MsIdentityConfig {
   /** Cabecera `X-Service-Token` de las rutas `/internal/**`. */
   serviceToken: string;
   basePath: string;
+  /** Para llamar a Billing (datos de facturación de los turistas). */
+  esbUrl: string;
   portalUrl: string;
   nodeId: string;
   nodeCode: string;
@@ -65,6 +72,7 @@ export function readMsIdentityConfig(env: NodeJS.ProcessEnv = process.env): MsId
     internalTokenSecret: env.INTERNAL_TOKEN_SECRET ?? '',
     serviceToken: env.SERVICE_TOKEN ?? '',
     basePath: env.BASE_PATH ?? IDENTITY_BASE_PATH,
+    esbUrl: env.ESB_URL ?? 'http://127.0.0.1:3300',
     portalUrl: (env.PORTAL_URL ?? 'http://localhost:5173').replace(/\/$/, ''),
     nodeId: env.NODE_ID ?? 'node-dilan-identity-01',
     nodeCode: env.NODE_CODE ?? 'DILAN_IDENTITY',
@@ -78,6 +86,7 @@ export function readMsIdentityConfig(env: NodeJS.ProcessEnv = process.env): MsId
 export interface MsIdentityDependencies {
   logger?: Logger;
   mailer?: Mailer;
+  esb?: EsbClient;
 }
 
 export interface MsIdentityService {
@@ -105,6 +114,7 @@ export function createMsIdentityService(config: MsIdentityConfig, dataSource: Da
   const auth = new AuthService(dataSource, userRepository, sessions, verification, config);
   const users = new UserService(dataSource, userRepository, sessions);
   const apiClients = new ApiClientService(apiClientRepository);
+  const clients = new ClientService(apiClientRepository, deps.esb ?? new EsbClient(config.esbUrl), logger);
   const credentials = new CredentialValidator(userRepository, sessions, apiClientRepository, config.jwtSecret, config.internalTokenSecret);
 
   /** Bearer del usuario o, detrás del Gateway y el ESB, el principal interno ya validado. */
@@ -120,6 +130,19 @@ export function createMsIdentityService(config: MsIdentityConfig, dataSource: Da
     const authenticated = await authenticate(req);
     if (!authenticated.principal.roles.includes('ADMIN')) throw AppError.forbidden('Esta operación requiere el rol ADMIN.');
     return authenticated;
+  }
+
+  /** `/clientes`: un socio con `X-API-Key` o un `ADMIN`, siempre detrás del Gateway. */
+  async function requirePartnerOrAdmin(req: Request): Promise<void> {
+    if (/^Bearer /i.test(req.get('authorization') ?? '')) {
+      await requireAdmin(req);
+      return;
+    }
+    const token = currentContext()?.principalToken;
+    if (!token) throw AppError.unauthorized();
+    const principal = await verifyInternalPrincipal(token, config.internalTokenSecret);
+    if (principal.tipo === 'API_CLIENTE') return;
+    await requireAdmin(req);
   }
 
   const internal = requireServiceToken(config.serviceToken);
@@ -217,8 +240,8 @@ export function createMsIdentityService(config: MsIdentityConfig, dataSource: Da
   });
 
   api.delete('/usuarios/:id/roles/:rol', async (req, res) => {
-    await requireAdmin(req);
-    res.json(await users.removeRole(parseId(req.params.id), parseRol(req.params.rol)));
+    const { principal } = await requireAdmin(req);
+    res.json(await users.removeRole(parseId(req.params.id), parseRol(req.params.rol), principal.id));
   });
 
   api.get('/roles', async (req, res) => {
@@ -244,7 +267,28 @@ export function createMsIdentityService(config: MsIdentityConfig, dataSource: Da
     res.json(await apiClients.setActive(parseId(req.params.id), parseActivo(req.body)));
   });
 
+  // Clientes turistas (socio o ADMIN) -------------------------------------------
+
+  api.get('/clientes', async (req, res) => {
+    await requirePartnerOrAdmin(req);
+    res.json(await clients.find(parseClienteFiltros(req.query as Record<string, unknown>)));
+  });
+
+  api.post('/clientes', async (req, res) => {
+    await requirePartnerOrAdmin(req);
+    const { cliente, creado } = await clients.ensure(parseCliente(req.body));
+    // El ESB solo reenvía el cuerpo: `creado` le dice a la Partner API si responde 201 o 200.
+    res.status(creado ? 201 : 200).json({ ...cliente, creado });
+  });
+
   // Validación para el Gateway y otros servicios -------------------------------
+
+  /** Booking registra (o reutiliza) al titular de una reserva de socio. */
+  api.post('/internal/clientes', internal, async (req, res) => {
+    const { cliente, creado } = await clients.ensure(parseCliente(req.body));
+    // El ESB solo reenvía el cuerpo: `creado` le dice a la Partner API si responde 201 o 200.
+    res.status(creado ? 201 : 200).json({ ...cliente, creado });
+  });
 
   api.post('/internal/tokens/validar', internal, async (req, res) => {
     const { principal } = await credentials.validateToken(parseSecret(req.body, 'token'));

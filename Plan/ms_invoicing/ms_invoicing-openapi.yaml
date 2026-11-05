@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: ms_invoicing · Electronic Invoicing Service (Descubre EC)
+  title: ms_invoicing · Electronic Invoicing Service (TourGirls)
   version: 1.0.0
   description: >-
     Contrato de consulta del microservicio **14 · Electronic Invoicing Service**, derivado de la base `ms_invoicing`
@@ -377,7 +377,7 @@ components:
           example: DILAN_ATRACCIONES
         url_base:
           type: string
-          example: 'https://descubreec.com/api/v1'
+          example: 'https://tourgirls.com/api/v1'
         version:
           type: string
           example: 2.0.0

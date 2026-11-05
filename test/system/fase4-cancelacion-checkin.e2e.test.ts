@@ -117,7 +117,7 @@ describe('Fase 4 — Cancelación y check-in', () => {
 
   it('un guía (rol guia) hace el check-in de una reserva de Booking con el documento de un pasajero', async () => {
     const reserva = await reservar(system, apiKey, reservaBody({ adult_count: 1, child_count: 1, passengers: [{ full_name: 'Mateo Rosero', document_id: '1754321098', ticket_type: 'CHILD' }] }, HOY(), '23:59')).expect(201);
-    const guia = await userToken(system, 'carlos.morales@descubreec.test', ['guia']);
+    const guia = await userToken(system, 'carlos.morales@tourgirls.test', ['guia']);
     const cliente = await userToken(system, 'otro@portal.test', ['cliente']);
     await checkin(reserva.body.reservation_id, { documento_identidad: '1754321098' }, randomUUID(), ['Authorization', `Bearer ${cliente}`]).expect(403);
     const res = await checkin(reserva.body.reservation_id, { documento_identidad: '1754321098', guia_codigo: 'GUIA-CARLOS-01' }, randomUUID(), ['Authorization', `Bearer ${guia}`]).expect(200);

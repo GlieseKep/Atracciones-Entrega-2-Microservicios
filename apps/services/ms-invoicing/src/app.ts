@@ -48,11 +48,11 @@ export function readMsInvoicingConfig(env: NodeJS.ProcessEnv = process.env): MsI
     issuer: {
       ambiente: '1',
       ruc: env.SRI_RUC ?? '1792348123001',
-      razonSocial: env.SRI_RAZON_SOCIAL ?? 'Descubre EC',
+      razonSocial: env.SRI_RAZON_SOCIAL ?? 'TourGirls',
       direccion: env.SRI_DIRECCION ?? 'Quito, Ecuador',
     },
     ivaPorcentaje: Number(env.IVA_PORCENTAJE ?? 15),
-    correoDefecto: env.FACTURA_CORREO_DEFECTO ?? 'facturas@descubreec.com',
+    correoDefecto: env.FACTURA_CORREO_DEFECTO ?? 'facturas@tourgirls.com',
     sriMaxPorMinuto: Number(env.SRI_MAX_POR_MINUTO ?? 30),
     nodeId: env.NODE_ID ?? 'node-dilan-invoicing-01',
     nodeCode: env.NODE_CODE ?? 'DILAN_INVOICING',

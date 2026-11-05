@@ -4,7 +4,8 @@ import type { DatoFacturacionDto, DatoFacturacionInput, TipoIdentificacion } fro
 
 interface ProfileRow {
   dfa_id: string;
-  usu_id: string;
+  usu_id: string | null;
+  cla_id: string | null;
   dfa_tipo_identificacion: TipoIdentificacion;
   dfa_identificacion: string;
   dfa_razon_social: string;
@@ -15,12 +16,13 @@ interface ProfileRow {
   dfa_creado_en: Date;
 }
 
-const COLUMNS = `dfa_id, usu_id, dfa_tipo_identificacion, dfa_identificacion, dfa_razon_social, dfa_correo, dfa_telefono,
+const COLUMNS = `dfa_id, usu_id, cla_id, dfa_tipo_identificacion, dfa_identificacion, dfa_razon_social, dfa_correo, dfa_telefono,
   dfa_es_principal, dfa_activo, dfa_creado_en`;
 
 const toDto = (row: ProfileRow): DatoFacturacionDto => ({
   id: Number(row.dfa_id),
-  usu_id: Number(row.usu_id),
+  usu_id: row.usu_id === null ? null : Number(row.usu_id),
+  cla_id: row.cla_id === null ? null : Number(row.cla_id),
   tipo_identificacion: row.dfa_tipo_identificacion,
   identificacion: row.dfa_identificacion,
   razon_social: row.dfa_razon_social,
@@ -137,6 +139,45 @@ export class ProfileRepository {
       await this.requireActive(usuId, id, m);
       await this.clearPrincipal(usuId, m);
       const rows = returnedRows<ProfileRow>(await m.query(`UPDATE dato_facturacion SET dfa_es_principal = TRUE WHERE dfa_id = $1 RETURNING ${COLUMNS}`, [id]));
+      return toDto(rows[0]);
+    });
+  }
+
+  // Turistas de un socio (`cla_id`) ------------------------------------------------
+
+  async findPrincipalForClient(claId: number): Promise<DatoFacturacionDto | null> {
+    const [row] = await this.db.query(`SELECT ${COLUMNS} FROM dato_facturacion WHERE cla_id = $1 AND dfa_activo AND dfa_es_principal`, [claId]);
+    return row ? toDto(row) : null;
+  }
+
+  /**
+   * Idempotente: si el turista ya tiene un perfil activo con esa identificación lo devuelve sin cambios; si estaba
+   * inactivo lo reactiva; si no, lo crea. Queda como principal cuando el turista no tiene otro.
+   */
+  ensureForClient(claId: number, input: DatoFacturacionInput): Promise<DatoFacturacionDto> {
+    return this.db.transaction(async (m) => {
+      // Clave distinta de la de los usuarios web, que usan `usu_id` directo.
+      await m.query(`SELECT pg_advisory_xact_lock(hashtextextended('dato_facturacion:cla:' || $1::text, 0))`, [claId]);
+      const [existing]: ProfileRow[] = await m.query(
+        `SELECT ${COLUMNS} FROM dato_facturacion WHERE cla_id = $1 AND dfa_tipo_identificacion = $2 AND dfa_identificacion = $3`,
+        [claId, input.tipo_identificacion, input.identificacion],
+      );
+      if (existing?.dfa_activo) return toDto(existing);
+      const [principal] = await m.query(`SELECT 1 FROM dato_facturacion WHERE cla_id = $1 AND dfa_es_principal`, [claId]);
+      const data = [input.razon_social, input.correo, input.telefono, !principal];
+      const rows = existing
+        ? returnedRows<ProfileRow>(
+            await m.query(
+              `UPDATE dato_facturacion SET dfa_razon_social = $2, dfa_correo = $3, dfa_telefono = $4, dfa_es_principal = $5, dfa_activo = TRUE
+               WHERE dfa_id = $1 RETURNING ${COLUMNS}`,
+              [existing.dfa_id, ...data],
+            ),
+          )
+        : await m.query(
+            `INSERT INTO dato_facturacion (cla_id, dfa_tipo_identificacion, dfa_identificacion, dfa_razon_social, dfa_correo, dfa_telefono, dfa_es_principal)
+             VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING ${COLUMNS}`,
+            [claId, input.tipo_identificacion, input.identificacion, ...data],
+          );
       return toDto(rows[0]);
     });
   }

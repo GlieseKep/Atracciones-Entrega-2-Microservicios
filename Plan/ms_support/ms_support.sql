@@ -1,5 +1,5 @@
 -- ============================================================================
---  DESCUBRE EC  ·  ms_support  ·  Support Service (REST)
+--  TOURGIRLS  ·  ms_support  ·  Support Service (REST)
 --  Base de datos propia del microservicio 15.
 --  Plan: Plan/ms_support/PLAN_IMPLEMENTACION.md
 --  Origen: Plan/02_microservicios_v2_bases_de_datos.sql (seccion 15), sin cambios

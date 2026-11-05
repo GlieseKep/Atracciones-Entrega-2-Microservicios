@@ -50,7 +50,9 @@ export class UserService {
     return this.get(id);
   }
 
-  async removeRole(id: number, rol: RolNombre): Promise<UsuarioDto> {
+  /** Un administrador no puede quitarse su propio rol `ADMIN`: perdería el acceso al panel. */
+  async removeRole(id: number, rol: RolNombre, adminId: number): Promise<UsuarioDto> {
+    if (rol === 'ADMIN' && id === adminId) throw AppError.conflict('CANNOT_REMOVE_OWN_ADMIN', 'Un administrador no puede quitarse su propio rol ADMIN.');
     await this.get(id);
     if (!(await this.users.removeRole(id, rol))) throw AppError.notFound(`El usuario no tiene el rol ${rol}.`, 'ROLE_NOT_ASSIGNED');
     return this.get(id);

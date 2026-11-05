@@ -1,5 +1,5 @@
 -- ============================================================================
---  DESCUBRE EC  ·  ms_cart  ·  Cart Service (REST)
+--  TOURGIRLS  ·  ms_cart  ·  Cart Service (REST)
 --  Base de datos propia del microservicio 8.
 --  Plan: Plan/ms_cart/PLAN_IMPLEMENTACION.md
 --  Contrato: Plan/ms_cart/ms_cart-openapi.yaml

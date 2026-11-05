@@ -100,6 +100,19 @@ export function createMsBillingProfileService(config: MsBillingProfileConfig, da
     res.json(profile);
   });
 
+  // Turistas de un socio (`cla_id` de Identity): Identity los registra al crear el cliente.
+  api.post('/internal/clientes/:claId/datos-facturacion/principal', requireServiceToken(config.serviceToken), async (req, res) => {
+    const claId = parseId(req.params.claId, 'cla_id');
+    res.json(await profiles.ensureForClient(claId, parseProfile(req.body)));
+  });
+
+  api.get('/internal/clientes/:claId/datos-facturacion/principal', requireServiceToken(config.serviceToken), async (req, res) => {
+    const claId = parseId(req.params.claId, 'cla_id');
+    const profile = await profiles.findPrincipalForClient(claId);
+    if (!profile) throw AppError.notFound(`El cliente ${claId} no tiene perfil de facturación.`, 'BILLING_PROFILE_NOT_FOUND');
+    res.json(profile);
+  });
+
   return createHttpService({
     service: 'ms-billing-profile',
     logger,

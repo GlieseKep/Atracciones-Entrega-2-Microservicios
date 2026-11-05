@@ -1,5 +1,5 @@
 -- ============================================================================
---  DESCUBRE EC  ·  ms_location  ·  Location Service (REST)
+--  TOURGIRLS  ·  ms_location  ·  Location Service (REST)
 --  Base de datos propia del microservicio 3.
 --  Plan: Plan/ms_location/PLAN_IMPLEMENTACION.md
 --  Origen: Plan/02_microservicios_v2_bases_de_datos.sql (seccion 3)

@@ -1,4 +1,4 @@
-# Guía · Correr Descubre EC en local y conectarse con Booking por Tailscale
+# Guía · Correr TourGirls en local y conectarse con Booking por Tailscale
 
 Objetivo de la reunión:
 
@@ -86,7 +86,7 @@ $common = @{
 $apps = [ordered]@{
   'sri-mock'     = @{ file = 'apps/sri-mock/dist/main.js'; env = @{} }
   'booking-mock' = @{ file = 'apps/booking-mock/dist/main.js'; env = @{} }   # solo para probar sin Booking (paso 6)
-  'identity'     = @{ file = 'apps/services/identity/dist/main.js'; env = @{ ADMIN_EMAIL = 'admin@descubreec.test'; ADMIN_PASSWORD = 'Admin-Local-2026' } }
+  'identity'     = @{ file = 'apps/services/identity/dist/main.js'; env = @{ ADMIN_EMAIL = 'admin@tourgirls.test'; ADMIN_PASSWORD = 'Admin-Local-2026' } }
   'catalog'      = @{ file = 'apps/services/catalog/dist/main.js'; env = @{} }
   'inventory'    = @{ file = 'apps/services/inventory/dist/main.js'; env = @{ BOOKING_SYNC_ENABLED = 'true'; BOOKING_STOCK_GRPC = 'localhost:50051' } }
   'cart'         = @{ file = 'apps/services/cart/dist/main.js'; env = @{} }
@@ -185,7 +185,7 @@ Si todo esto funciona en local, la lógica está lista; lo demás es red.
 Aunque el Gateway escuche en `0.0.0.0`, **el Firewall de Windows bloquea por defecto** lo que llega de otra máquina, también por Tailscale. En PowerShell **como administrador**:
 
 ```powershell
-New-NetFirewallRule -DisplayName 'Descubre EC - Gateway 3000 (Tailscale)' -Direction Inbound -Protocol TCP -LocalPort 3000 -Action Allow -RemoteAddress 100.64.0.0/10
+New-NetFirewallRule -DisplayName 'TourGirls - Gateway 3000 (Tailscale)' -Direction Inbound -Protocol TCP -LocalPort 3000 -Action Allow -RemoteAddress 100.64.0.0/10
 ```
 
 `100.64.0.0/10` es el rango de IPs de Tailscale: el puerto solo queda abierto para los equipos de la red privada, no para toda la red local o pública.
@@ -193,7 +193,7 @@ New-NetFirewallRule -DisplayName 'Descubre EC - Gateway 3000 (Tailscale)' -Direc
 Para quitar la regla después de la entrega:
 
 ```powershell
-Remove-NetFirewallRule -DisplayName 'Descubre EC - Gateway 3000 (Tailscale)'
+Remove-NetFirewallRule -DisplayName 'TourGirls - Gateway 3000 (Tailscale)'
 ```
 
 ## 8. Tailscale (en la reunión)

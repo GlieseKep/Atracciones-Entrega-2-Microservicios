@@ -86,7 +86,7 @@ for (const folder of ['openapi', 'proto']) {
 const rootPkg = readJson('package.json');
 writeFileSync(
   join(out, 'package.json'),
-  `${JSON.stringify({ name: 'descubre-ec-microservicios', version: rootPkg.version, private: true, engines: rootPkg.engines, dependencies }, null, 2)}\n`,
+  `${JSON.stringify({ name: 'tourgirls-microservicios', version: rootPkg.version, private: true, engines: rootPkg.engines, dependencies }, null, 2)}\n`,
 );
 execSync('npm install --omit=dev --no-audit --no-fund --ignore-scripts', { cwd: out, stdio: 'inherit' });
 console.log(`Listo: ${out} (${APPS.length} apps)`);

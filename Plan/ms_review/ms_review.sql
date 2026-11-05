@@ -1,5 +1,5 @@
 -- ============================================================================
---  DESCUBRE EC  ·  ms_review  ·  Review Service (REST)
+--  TOURGIRLS  ·  ms_review  ·  Review Service (REST)
 --  Base de datos propia del microservicio 5.
 --  Plan: Plan/ms_review/PLAN_IMPLEMENTACION.md
 --  Origen: Plan/02_microservicios_v2_bases_de_datos.sql (seccion 5)

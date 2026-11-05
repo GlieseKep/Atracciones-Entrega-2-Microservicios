@@ -1,5 +1,5 @@
 -- ============================================================================
---  DESCUBRE EC  ·  BASES DE DATOS POR MICROSERVICIO (v2 + contrato OpenAPI v3)
+--  TOURGIRLS  ·  BASES DE DATOS POR MICROSERVICIO (v2 + contrato OpenAPI v3)
 --  Basado en: Plan/microservicios_tablas_v2.html  (16 microservicios)
 --  Origen de columnas y reglas: Plan/Script Base de dats.txt (v1.3, 3FN)
 --  Contrato: Plan/PlanBooking/atracciones-openapi-v3(1).yaml (v3.0.0)
@@ -234,6 +234,31 @@ INSERT INTO rol (rol_nombre, rol_descripcion) VALUES
     ('CLIENTE',  'Usuario que compra y reserva');
 
 
+-- Clientes turistas (Booking): se registran en cliente_api sin clave ni cuenta web
+-- (GET/POST /api/v3/clientes). cla_tipo separa a los socios (X-API-Key) de los
+-- turistas; un turista nunca se autentica. Rol GUIA para el check-in.
+ALTER TABLE cliente_api ADD COLUMN cla_tipo VARCHAR(10) NOT NULL DEFAULT 'SOCIO'
+    CONSTRAINT cliente_api_tipo_valido CHECK (cla_tipo IN ('SOCIO', 'TURISTA'));
+ALTER TABLE cliente_api ALTER COLUMN cla_clave_hash DROP NOT NULL;
+ALTER TABLE cliente_api
+    ADD COLUMN cla_correo         dom_correo,
+    ADD COLUMN cla_identificacion VARCHAR(20),
+    ADD COLUMN cla_telefono       dom_telefono,
+    ADD COLUMN cla_actualizado_en TIMESTAMPTZ NOT NULL DEFAULT now();
+ALTER TABLE cliente_api ADD CONSTRAINT cliente_api_datos_por_tipo CHECK (
+    (cla_tipo = 'SOCIO'   AND cla_clave_hash IS NOT NULL) OR
+    (cla_tipo = 'TURISTA' AND cla_clave_hash IS NULL
+                          AND cla_correo IS NOT NULL AND cla_identificacion IS NOT NULL
+                          AND (cla_identificacion ~ '^[0-9]{10}$' OR cla_identificacion ~ '^[A-Z0-9]{6,9}$'))
+);
+CREATE UNIQUE INDEX ux_cliente_api_turista_correo ON cliente_api (lower(cla_correo)) WHERE cla_tipo = 'TURISTA';
+CREATE UNIQUE INDEX ux_cliente_api_turista_identificacion ON cliente_api (cla_identificacion) WHERE cla_tipo = 'TURISTA';
+CREATE TRIGGER trg_cliente_api_actualizado BEFORE UPDATE ON cliente_api
+    FOR EACH ROW EXECUTE FUNCTION fn_actualizar_timestamp('cla_actualizado_en');
+INSERT INTO rol (rol_nombre, rol_descripcion)
+    VALUES ('GUIA', 'Guía que valida el check-in en el punto de encuentro');
+
+
 -- ============================================================================
 --  2 · BILLING PROFILE SERVICE  (REST)
 --  Tablas: dato_facturacion
@@ -271,6 +296,19 @@ CREATE TABLE dato_facturacion (
 CREATE UNIQUE INDEX ux_dato_facturacion_principal
     ON dato_facturacion (usu_id) WHERE dfa_es_principal;
 CREATE INDEX ix_dato_facturacion_usu_id ON dato_facturacion (usu_id);
+
+
+-- Datos de facturacion de los turistas de cliente_api (Identity): cada fila es
+-- de un usuario web (usu_id) o de un turista (cla_id), nunca de los dos.
+ALTER TABLE dato_facturacion ALTER COLUMN usu_id DROP NOT NULL;
+ALTER TABLE dato_facturacion ADD COLUMN cla_id BIGINT;            -- ID logico (Identity, cliente_api TURISTA)
+ALTER TABLE dato_facturacion ADD CONSTRAINT dato_facturacion_un_titular
+    CHECK ((usu_id IS NOT NULL) <> (cla_id IS NOT NULL));
+ALTER TABLE dato_facturacion ADD CONSTRAINT uq_dato_facturacion_cliente_identificacion
+    UNIQUE (cla_id, dfa_tipo_identificacion, dfa_identificacion);
+CREATE UNIQUE INDEX ux_dato_facturacion_principal_cliente
+    ON dato_facturacion (cla_id) WHERE dfa_es_principal AND cla_id IS NOT NULL;
+CREATE INDEX ix_dato_facturacion_cla_id ON dato_facturacion (cla_id);
 
 
 -- ============================================================================
@@ -1132,6 +1170,27 @@ INSERT INTO estado (est_codigo, est_nombre, est_final) VALUES
     ('COMPLETED',  'Reserva completada',            TRUE),
     ('CANCELLED',  'Reserva cancelada',             TRUE),
     ('EXPIRED',    'Reserva expirada',              TRUE);
+
+
+-- Turista de la reserva (cliente_api de Identity, solo compras de un socio),
+-- canal de compra y aviso del check-in a Booking Central (con reintentos).
+ALTER TABLE reserva ADD COLUMN cla_id_cliente BIGINT;   -- ID logico (Identity, cliente_api TURISTA); NULL en compras web
+ALTER TABLE reserva ADD COLUMN res_canal VARCHAR(10) NOT NULL DEFAULT 'WEB'
+    CONSTRAINT reserva_canal_valido CHECK (res_canal IN ('WEB', 'SOCIO'));
+CREATE INDEX ix_reserva_cla_id_cliente ON reserva (cla_id_cliente);
+
+CREATE TABLE notificacion_checkin (
+    res_id            BIGINT       PRIMARY KEY
+        CONSTRAINT fk_notificacion_checkin_reserva REFERENCES reserva (res_id) ON DELETE CASCADE,
+    nch_payload       JSONB        NOT NULL,             -- cuerpo de POST /api/v3/reservas/{external_order_id}/checkin
+    nch_intentos      INTEGER      NOT NULL DEFAULT 0,
+    nch_ultimo_error  VARCHAR(500),
+    nch_proximo_en    TIMESTAMPTZ  NOT NULL DEFAULT now(),
+    nch_enviado_en    TIMESTAMPTZ,
+    nch_creado_en     TIMESTAMPTZ  NOT NULL DEFAULT now(),
+    CONSTRAINT notificacion_checkin_intentos_validos CHECK (nch_intentos >= 0)
+);
+CREATE INDEX ix_notificacion_checkin_pendiente ON notificacion_checkin (nch_proximo_en) WHERE nch_enviado_en IS NULL;
 
 
 -- ============================================================================

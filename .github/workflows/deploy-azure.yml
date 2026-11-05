@@ -1,4 +1,4 @@
-# Compila, empaqueta (tools/package-microservices.mjs) y publica Descubre EC en UNA App Service (tourgirls-gateway-mm),
+# Compila, empaqueta (tools/package-microservices.mjs) y publica TourGirls en UNA App Service (tourgirls-gateway-mm),
 # como pide GUIA_SOCIOS_AZURE_APP_SERVICE. La app arranca todos los procesos con `node tools/launcher.mjs`.
 #
 # Secreto del repositorio: AZURE_WEBAPP_PUBLISH_PROFILE (perfil de publicación de tourgirls-gateway-mm).

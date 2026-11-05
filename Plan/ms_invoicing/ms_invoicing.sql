@@ -1,5 +1,5 @@
 -- ============================================================================
---  DESCUBRE EC  ·  ms_invoicing  ·  Electronic Invoicing Service (SOAP)
+--  TOURGIRLS  ·  ms_invoicing  ·  Electronic Invoicing Service (SOAP)
 --  Base de datos propia del microservicio 14.
 --  Plan: Plan/ms_invoicing/PLAN_IMPLEMENTACION.md
 --  Origen: Plan/02_microservicios_v2_bases_de_datos.sql (seccion 14)

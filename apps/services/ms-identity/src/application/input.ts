@@ -1,5 +1,5 @@
-import { AppError, type InvalidParam } from '@atracciones/platform';
-import { ROLES, type PerfilUpdateRequest, type RegistroRequest, type RolNombre } from '../contract';
+import { AppError, isValidCedula, isValidFullName, isValidPassport, type InvalidParam } from '@atracciones/platform';
+import { ROLES, type ClienteFiltros, type ClienteRequest, type PerfilUpdateRequest, type RegistroRequest, type RolNombre } from '../contract';
 import type { UsuarioFiltros } from '../persistence/user-repository';
 
 type Body = Record<string, unknown>;
@@ -186,4 +186,44 @@ export function parseUserFilters(query: Record<string, unknown>): UsuarioFiltros
     page: positiveInt(query.page, 'page', 1, Number.MAX_SAFE_INTEGER),
     limit: positiveInt(query.limit, 'limit', 20, 100),
   };
+}
+
+/** Cédula ecuatoriana válida (10 dígitos) o pasaporte de 6 a 9 caracteres; el RUC no identifica a una persona (422). */
+function identificacion(value: unknown, name: string, problems: InvalidParam[]): string {
+  const text = typeof value === 'string' ? value.trim().toUpperCase() : '';
+  if (/^\d{13}$/.test(text)) {
+    throw AppError.unprocessable('INVALID_IDENTIFICATION', 'El RUC no identifica a una persona: envíe la cédula o el pasaporte.', [
+      { name, reason: 'Debe ser una cédula o un pasaporte.' },
+    ]);
+  }
+  const valid = /^\d{10}$/.test(text) ? isValidCedula(text) : isValidPassport(text);
+  if (!valid) problems.push({ name, reason: 'Debe ser una cédula ecuatoriana válida o un pasaporte de 6 a 9 caracteres alfanuméricos.' });
+  return text;
+}
+
+/** Cuerpo de `POST /clientes`: `{ nombre, email, identificacion, telefono }`. */
+export function parseCliente(body: unknown): ClienteRequest {
+  const f = fields(body);
+  const nombre = f.requiredText('nombre', 150).replace(/\s+/g, ' ');
+  if (nombre !== '' && !isValidFullName(nombre)) f.fail('nombre', 'Debe tener al menos dos palabras (nombre y apellido).');
+  const email = f.email('email');
+  const doc = identificacion(f.body.identificacion, 'identificacion', f.errors);
+  const telefono = f.optionalText('telefono', 20)?.replace(/[\s-]/g, '') ?? null;
+  if (telefono !== null && !PHONE.test(telefono)) f.fail('telefono', 'El formato debe ser +593991234567 o 0991234567.');
+  f.done();
+  return { nombre, email, identificacion: doc, telefono };
+}
+
+/** Query de `GET /clientes`: al menos `email` o `identificacion`. */
+export function parseClienteFiltros(query: Record<string, unknown>): ClienteFiltros {
+  const text = (value: unknown) => (typeof value === 'string' && value.trim() !== '' ? value.trim() : null);
+  const email = text(query.email)?.toLowerCase() ?? null;
+  const ident = text(query.identificacion)?.toUpperCase() ?? null;
+  if (!email && !ident) {
+    throw AppError.validation("Envíe 'email' o 'identificacion'.", [
+      { name: 'email', reason: 'Se necesita email o identificacion.' },
+      { name: 'identificacion', reason: 'Se necesita email o identificacion.' },
+    ]);
+  }
+  return { email, identificacion: ident };
 }

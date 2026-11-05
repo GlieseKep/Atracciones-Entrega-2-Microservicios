@@ -1,4 +1,4 @@
-// Lanzador de Descubre EC en una sola App Service (Plan/PLAN_DESPLIEGUE_UNA_APP.md): arranca los 16 microservicios, el SRI
+// Lanzador de TourGirls en una sola App Service (Plan/PLAN_DESPLIEGUE_UNA_APP.md): arranca los 16 microservicios, el SRI
 // simulado, el ESB, la Partner API, GraphQL y el Gateway como procesos Node separados dentro del mismo contenedor.
 //
 //   Comando de inicio en Azure:  node tools/launcher.mjs

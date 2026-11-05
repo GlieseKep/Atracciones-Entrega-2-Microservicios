@@ -131,7 +131,7 @@ describe('Fase 2 — Catálogo y disponibilidad', () => {
 
     const cambio = { permite_promociones: true, porcentaje_descuento_maximo: 20, destinos_habilitados: ['Quito', 'Riobamba'], vigencia_hasta: '2027-12-31' };
     await http().put('/api/v2/atracciones/promociones/contrato').set('X-API-Key', apiKey).send(cambio).expect(403);
-    const admin = await userToken(system, 'admin@descubreec.test', ['admin']);
+    const admin = await userToken(system, 'admin@tourgirls.test', ['admin']);
     await http().put('/api/v2/atracciones/promociones/contrato').set('Authorization', `Bearer ${admin}`).send({ ...cambio, porcentaje_descuento_maximo: 60 }).expect(400);
     const guardado = await http().put('/api/v2/atracciones/promociones/contrato').set('Authorization', `Bearer ${admin}`).send(cambio).expect(200);
     expect(guardado.body).toEqual(expect.objectContaining({ porcentaje_descuento_maximo: 20, destinos_habilitados: ['Quito', 'Riobamba'] }));

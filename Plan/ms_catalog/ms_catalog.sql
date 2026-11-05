@@ -1,5 +1,5 @@
 -- ============================================================================
---  DESCUBRE EC  ·  ms_catalog  ·  Catalog & Attractions Service (REST)
+--  TOURGIRLS  ·  ms_catalog  ·  Catalog & Attractions Service (REST)
 --  Base de datos propia del microservicio 4.
 --  Plan: Plan/ms_catalog/PLAN_IMPLEMENTACION.md
 --  Origen: Plan/02_microservicios_v2_bases_de_datos.sql (seccion 4)

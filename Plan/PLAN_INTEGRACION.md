@@ -1,4 +1,4 @@
-# Plan de integración · Descubre EC
+# Plan de integración · TourGirls
 
 | | |
 |---|---|

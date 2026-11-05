@@ -47,7 +47,12 @@ export const MS_IDENTITY_ROUTES = {
   'identity.createApiClient': route('POST', '/clientes-api'),
   'identity.setApiClientActive': route('PUT', '/clientes-api/:id/activo'),
 
+  // Clientes turistas que registra un socio (Booking) o un ADMIN. Registrar llama a Billing: plazo mayor.
+  'identity.findClient': route('GET', '/clientes'),
+  'identity.createClient': route('POST', '/clientes', 6000),
+
   // Uso interno (`X-Service-Token`).
+  'identity.ensureClient': route('POST', '/internal/clientes', 6000),
   'identity.validateToken': route('POST', '/internal/tokens/validar', 1500),
   'identity.validateApiKey': route('POST', '/internal/api-keys/validar', 1500),
   'identity.getUsers': route('POST', '/internal/usuarios/lote'),

@@ -69,7 +69,7 @@ describe('catalog_db', () => {
     );
     const [operador] = await ds().query(
       `INSERT INTO operador (codigo, nombre_comercial, ruc, telefono_emergencia, email_soporte)
-       VALUES ('proveedor-atracciones-dilan', 'Descubre EC', '1792348123001', '+593991234567', 'soporte@descubreec.com') RETURNING id`,
+       VALUES ('proveedor-atracciones-dilan', 'TourGirls', '1792348123001', '+593991234567', 'soporte@tourgirls.com') RETURNING id`,
     );
     ids = { categoria: categoria.id, operador: operador.id, ciudad: ciudad.id };
   });

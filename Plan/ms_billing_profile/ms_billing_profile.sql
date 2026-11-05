@@ -1,5 +1,5 @@
 -- ============================================================================
---  DESCUBRE EC  ·  ms_billing_profile  ·  Billing Profile Service (REST)
+--  TOURGIRLS  ·  ms_billing_profile  ·  Billing Profile Service (REST)
 --  Base de datos propia del microservicio 2.
 --  Plan: Plan/ms_billing_profile/PLAN_IMPLEMENTACION.md
 --  Origen: Plan/02_microservicios_v2_bases_de_datos.sql (seccion 2), sin cambios
@@ -49,3 +49,15 @@ CREATE TABLE dato_facturacion (
 CREATE UNIQUE INDEX ux_dato_facturacion_principal
     ON dato_facturacion (usu_id) WHERE dfa_es_principal;
 CREATE INDEX ix_dato_facturacion_usu_id ON dato_facturacion (usu_id);
+
+-- Datos de facturacion de los turistas de cliente_api (Identity): cada fila es
+-- de un usuario web (usu_id) o de un turista (cla_id), nunca de los dos.
+ALTER TABLE dato_facturacion ALTER COLUMN usu_id DROP NOT NULL;
+ALTER TABLE dato_facturacion ADD COLUMN cla_id BIGINT;            -- ID logico (Identity, cliente_api TURISTA)
+ALTER TABLE dato_facturacion ADD CONSTRAINT dato_facturacion_un_titular
+    CHECK ((usu_id IS NOT NULL) <> (cla_id IS NOT NULL));
+ALTER TABLE dato_facturacion ADD CONSTRAINT uq_dato_facturacion_cliente_identificacion
+    UNIQUE (cla_id, dfa_tipo_identificacion, dfa_identificacion);
+CREATE UNIQUE INDEX ux_dato_facturacion_principal_cliente
+    ON dato_facturacion (cla_id) WHERE dfa_es_principal AND cla_id IS NOT NULL;
+CREATE INDEX ix_dato_facturacion_cla_id ON dato_facturacion (cla_id);

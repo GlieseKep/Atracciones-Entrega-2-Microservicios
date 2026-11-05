@@ -33,10 +33,17 @@ export interface StockChangeEvent {
   timestamp: number;
 }
 
+/** Aviso de check-in que Booking Central recibe en `POST /api/v3/reservas/{external_order_id}/checkin`. */
+export interface CheckinNotice {
+  external_order_id: string;
+  body: Record<string, unknown>;
+  received_at: string;
+}
+
 export interface BookingMock {
   grpcPort: number;
   /** Lo recibido, en orden de llegada. */
-  received: { pushes: StockUpdateMessage[]; streamed: StockChangeEvent[] };
+  received: { pushes: StockUpdateMessage[]; streamed: StockChangeEvent[]; checkins: CheckinNotice[] };
   /** Simula una caída de Booking: mientras esté en `true`, los RPC responden UNAVAILABLE. */
   setDown(down: boolean): void;
   close(): Promise<void>;
@@ -48,7 +55,7 @@ const logger = createLogger('booking-mock');
 export async function startBookingMock(port = 50051): Promise<BookingMock> {
   const proto = loadProto('booking/inventory.proto');
   const service = serviceConstructor(proto, 'inventory.InventoryStockService');
-  const received: BookingMock['received'] = { pushes: [], streamed: [] };
+  const received: BookingMock['received'] = { pushes: [], streamed: [], checkins: [] };
   let down = false;
   const unavailable = () => AppError.unavailable('Booking simulado fuera de servicio.');
 
@@ -91,13 +98,28 @@ export async function startBookingMock(port = 50051): Promise<BookingMock> {
   };
 }
 
-/** Consulta HTTP de lo recibido (desarrollo local): `GET /received`. */
-export async function startInspectionServer(mock: BookingMock, port: number): Promise<RunningServer> {
+/**
+ * HTTP de desarrollo local: `GET /received` (lo recibido) y el aviso de check-in de Booking Central
+ * (`POST /api/v3/reservas/{external_order_id}/checkin`), que exige `X-API-Key` (la de `BOOKING_CORE_API_KEY`, si se fija).
+ */
+export async function startInspectionServer(mock: BookingMock, port: number, apiKey = process.env.BOOKING_CORE_API_KEY ?? ''): Promise<RunningServer> {
   const app = createHttpService({
     service: 'booking-mock',
     routes: (a) => {
       a.get('/received', (_req, res) => {
         res.json(mock.received);
+      });
+      a.post('/api/v3/reservas/:externalOrderId/checkin', (req, res) => {
+        const key = req.get('x-api-key') ?? '';
+        if (!key || (apiKey && key !== apiKey)) throw AppError.unauthorized('Falta la X-API-Key o no es válida.');
+        const externalOrderId = String(req.params.externalOrderId);
+        if (mock.received.checkins.some((c) => c.external_order_id === externalOrderId)) {
+          throw AppError.conflict('CHECKIN_ALREADY_REGISTERED', `El check-in de ${externalOrderId} ya estaba registrado.`);
+        }
+        const body = (req.body ?? {}) as Record<string, unknown>;
+        mock.received.checkins.push({ external_order_id: externalOrderId, body, received_at: new Date().toISOString() });
+        logger.info('check-in recibido', { external_order_id: externalOrderId, client_id: body.client_id });
+        res.json({ acknowledged: true, status: 'CONFIRMADO_ASISTIDO' });
       });
     },
   });

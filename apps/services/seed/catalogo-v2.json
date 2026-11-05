@@ -2,10 +2,10 @@
   "descripcion": "Catálogo inicial v2 (las 10 atracciones del monolito con los datos que exige el contrato). Lo cargan Catalog e Inventory, cada uno en su base; se relacionan por codigo_publico. Fotografías de Wikimedia Commons. Datos del operador tomados de los ejemplos del contrato.",
   "operador": {
     "codigo": "proveedor-atracciones-dilan",
-    "nombre_comercial": "Descubre EC Tours & Experiences",
+    "nombre_comercial": "TourGirls Tours & Experiences",
     "ruc": "1792348123001",
     "telefono_emergencia": "+593991234567",
-    "email_soporte": "soporte@descubreec.com"
+    "email_soporte": "soporte@tourgirls.com"
   },
   "acuerdo_promocion": {
     "permite_promociones": true,
@@ -14,7 +14,7 @@
     "fecha_acuerdo": "2026-10-01",
     "vigencia_hasta": "2027-12-31",
     "condiciones_combo": "Aplica en paquetes de al menos 2 servicios en la misma ciudad de destino con un mínimo de 48 horas de anticipación.",
-    "contacto": { "nombre": "Dilan Mendoza", "email": "dilan.mendoza@descubreec.com", "telefono": "+593998765432" }
+    "contacto": { "nombre": "Dilan Mendoza", "email": "dilan.mendoza@tourgirls.com", "telefono": "+593998765432" }
   },
   "regiones": [
     {
@@ -115,7 +115,7 @@
       "descripcion": "Recorre con un guía local el monumento a la línea ecuatorial en San Antonio de Pichincha. Conoce la historia de la misión geodésica franco-española, visita los museos etnográficos y planetario, y toma la clásica foto con un pie en cada hemisferio. Incluye traslado desde Quito y entrada al complejo.",
       "categoria": "cat-cultura-200", "ciudad": "Quito", "duracion_horas": 3,
       "incluye_comida": false, "incluye_transporte": true, "incluye_guia": true,
-      "punto_encuentro": { "direccion": "Boulevard Naciones Unidas y Av. de los Shyris, frente al Banco del Pichincha", "latitud": -0.178652, "longitud": -78.48312, "instrucciones": "Presentarse con 15 minutos de anticipación junto al tótem informativo rojo de Descubre EC." },
+      "punto_encuentro": { "direccion": "Boulevard Naciones Unidas y Av. de los Shyris, frente al Banco del Pichincha", "latitud": -0.178652, "longitud": -78.48312, "instrucciones": "Presentarse con 15 minutos de anticipación junto al tótem informativo rojo de TourGirls." },
       "accesibilidad": { "silla_ruedas": true, "carriola": true, "animales_asistencia": true },
       "cancelacion": { "gratuita": true, "horas_limite": 24, "descripcion": "Cancela gratis hasta 24 horas antes de la actividad y recibe el 100% de reembolso." },
       "permite_paquete": true, "idiomas": ["es", "en"],
@@ -165,7 +165,7 @@
       "descripcion": "Descubre la laguna de aguas turquesa que llena el cráter del volcán Quilotoa. Caminarás por el borde del cráter, descenderás hasta la orilla y visitarás talleres de pintura indígena de Tigua. Almuerzo típico incluido en una comunidad local.",
       "categoria": "cat-tours-202", "ciudad": "Latacunga", "duracion_horas": 10,
       "incluye_comida": true, "incluye_transporte": true, "incluye_guia": true,
-      "punto_encuentro": { "direccion": "Mirador Shalalá, Quilotoa", "latitud": -0.8584, "longitud": -78.9047, "instrucciones": "El guía espera en la entrada del mirador con un cartel de Descubre EC." },
+      "punto_encuentro": { "direccion": "Mirador Shalalá, Quilotoa", "latitud": -0.8584, "longitud": -78.9047, "instrucciones": "El guía espera en la entrada del mirador con un cartel de TourGirls." },
       "accesibilidad": { "silla_ruedas": false, "carriola": false, "animales_asistencia": true },
       "cancelacion": { "gratuita": true, "horas_limite": 24, "descripcion": "Cancela gratis hasta 24 horas antes de la actividad." },
       "permite_paquete": true, "idiomas": ["es", "en"],
@@ -187,7 +187,7 @@
       "descripcion": "El primer Patrimonio Cultural de la Humanidad de la UNESCO se transforma de noche. Recorre la Plaza Grande iluminada, iglesias barrocas y callejones coloniales mientras tu guía narra leyendas quiteñas. Termina con una degustación de chocolate ecuatoriano.",
       "categoria": "cat-tours-203", "ciudad": "Quito", "duracion_horas": 2.5,
       "incluye_comida": true, "incluye_transporte": false, "incluye_guia": true,
-      "punto_encuentro": { "direccion": "Plaza de la Independencia, junto a la Catedral Metropolitana", "latitud": -0.2201, "longitud": -78.5123, "instrucciones": "El guía lleva un farol y una credencial de Descubre EC." },
+      "punto_encuentro": { "direccion": "Plaza de la Independencia, junto a la Catedral Metropolitana", "latitud": -0.2201, "longitud": -78.5123, "instrucciones": "El guía lleva un farol y una credencial de TourGirls." },
       "accesibilidad": { "silla_ruedas": true, "carriola": true, "animales_asistencia": true },
       "cancelacion": { "gratuita": true, "horas_limite": 12, "descripcion": "Cancela gratis hasta 12 horas antes de la actividad." },
       "permite_paquete": true, "idiomas": ["es", "en"],

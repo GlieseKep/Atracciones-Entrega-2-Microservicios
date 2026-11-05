@@ -11,7 +11,7 @@ interface IdentityPrincipal {
 }
 
 /** Permisos de un socio con `X-API-Key` en el contrato con Booking. Cancelar como `ADMIN` (`attractions:write`) no se concede. */
-export const PARTNER_SCOPES = ['attractions:read', 'attractions:book', 'attractions:cancel', 'attractions:checkin'];
+export const PARTNER_SCOPES = ['attractions:read', 'attractions:book', 'attractions:cancel', 'attractions:checkin', 'clients:read', 'clients:write'];
 
 /**
  * Autentica la petición: `Authorization: Bearer <JWT de ms-identity>` o `X-API-Key` de un socio. Las dos se validan en
