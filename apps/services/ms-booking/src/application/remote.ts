@@ -94,7 +94,8 @@ export class Remote {
     return this.esb.call('order', 'listOrders', { page, limit });
   }
 
-  reserveSeats(atraccionId: string, slotId: string, cantidad: number, clave: string): Promise<{ dis_id: number; cupos_disponibles: number }> {
+  /** `gui_id`: guía del turno en Inventory (`null` o 0 = sin guía). */
+  reserveSeats(atraccionId: string, slotId: string, cantidad: number, clave: string): Promise<{ dis_id: number; cupos_disponibles: number; gui_id?: number | null }> {
     return this.esb.call('inventory', 'reserveSeats', { atraccion_id: atraccionId, slot_id: slotId, cantidad, clave_idempotencia: clave });
   }
 

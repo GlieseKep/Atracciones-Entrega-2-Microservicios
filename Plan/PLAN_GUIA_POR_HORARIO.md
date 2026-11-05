@@ -6,6 +6,14 @@
 | Origen | `AUDITORIA_PANEL_ADMIN.md` §2.9 y §5 (reparto de guías) |
 | Servicios | ms-inventory (guarda el guía), ms-booking (lo usa en la compra), ms-catalog (valida el guía), GraphQL/ESB, panel administrativo |
 
+> **Estado (2026-11-05): backend programado** (secciones 4.1 a 4.4). Compila con `npm run build` (`tsc -b`); falta
+> desplegar y correr la comprobación de la sección 6. El panel (4.5) llega con la migración del panel administrativo.
+>
+> **Cambio respecto del plan:** Inventory no valida el guía con `catalog.getLogistics`, porque esa ruta solo responde
+> para atracciones **publicadas** y los horarios se arman antes de publicar. Se añadió en ms-catalog la ruta interna
+> `GET /internal/atracciones/{id}/guias/{guiId}` (ESB `catalog.getAttractionGuide`, documentada en
+> `Plan/ms_catalog/ms_catalog-openapi.yaml`): guía activo y del operador de la atracción, publicada o no.
+
 ## 1. Qué dice el contrato v3
 
 El contrato (`Plan/PlanBooking/atracciones-openapi-v3(1).yaml`) **no especifica cómo se asigna el guía**. Solo define:
@@ -55,7 +63,7 @@ Reglas:
    - Todo en una transacción y validando el guía una sola vez. Responde cuántos turnos cambiaron y la lista de `slot_id`.
    - Los turnos que se generen después dentro del rango (por ejemplo, si se reactiva un horario) nacen con el guía del
      horario, no con el del rango: el panel lo advierte al reactivar.
-6. Inventory **valida** el guía con Catalog antes de guardarlo: `catalog.getLogistics { id: <atracción>, gui_id }`.
+6. Inventory **valida** el guía con Catalog antes de guardarlo: `catalog.getAttractionGuide { id: <atracción>, guiId }`.
    Responde 404 `GUIDE_NOT_FOUND` si el guía no existe, está inactivo o es de otro operador.
 7. Las reservas ya hechas **no cambian** de guía: el guía queda en `reserva.gui_id` (Booking) al comprar. Al asignar un
    rango con turnos que ya tienen reservas, el panel lo advierte («N reservas mantienen su guía actual»).

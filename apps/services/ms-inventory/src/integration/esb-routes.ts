@@ -27,6 +27,9 @@ export const MS_INVENTORY_ROUTES = {
   'inventory.listSlots': route('ListSlots', 5000),
   'inventory.setSlotCapacity': route('SetSlotCapacity', 5000),
   'inventory.setSlotClosed': route('SetSlotClosed', 5000),
+  // Guía de un turno o de un rango: validan el guía en Catalog.
+  'inventory.setSlotGuide': route('SetSlotGuide', 5000),
+  'inventory.setSlotsGuide': route('SetSlotsGuide', 10000),
   'inventory.listBlockedDates': route('ListBlockedDates', 5000),
   'inventory.blockDate': route('BlockDate', 5000),
   'inventory.unblockDate': route('UnblockDate', 10000),

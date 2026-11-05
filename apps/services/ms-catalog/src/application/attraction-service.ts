@@ -44,6 +44,18 @@ export class AttractionService {
     return { atr_id: Number(row.atr_id), id: row.atr_codigo, slug: row.atr_slug, nombre: row.atr_nombre };
   }
 
+  /**
+   * Guía que Inventory puede poner en los horarios y turnos de una atracción: activo y del mismo operador. A diferencia
+   * de `logistics`, vale para atracciones aún no publicadas (los horarios se arman antes de publicar).
+   */
+  async guideFor(id: string, guiId: number): Promise<{ gui_id: number; nombre: string }> {
+    const row = await this.attractions.findByPublicId(id);
+    if (!row) throw notFound(id);
+    const guia = await this.guides.forReservation(Number(row.ope_id), guiId);
+    if (!guia) throw AppError.notFound(`El guía ${guiId} no está activo o no es del operador de esta atracción.`, 'GUIDE_NOT_FOUND');
+    return guia;
+  }
+
   /** Sin `guiId` asigna el primer guía activo del operador. Si se pide uno que no sirve, responde `404`. */
   async logistics(id: string, guiId: number | null): Promise<LogisticaReserva> {
     const row = publicRow(await this.attractions.findByPublicId(id));

@@ -36,6 +36,8 @@ export interface ReserveSeatsResponse {
   dis_id: number;
   slot_id: string;
   cupos_disponibles: number;
+  /** Guía del turno (ID de Catalog); `null` = sin guía, Catalog elige al comprar. */
+  gui_id: number | null;
 }
 
 export interface ReleaseSeatsResponse {
@@ -49,6 +51,8 @@ export interface Schedule {
   hora: string;
   cupo: number;
   activo: boolean;
+  /** Guía por defecto de los turnos que genera (ID de Catalog); `null` = sin guía. */
+  gui_id: number | null;
 }
 
 export interface Slot {
@@ -60,6 +64,16 @@ export interface Slot {
   cupo_total: number;
   cupo_reservado: number;
   cerrada: boolean;
+  /** Guía del turno (ID de Catalog); `null` = sin guía. */
+  gui_id: number | null;
+}
+
+/** Resultado de asignar un guía a un rango de turnos. */
+export interface SlotsGuideResult {
+  actualizados: number;
+  slot_ids: string[];
+  /** Turnos del rango con reservas: esas reservas conservan el guía con el que se compraron. */
+  con_reservas: number;
 }
 
 export interface BlockedDate {

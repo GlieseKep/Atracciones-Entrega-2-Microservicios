@@ -24,6 +24,9 @@ service InventoryService {
   rpc ListSlots (ListSlotsRequest) returns (SlotPage);
   rpc SetSlotCapacity (SetSlotCapacityRequest) returns (Slot);
   rpc SetSlotClosed (SetSlotClosedRequest) returns (Slot);
+  // Guia de un turno (un dia) y de los turnos de un rango de fechas. gui_id = 0: vuelve al guia del horario.
+  rpc SetSlotGuide (SetSlotGuideRequest) returns (Slot);
+  rpc SetSlotsGuide (SetSlotsGuideRequest) returns (SlotsGuideResult);
   rpc ListBlockedDates (ListBlockedDatesRequest) returns (BlockedDateList);
   rpc BlockDate (BlockDateRequest) returns (BlockedDate);
   rpc UnblockDate (UnblockDateRequest) returns (Empty);
@@ -96,6 +99,7 @@ message ReserveSeatsResponse {
   int64 dis_id = 1;
   string slot_id = 2;
   int32 cupos_disponibles = 3;
+  int64 gui_id = 4;               // guia del turno (Catalog); 0 = sin guia
 }
 
 message ReleaseSeatsRequest {
@@ -113,6 +117,7 @@ message Schedule {
   string hora = 3;                // HH:mm:ss
   int32 cupo = 4;
   bool activo = 5;
+  int64 gui_id = 6;               // guia por defecto de los turnos (Catalog); 0 = sin guia
 }
 
 message ListSchedulesRequest {
@@ -128,6 +133,7 @@ message SaveScheduleRequest {
   string atraccion_id = 2;
   string hora = 3;
   int32 cupo = 4;
+  int64 gui_id = 5;               // guia de los turnos; 0 = sin guia
 }
 
 message SetScheduleActiveRequest {
@@ -144,6 +150,7 @@ message Slot {
   int32 cupo_total = 6;
   int32 cupo_reservado = 7;
   bool cerrada = 8;
+  int64 gui_id = 9;               // guia del turno (Catalog); 0 = sin guia
 }
 
 message GetSlotsByIdsRequest {
@@ -177,6 +184,27 @@ message SetSlotClosedRequest {
   string atraccion_id = 1;
   string slot_id = 2;
   bool cerrada = 3;
+}
+
+message SetSlotGuideRequest {
+  string atraccion_id = 1;
+  string slot_id = 2;
+  int64 gui_id = 3;               // 0 = guia del horario
+}
+
+message SetSlotsGuideRequest {
+  string atraccion_id = 1;
+  string desde = 2;               // YYYY-MM-DD, hoy o posterior
+  string hasta = 3;               // YYYY-MM-DD, hasta hoy + 90 dias
+  int64 hor_id = 4;               // 0 = todos los horarios
+  repeated int32 dias_semana = 5;  // 1 = lunes ... 7 = domingo; vacio = todos
+  int64 gui_id = 6;               // 0 = guia del horario
+}
+
+message SlotsGuideResult {
+  int32 actualizados = 1;
+  repeated string slot_ids = 2;
+  int32 con_reservas = 3;         // turnos del rango que ya tienen reservas (conservan su guia)
 }
 
 message BlockedDate {

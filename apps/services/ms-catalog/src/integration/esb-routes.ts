@@ -37,6 +37,7 @@ export const MS_CATALOG_ROUTES = {
   // Uso interno (`X-Service-Token`).
   'catalog.getLogistics': route('GET', '/internal/atracciones/:id/logistica'),
   'catalog.getReference': route('GET', '/internal/atracciones/:id/referencia'),
+  'catalog.getAttractionGuide': route('GET', '/internal/atracciones/:id/guias/:guiId'),
 
   // Administración.
   'catalog.listOperators': route('GET', '/operadores'),

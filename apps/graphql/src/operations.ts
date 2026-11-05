@@ -90,6 +90,8 @@ export const OPERATIONS: Operation[] = [
   q('inventory', 'listSlots'),
   m('inventory', 'setSlotCapacity'),
   m('inventory', 'setSlotClosed'),
+  m('inventory', 'setSlotGuide'),
+  m('inventory', 'setSlotsGuide'),
   q('inventory', 'listBlockedDates'),
   m('inventory', 'blockDate'),
   m('inventory', 'unblockDate'),

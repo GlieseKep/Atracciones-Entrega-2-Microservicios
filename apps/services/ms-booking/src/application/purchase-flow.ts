@@ -85,7 +85,7 @@ export class PurchaseFlow {
       fecha: input.date,
     });
     const tickets = input.adultos + input.ninos + input.seniors + input.infantes;
-    let seats: { dis_id: number; cupos_disponibles: number };
+    let seats: { dis_id: number; cupos_disponibles: number; gui_id?: number | null };
     try {
       seats = await this.remote.reserveSeats(attraction.id, input.slotId, tickets, seatKey(order.ord_numero));
     } catch (error) {
@@ -93,13 +93,17 @@ export class PurchaseFlow {
       throw error;
     }
     let row: ReservationRow;
+    let assigned = logistics;
     try {
-      row = await this.save(input, order, seats, logistics, client);
+      // El guía es el del turno (Plan/PLAN_GUIA_POR_HORARIO.md). Sin guía en el turno, o si ya no está activo, queda el
+      // que asignó Catalog (el primer guía activo del operador).
+      if (seats.gui_id) assigned = (await this.remote.logisticsOrNull(attraction.id, seats.gui_id)) ?? logistics;
+      row = await this.save(input, order, seats, assigned, client);
     } catch (error) {
       await this.undoSeatsAndOrder(order.ord_numero);
       throw error;
     }
-    return this.pay(input, row, logistics);
+    return this.pay(input, row, assigned);
   }
 
   private save(

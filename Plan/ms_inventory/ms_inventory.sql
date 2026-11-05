@@ -35,6 +35,7 @@ CREATE TABLE horario (
     hor_hora   TIME    NOT NULL,
     hor_cupo   INTEGER NOT NULL DEFAULT 20,
     hor_activo BOOLEAN NOT NULL DEFAULT TRUE,
+    gui_id     BIGINT,                              -- ID logico (Catalog): guia por defecto de los turnos; NULL = sin guia
     CONSTRAINT horario_cupo_positivo CHECK (hor_cupo > 0),
     CONSTRAINT uq_horario_atraccion_hora UNIQUE (atr_codigo, hor_hora),
     -- Clave candidata para la FK compuesta desde disponibilidad
@@ -51,6 +52,7 @@ CREATE TABLE disponibilidad (
     dis_cupo_total     INTEGER     NOT NULL,
     dis_cupo_reservado INTEGER     NOT NULL DEFAULT 0,
     dis_cerrada        BOOLEAN     NOT NULL DEFAULT FALSE,
+    gui_id             BIGINT,                      -- ID logico (Catalog): guia del turno; NULL = sin guia
     CONSTRAINT uq_disponibilidad_atraccion_fecha_horario UNIQUE (atr_codigo, dis_fecha, hor_id),
     CONSTRAINT uq_disponibilidad_atraccion_slot UNIQUE (atr_codigo, dis_slot_codigo),
     -- La fecha del slot_id debe coincidir con dis_fecha (SLOT_TIME_MISMATCH);
@@ -70,6 +72,7 @@ CREATE TABLE disponibilidad (
 CREATE INDEX ix_disponibilidad_atr_codigo ON disponibilidad (atr_codigo);
 CREATE INDEX ix_disponibilidad_hor_id ON disponibilidad (hor_id, atr_codigo);
 CREATE INDEX ix_disponibilidad_fecha  ON disponibilidad (dis_fecha);
+CREATE INDEX ix_disponibilidad_gui_id ON disponibilidad (gui_id);
 
 CREATE TABLE fecha_bloqueada (
     fb_id        BIGINT       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,

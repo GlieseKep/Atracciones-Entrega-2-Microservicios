@@ -1,9 +1,9 @@
 import { AppError, addDays, returnedRows } from '@atracciones/platform';
 import type { DataSource, EntityManager } from 'typeorm';
-import type { BlockedDate, Schedule, Slot } from '../contract';
+import type { BlockedDate, Schedule, Slot, SlotsGuideResult } from '../contract';
 import { recordNewSlotsStock, recordStock, type SlotStock } from './stock-outbox';
 
-const SCHEDULE_COLUMNS = `hor_id, atr_codigo, hor_hora::text AS hor_hora, hor_cupo, hor_activo`;
+const SCHEDULE_COLUMNS = `hor_id, atr_codigo, hor_hora::text AS hor_hora, hor_cupo, hor_activo, gui_id`;
 
 interface ScheduleRow {
   hor_id: string;
@@ -11,7 +11,10 @@ interface ScheduleRow {
   hor_hora: string;
   hor_cupo: number;
   hor_activo: boolean;
+  gui_id: string | null;
 }
+
+const guideOf = (value: string | null) => (value === null ? null : Number(value));
 
 const toSchedule = (row: ScheduleRow): Schedule => ({
   hor_id: Number(row.hor_id),
@@ -19,10 +22,11 @@ const toSchedule = (row: ScheduleRow): Schedule => ({
   hora: row.hor_hora,
   cupo: row.hor_cupo,
   activo: row.hor_activo,
+  gui_id: guideOf(row.gui_id),
 });
 
 const SLOT_SELECT = `SELECT d.dis_id, d.atr_codigo, d.dis_slot_codigo, d.dis_fecha::text AS dis_fecha, h.hor_hora::text AS hora,
-    d.dis_cupo_total, d.dis_cupo_reservado, d.dis_cerrada
+    d.dis_cupo_total, d.dis_cupo_reservado, d.dis_cerrada, d.gui_id
   FROM disponibilidad d JOIN horario h ON h.hor_id = d.hor_id`;
 
 interface SlotRow {
@@ -34,6 +38,7 @@ interface SlotRow {
   dis_cupo_total: number;
   dis_cupo_reservado: number;
   dis_cerrada: boolean;
+  gui_id: string | null;
 }
 
 const toSlot = (row: SlotRow): Slot => ({
@@ -45,7 +50,17 @@ const toSlot = (row: SlotRow): Slot => ({
   cupo_total: row.dis_cupo_total,
   cupo_reservado: row.dis_cupo_reservado,
   cerrada: row.dis_cerrada,
+  gui_id: guideOf(row.gui_id),
 });
+
+/** Rango de turnos para asignar un guía en bloque. `horId` 0 = todos; `dias` vacío = todos (ISO, 1 = lunes). */
+export interface SlotRange {
+  codigo: string;
+  desde: string;
+  hasta: string;
+  horId: number;
+  dias: number[];
+}
 
 /** Un turno cerrado no tiene cupos a la venta. */
 const toStock = (row: SlotRow): SlotStock => ({
@@ -85,9 +100,12 @@ export class ScheduleRepository {
     return toSchedule(row);
   }
 
-  async createSchedule(codigo: string, hora: string, cupo: number): Promise<Schedule> {
+  async createSchedule(codigo: string, hora: string, cupo: number, guiId: number | null): Promise<Schedule> {
     try {
-      const [row] = await this.db.query(`INSERT INTO horario (atr_codigo, hor_hora, hor_cupo) VALUES ($1, $2, $3) RETURNING ${SCHEDULE_COLUMNS}`, [codigo, hora, cupo]);
+      const [row] = await this.db.query(
+        `INSERT INTO horario (atr_codigo, hor_hora, hor_cupo, gui_id) VALUES ($1, $2, $3, $4) RETURNING ${SCHEDULE_COLUMNS}`,
+        [codigo, hora, cupo, guiId],
+      );
       return toSchedule(row);
     } catch (error) {
       const driver = (error as { driverError?: { code?: string } }).driverError;
@@ -95,10 +113,26 @@ export class ScheduleRepository {
     }
   }
 
-  async updateScheduleCapacity(id: number, cupo: number): Promise<Schedule> {
-    const rows = returnedRows<ScheduleRow>(await this.db.query(`UPDATE horario SET hor_cupo = $2 WHERE hor_id = $1 RETURNING ${SCHEDULE_COLUMNS}`, [id, cupo]));
-    if (rows.length === 0) throw scheduleNotFound(id);
-    return toSchedule(rows[0]);
+  /**
+   * Cupo y guía del horario. Un guía nuevo pasa a los turnos desde `today` que aún tenían el guía anterior; los días
+   * que se cambiaron a mano conservan el suyo.
+   */
+  updateSchedule(id: number, cupo: number, guiId: number | null, today: string): Promise<Schedule> {
+    return this.db.transaction(async (m) => {
+      const [before] = await m.query(`SELECT gui_id FROM horario WHERE hor_id = $1 FOR UPDATE`, [id]);
+      if (!before) throw scheduleNotFound(id);
+      const rows = returnedRows<ScheduleRow>(
+        await m.query(`UPDATE horario SET hor_cupo = $2, gui_id = $3 WHERE hor_id = $1 RETURNING ${SCHEDULE_COLUMNS}`, [id, cupo, guiId]),
+      );
+      const previous = guideOf(before.gui_id);
+      if (previous !== guiId) {
+        await m.query(
+          `UPDATE disponibilidad SET gui_id = $2 WHERE hor_id = $1 AND dis_fecha >= $4::date AND gui_id IS NOT DISTINCT FROM $3::bigint`,
+          [id, guiId, previous, today],
+        );
+      }
+      return toSchedule(rows[0]);
+    });
   }
 
   async setScheduleActive(id: number, activo: boolean): Promise<Schedule> {
@@ -114,17 +148,17 @@ export class ScheduleRepository {
     return this.db.transaction(async (m) => {
       const rows: SlotRow[] = await m.query(
         `WITH nuevos AS (
-           INSERT INTO disponibilidad (atr_codigo, hor_id, dis_fecha, dis_slot_codigo, dis_cupo_total)
-           SELECT h.atr_codigo, h.hor_id, f.fecha::date, 'slot-' || to_char(f.fecha, 'YYYYMMDD') || '-' || to_char(h.hor_hora, 'HH24MI'), h.hor_cupo
+           INSERT INTO disponibilidad (atr_codigo, hor_id, dis_fecha, dis_slot_codigo, dis_cupo_total, gui_id)
+           SELECT h.atr_codigo, h.hor_id, f.fecha::date, 'slot-' || to_char(f.fecha, 'YYYYMMDD') || '-' || to_char(h.hor_hora, 'HH24MI'), h.hor_cupo, h.gui_id
            FROM horario h
            CROSS JOIN generate_series($1::date, $2::date, interval '1 day') AS f(fecha)
            WHERE h.hor_activo AND ($3::bpchar IS NULL OR h.atr_codigo = $3::bpchar)
              AND NOT EXISTS (SELECT 1 FROM fecha_bloqueada b WHERE b.atr_codigo = h.atr_codigo AND b.fb_fecha = f.fecha::date)
            ON CONFLICT DO NOTHING
-           RETURNING dis_id, atr_codigo, hor_id, dis_slot_codigo, dis_fecha, dis_cupo_total, dis_cupo_reservado, dis_cerrada
+           RETURNING dis_id, atr_codigo, hor_id, dis_slot_codigo, dis_fecha, dis_cupo_total, dis_cupo_reservado, dis_cerrada, gui_id
          )
          SELECT n.dis_id, n.atr_codigo, n.dis_slot_codigo, n.dis_fecha::text AS dis_fecha, h.hor_hora::text AS hora,
-                n.dis_cupo_total, n.dis_cupo_reservado, n.dis_cerrada
+                n.dis_cupo_total, n.dis_cupo_reservado, n.dis_cerrada, n.gui_id
          FROM nuevos n JOIN horario h ON h.hor_id = n.hor_id`,
         [today, addDays(today, days), codigo],
       );
@@ -175,6 +209,43 @@ export class ScheduleRepository {
       const updated = { ...row, dis_cerrada: cerrada };
       await recordStock(m, toStock(updated), 'push');
       return toSlot(updated);
+    });
+  }
+
+  /** Guía de un turno. `null` vuelve al guía de su horario. El guía no cambia el stock: no va al outbox. */
+  setSlotGuide(codigo: string, slotCode: string, guiId: number | null): Promise<Slot> {
+    return this.db.transaction(async (m) => {
+      const row = await this.lockedSlot(codigo, slotCode, m);
+      const [updated] = returnedRows<{ gui_id: string | null }>(
+        await m.query(
+          `UPDATE disponibilidad d SET gui_id = COALESCE($2::bigint, h.gui_id) FROM horario h
+           WHERE h.hor_id = d.hor_id AND d.dis_id = $1 RETURNING d.gui_id`,
+          [row.dis_id, guiId],
+        ),
+      );
+      return toSlot({ ...row, gui_id: updated.gui_id });
+    });
+  }
+
+  /**
+   * Guía de todos los turnos de un rango (desde `today`), en una sola sentencia. `null` vuelve al guía de cada
+   * horario. Pisa los cambios de días sueltos dentro del rango.
+   */
+  setSlotsGuide(range: SlotRange, guiId: number | null, today: string): Promise<SlotsGuideResult> {
+    return this.db.transaction(async (m) => {
+      const rows = returnedRows<{ dis_slot_codigo: string; reservado: boolean }>(
+        await m.query(
+          `UPDATE disponibilidad d SET gui_id = COALESCE($6::bigint, h.gui_id) FROM horario h
+           WHERE h.hor_id = d.hor_id AND d.atr_codigo = $1
+             AND d.dis_fecha BETWEEN greatest($2::date, $7::date) AND $3::date
+             AND ($4::bigint = 0 OR d.hor_id = $4::bigint)
+             AND (cardinality($5::int[]) = 0 OR extract(isodow FROM d.dis_fecha)::int = ANY($5::int[]))
+           RETURNING d.dis_slot_codigo, d.dis_cupo_reservado > 0 AS reservado`,
+          [range.codigo, range.desde, range.hasta, range.horId, range.dias, guiId, today],
+        ),
+      );
+      const slotIds = rows.map((row) => row.dis_slot_codigo).sort();
+      return { actualizados: rows.length, slot_ids: slotIds, con_reservas: rows.filter((row) => row.reservado).length };
     });
   }
 

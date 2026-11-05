@@ -45,6 +45,23 @@ export function parseReason(value: unknown): string {
   return text;
 }
 
+/** Guía de Catalog: ausente o `0` es `null` (sin guía, o el del horario según la operación). */
+export function parseGuideId(value: unknown): number | null {
+  if (value === undefined || value === null || value === '' || Number(value) === 0) return null;
+  const id = Number(value);
+  if (!Number.isSafeInteger(id) || id < 1) throw invalid('gui_id', 'Debe ser un entero positivo, o 0 para ninguno.');
+  return id;
+}
+
+/** Días ISO (1 = lunes … 7 = domingo), sin repetir. Vacío = todos. */
+export function parseWeekdays(value: unknown): number[] {
+  if (value === undefined || value === null) return [];
+  if (!Array.isArray(value)) throw invalid('dias_semana', 'Debe ser una lista.');
+  const days = value.map(Number);
+  if (days.some((day) => !Number.isInteger(day) || day < 1 || day > 7)) throw invalid('dias_semana', 'Cada día va de 1 (lunes) a 7 (domingo).');
+  return [...new Set(days)].sort();
+}
+
 export function parseCodes(value: unknown): string[] {
   if (!Array.isArray(value)) throw invalid('atraccion_ids', 'Debe ser una lista.');
   return [...new Set(value.map((code) => parseCode(code, 'atraccion_ids')))];

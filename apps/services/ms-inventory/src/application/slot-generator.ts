@@ -1,7 +1,8 @@
 import { errorFields, todayIn, type Logger } from '@atracciones/platform';
 import type { ScheduleRepository } from '../persistence/schedule-repository';
 
-const WINDOW_DAYS = 90;
+/** Días hacia adelante con turnos generados. */
+export const WINDOW_DAYS = 90;
 const INTERVAL_MS = 6 * 60 * 60_000;
 
 /** Mantiene turnos para los próximos 90 días. Si estuvo caído, rellena al volver. */

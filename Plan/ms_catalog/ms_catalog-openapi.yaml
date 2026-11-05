@@ -456,6 +456,47 @@ paths:
           $ref: '#/components/responses/ProblemDetails500'
       security:
         - ServiceTokenAuth: []
+  '/internal/atracciones/{id}/guias/{guiId}':
+    get:
+      tags:
+        - Interno
+      summary: Validar el guía de un horario o turno
+      description: 'Lo usa Inventory al asignar un guía a horarios y turnos. `200` si el guía está activo y es del operador de la atracción, aunque la atracción no esté publicada; si no, `404 GUIDE_NOT_FOUND`.'
+      parameters:
+        - $ref: '#/components/parameters/XCorrelationIdHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: guiId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Guía válido.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [gui_id, nombre]
+                properties:
+                  gui_id:
+                    type: integer
+                    format: int64
+                  nombre:
+                    type: string
+        '401':
+          $ref: '#/components/responses/ProblemDetails401'
+        '404':
+          $ref: '#/components/responses/ProblemDetails404'
+        '500':
+          $ref: '#/components/responses/ProblemDetails500'
+      security:
+        - ServiceTokenAuth: []
   '/internal/atracciones/{id}/referencia':
     get:
       tags:

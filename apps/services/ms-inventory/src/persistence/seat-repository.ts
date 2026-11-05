@@ -5,12 +5,15 @@ import { recordStock, type SlotStock } from './stock-outbox';
 
 interface SeatRow extends SlotStock {
   dis_id: string;
+  gui_id: string | null;
 }
 
-/** `RETURNING` de `disponibilidad` con lo que necesitan los eventos. */
+/** `RETURNING` de `disponibilidad` con lo que necesitan los eventos y la compra (guía del turno). */
 const RETURNING = `RETURNING dis_id, atr_codigo, dis_slot_codigo, dis_fecha::text AS dis_fecha,
   (SELECT hor_hora::text FROM horario h WHERE h.hor_id = disponibilidad.hor_id) AS hora,
-  dis_cupo_total - dis_cupo_reservado AS disponibles`;
+  dis_cupo_total - dis_cupo_reservado AS disponibles, gui_id`;
+
+const guideOf = (value: string | null | undefined) => (value === null || value === undefined ? null : Number(value));
 
 export class SeatRepository {
   constructor(private readonly db: DataSource) {}
@@ -42,11 +45,11 @@ export class SeatRepository {
       );
       if (inserted.length === 0) {
         const [previous] = await m.query(
-          `SELECT d.dis_id, d.dis_slot_codigo, d.dis_cupo_total - d.dis_cupo_reservado AS disponibles
+          `SELECT d.dis_id, d.dis_slot_codigo, d.dis_cupo_total - d.dis_cupo_reservado AS disponibles, d.gui_id
            FROM bloqueo_cupo b JOIN disponibilidad d ON d.dis_id = b.dis_id WHERE b.blo_clave = $1`,
           [clave],
         );
-        return { dis_id: Number(previous.dis_id), slot_id: previous.dis_slot_codigo, cupos_disponibles: previous.disponibles };
+        return { dis_id: Number(previous.dis_id), slot_id: previous.dis_slot_codigo, cupos_disponibles: previous.disponibles, gui_id: guideOf(previous.gui_id) };
       }
       const rows = returnedRows<SeatRow>(
         await m.query(
@@ -57,7 +60,7 @@ export class SeatRepository {
       );
       if (rows.length === 0) throw AppError.conflict('OUT_OF_STOCK', `No hay ${cantidad} cupos disponibles en el turno ${slotCode}.`);
       await this.recordChange(m, 'CupoBloqueado', rows[0], cantidad);
-      return { dis_id: Number(rows[0].dis_id), slot_id: rows[0].dis_slot_codigo, cupos_disponibles: rows[0].disponibles };
+      return { dis_id: Number(rows[0].dis_id), slot_id: rows[0].dis_slot_codigo, cupos_disponibles: rows[0].disponibles, gui_id: guideOf(rows[0].gui_id) };
     });
   }
 

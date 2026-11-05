@@ -214,6 +214,11 @@ export function createMsCatalogService(config: MsCatalogConfig, dataSource: Data
     res.json(await service.logistics(req.params.id as string, guiId));
   });
 
+  /** Inventory valida el guía de un horario o turno (sin exigir que la atracción esté publicada). */
+  api.get('/internal/atracciones/:id/guias/:guiId', internal, async (req, res) => {
+    res.json(await service.guideFor(req.params.id as string, pathId(req.params.guiId, 'gui_id')));
+  });
+
   api.get('/internal/atracciones/:id/referencia', internal, async (req, res) => {
     res.json(await service.reference(req.params.id as string));
   });

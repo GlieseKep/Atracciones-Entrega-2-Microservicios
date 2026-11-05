@@ -16,12 +16,14 @@ import {
   parseCode,
   parseCodes,
   parseDate,
+  parseGuideId,
   parseKey,
   parseOptionalDate,
   parsePositive,
   parseReason,
   parseSlotCode,
   parseTime,
+  parseWeekdays,
 } from './application/input';
 import { ScheduleService } from './application/schedule-service';
 import { SlotGenerator } from './application/slot-generator';
@@ -131,7 +133,7 @@ export function createMsInventoryService(config: MsInventoryConfig, dataSource: 
     }),
 
     SaveSchedule: rpc('SaveSchedule', (request) =>
-      service.save(Number(request.hor_id ?? 0), parseCode(request.atraccion_id), parseTime(request.hora), parsePositive(request.cupo, 'cupo')),
+      service.save(Number(request.hor_id ?? 0), parseCode(request.atraccion_id), parseTime(request.hora), parsePositive(request.cupo, 'cupo'), parseGuideId(request.gui_id)),
     ),
 
     SetScheduleActive: rpc('SetScheduleActive', (request) => service.setActive(parsePositive(Number(request.hor_id), 'hor_id'), request.activo === true)),
@@ -154,6 +156,23 @@ export function createMsInventoryService(config: MsInventoryConfig, dataSource: 
       await service.requireStaff(codigo);
       return schedules.setSlotClosed(codigo, parseSlotCode(request.slot_id), request.cerrada === true);
     }),
+
+    SetSlotGuide: rpc('SetSlotGuide', (request) =>
+      service.setSlotGuide(parseCode(request.atraccion_id), parseSlotCode(request.slot_id), parseGuideId(request.gui_id)),
+    ),
+
+    SetSlotsGuide: rpc('SetSlotsGuide', (request) =>
+      service.setSlotsGuide(
+        {
+          codigo: parseCode(request.atraccion_id),
+          desde: parseDate(request.desde, 'desde'),
+          hasta: parseDate(request.hasta, 'hasta'),
+          horId: Number(request.hor_id ?? 0) || 0,
+          dias: parseWeekdays(request.dias_semana),
+        },
+        parseGuideId(request.gui_id),
+      ),
+    ),
 
     ListBlockedDates: rpc('ListBlockedDates', async (request) => {
       const codigo = parseCode(request.atraccion_id);
