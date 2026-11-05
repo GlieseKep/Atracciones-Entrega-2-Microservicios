@@ -58,3 +58,6 @@ export const toStars = (score10: number) => Math.round((score10 / 2) * 10) / 10;
 
 /** `Tour Quito (ADULT)` → `Tour Quito`: las líneas de la orden llevan el tipo de boleto en el nombre. */
 export const lineAttractionName = (descripcion: string) => descripcion.replace(/\s*\((ADULT|CHILD|SENIOR|INFANT|STUDENT)\)$/, '');
+
+/** Abrevia un identificador para mostrarlo como código de seguimiento. */
+export const shortCode = (id: string) => id.replace(/-/g, '').slice(0, 8).toUpperCase();

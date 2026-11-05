@@ -4,12 +4,12 @@ import { paths } from '@/utils/routes';
 
 /** Enlace de marca: lleva al inicio, o al panel si la sesión es de administración. */
 export function Logo({ inverted = false }: { inverted?: boolean }) {
-  const { canManageCatalog } = useAuth();
+  const { isAdmin } = useAuth();
   return (
     <Link
-      to={canManageCatalog ? paths.admin() : paths.home()}
+      to={isAdmin ? paths.admin() : paths.home()}
       className="flex shrink-0 items-center gap-2"
-      aria-label={canManageCatalog ? 'TourGirls, administración' : 'TourGirls, inicio'}
+      aria-label={isAdmin ? 'TourGirls, administración' : 'TourGirls, inicio'}
     >
       <svg width="34" height="34" viewBox="0 0 32 32" aria-hidden="true">
         <rect width="32" height="32" rx="8" fill="#C94D6B" />

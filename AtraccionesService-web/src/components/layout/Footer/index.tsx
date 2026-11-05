@@ -1,69 +1,48 @@
 import { Link } from 'react-router-dom';
-import { Globe, Mail, Phone } from 'lucide-react';
-import { PHOTO_CREDITS } from '@/features/attractions/demoCatalog';
+import { Globe, MessageCircle } from 'lucide-react';
+import { serializeFilters } from '@/features/attractions/filters';
+import { PHOTO_CREDITS } from '@/features/content/photos';
+import { useCategories } from '@/hooks/useAttractions';
+import { paths } from '@/utils/routes';
 import { Logo } from '../Logo';
 
-const COLUMNS = [
-  {
-    title: 'Ayuda',
-    links: [
-      { label: 'Centro de ayuda', to: '/ayuda' },
-      { label: 'Política de cancelación', to: '/ayuda#cancelacion' },
-      { label: 'Pagos y facturación', to: '/ayuda#pagos' },
-      { label: 'Contacto', to: '/ayuda#contacto' },
-    ],
-  },
-  {
-    title: 'Explora',
-    links: [
-      { label: 'Cosas que hacer en Quito', to: '/atracciones?ciudad=Quito' },
-      { label: 'Excursiones de naturaleza', to: '/atracciones?categorias=Naturaleza' },
-      { label: 'Tours culturales', to: '/atracciones?categorias=Cultura' },
-      { label: 'Aventura en los Andes', to: '/atracciones?categorias=Aventura' },
-    ],
-  },
-  {
-    title: 'Acerca de',
-    links: [
-      { label: 'Quiénes somos', to: '/ayuda#nosotros' },
-      { label: 'Términos de uso', to: '/ayuda#terminos' },
-      { label: 'Privacidad', to: '/ayuda#privacidad' },
-      { label: 'Cookies', to: '/ayuda#privacidad' },
-    ],
-  },
+const HELP = [
+  { label: 'Centro de ayuda', to: paths.help() },
+  { label: 'Política de cancelación', to: paths.help('cancelacion') },
+  { label: 'Pagos y facturación', to: paths.help('pagos') },
+  { label: 'Contacto', to: paths.help('contacto') },
 ];
 
-/** Pie de página gris claro en columnas, como el de Viator. */
+const ABOUT = [
+  { label: 'Quiénes somos', to: paths.help('nosotros') },
+  { label: 'Términos de uso', to: paths.help('terminos') },
+  { label: 'Privacidad y cookies', to: paths.help('privacidad') },
+];
+
+/** Pie de página en columnas. "Explora" usa las categorías de ms-catalog, así que sus enlaces siempre filtran. */
 export function Footer() {
+  const categories = useCategories();
+  const explore = [
+    { label: 'Todas las experiencias', to: paths.attractions() },
+    ...(categories.data ?? []).slice(0, 4).map((c) => ({ label: c.nombre, to: paths.attractions(serializeFilters({ category: c.id })) })),
+  ];
+  const columns = [
+    { title: 'Ayuda', links: HELP },
+    { title: 'Explora', links: explore },
+    { title: 'Acerca de', links: ABOUT },
+  ];
+
   return (
     <footer className="mt-20 border-t border-line bg-surface">
       <div className="page-container grid gap-10 py-12 md:grid-cols-[1.2fr_repeat(3,1fr)]">
         <div>
           <Logo />
-          <p className="mt-4 max-w-xs text-sm text-ink-soft">
-            Tours, entradas y experiencias fotogénicas en Ecuador, reservadas con disponibilidad verificada.
-          </p>
-          <ul className="mt-5 space-y-2 text-sm text-ink-soft">
-            <li className="flex items-center gap-2">
-              <Mail size={16} aria-hidden="true" /> hola@tourgirls.example
-            </li>
-            <li className="flex items-center gap-2">
-              <Phone size={16} aria-hidden="true" /> +593 2 000 0000
-            </li>
-          </ul>
-          <div className="mt-5 flex gap-2">
-            {['Instagram', 'Facebook', 'TikTok'].map((name) => (
-              <a
-                key={name}
-                href="#"
-                className="rounded-full border border-line bg-white px-3 py-1 text-xs font-semibold hover:border-brand-500 hover:text-brand-500"
-              >
-                {name}
-              </a>
-            ))}
-          </div>
+          <p className="mt-4 max-w-xs text-sm text-ink-soft">Tours, entradas y experiencias en Ecuador, con cupos verificados en tiempo real.</p>
+          <Link to={paths.help('contacto')} className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-ink hover:text-brand-500">
+            <MessageCircle size={16} aria-hidden="true" /> Escríbenos
+          </Link>
         </div>
-        {COLUMNS.map((col) => (
+        {columns.map((col) => (
           <nav key={col.title} aria-label={col.title}>
             <h2 className="text-base">{col.title}</h2>
             <ul className="mt-4 space-y-2.5 text-sm">

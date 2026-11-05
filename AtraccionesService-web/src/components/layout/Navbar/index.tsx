@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import { CalendarCheck, ChevronDown, Globe, LayoutDashboard, LogOut, Menu, User } from 'lucide-react';
+import { CalendarCheck, ChevronDown, Globe, LayoutDashboard, LogOut, Menu, ScanLine, User } from 'lucide-react';
 import { SearchBar } from '@/components/search/SearchBar';
 import { useAuth } from '@/hooks/useAuth';
 import { useUiStore } from '@/stores/uiStore';
@@ -12,8 +12,8 @@ export const NAV_LINKS = [
   { to: '/', label: 'Inicio', end: true },
   { to: '/atracciones', label: 'Atracciones' },
   { to: '/#destinos', label: 'Destinos' },
-  { to: '/#experiencias', label: 'Experiencias' },
-  { to: '/#historias', label: 'Historias' },
+  { to: '/#experiencias', label: 'Mejor valoradas' },
+  { to: '/ayuda', label: 'Ayuda' },
 ];
 
 /**
@@ -22,10 +22,12 @@ export const NAV_LINKS = [
  * no necesita la navegación de compra.
  */
 export function Navbar() {
-  const { isAuthenticated, displayName, signIn, signUp, signOut, canManageCatalog, status } = useAuth();
+  const { isAuthenticated, displayName, signIn, signUp, signOut, isAdmin: admin, hasRole, status } = useAuth();
   const setMobileMenu = useUiStore((s) => s.setMobileMenu);
   const location = useLocation();
-  const isAdmin = isAuthenticated && canManageCatalog;
+  const isAdmin = isAuthenticated && admin;
+  // Guías y operadores registran el check-in en el punto de encuentro.
+  const canCheckIn = !isAdmin && (hasRole('GUIA') || hasRole('OPERADOR'));
   const showSearch = !isAdmin && location.pathname !== '/';
 
   return (
@@ -53,6 +55,7 @@ export function Navbar() {
               label="Panel"
             />
           )}
+          {canCheckIn && <HeaderLink to="/admin/checkin" icon={<ScanLine size={20} aria-hidden="true" />} label="Check-in" />}
           {isAuthenticated && !isAdmin && (
             <HeaderLink
               to={paths.profile('reservas')}
@@ -61,7 +64,7 @@ export function Navbar() {
             />
           )}
           {isAuthenticated ? (
-            <AccountMenu name={displayName} onSignOut={signOut} canManageCatalog={canManageCatalog} />
+            <AccountMenu name={displayName} onSignOut={signOut} isAdmin={isAdmin} />
           ) : (
             <>
               <button
@@ -140,11 +143,11 @@ function HeaderLink({ to, icon, label }: { to: string; icon: React.ReactNode; la
 function AccountMenu({
   name,
   onSignOut,
-  canManageCatalog,
+  isAdmin,
 }: {
   name: string;
   onSignOut: () => void;
-  canManageCatalog: boolean;
+  isAdmin: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -191,17 +194,17 @@ function AccountMenu({
           role="menu"
           className="fade-in absolute right-0 mt-2 w-60 overflow-hidden rounded-md border border-line bg-white py-1 shadow-raised"
         >
-          {!canManageCatalog && (
+          {!isAdmin && (
             <>
               <Link role="menuitem" to={paths.profile()} className={item}>
                 <User size={18} aria-hidden="true" /> Perfil
               </Link>
               <Link role="menuitem" to={paths.profile('reservas')} className={item}>
-                <CalendarCheck size={18} aria-hidden="true" /> Reservas y pedidos
+                <CalendarCheck size={18} aria-hidden="true" /> Mis reservas
               </Link>
             </>
           )}
-          {canManageCatalog && (
+          {isAdmin && (
             <Link role="menuitem" to={paths.admin()} className={item}>
               <LayoutDashboard size={18} aria-hidden="true" /> Administración
             </Link>

@@ -12,9 +12,9 @@ import { Logo } from '../Logo';
 export function MobileMenu() {
   const open = useUiStore((s) => s.mobileMenuOpen);
   const setOpen = useUiStore((s) => s.setMobileMenu);
-  const { isAuthenticated, signIn, signUp, signOut, displayName, canManageCatalog } = useAuth();
+  const { isAuthenticated, signIn, signUp, signOut, displayName, isAdmin: admin } = useAuth();
   const location = useLocation();
-  const isAdmin = isAuthenticated && canManageCatalog;
+  const isAdmin = isAuthenticated && admin;
 
   useEffect(() => setOpen(false), [location.pathname, location.hash, setOpen]);
   useEffect(() => {

@@ -2,16 +2,30 @@ import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { CalendarDays, CheckCircle2, Clock, FileText, MapPin, QrCode, Receipt, Ticket, User, Users } from 'lucide-react';
+import {
+  ArrowRight,
+  CalendarDays,
+  CheckCircle2,
+  Clock,
+  FileText,
+  MapPin,
+  QrCode,
+  Receipt,
+  Ticket,
+  User,
+  Users,
+} from 'lucide-react';
 import { getReservation } from '@/api/bookings';
 import { getOrder, getOrderInvoice } from '@/api/orders';
-import { Button } from '@/components/common/Button';
+import { Button, ButtonLink } from '@/components/common/Button';
 import { Alert, ErrorState } from '@/components/common/Feedback';
 import { TextArea } from '@/components/common/Input';
 import { Modal } from '@/components/common/Modal';
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
 import { OrderStatusBadge, ReservationStatusBadge } from '@/components/profile/StatusBadge';
+import { photoAt } from '@/features/content/photos';
 import { useAsync } from '@/hooks/useAsync';
+import { useAttraction } from '@/hooks/useAttractions';
 import { useCancelReservation } from '@/hooks/useReservations';
 import { useUiStore } from '@/stores/uiStore';
 import type { Reservation } from '@/types/booking';
@@ -24,16 +38,33 @@ import { cancelReasonSchema, type CancelReasonValues } from '@/utils/validation'
 
 const CANCELLABLE = ['PENDING', 'CONFIRMED'];
 
-const METHOD_LABEL: Record<string, string> = { CREDIT_CARD: 'Tarjeta de crédito', DEBIT_CARD: 'Tarjeta de débito', PAYPAL: 'PayPal', TRANSFER: 'Transferencia' };
+const METHOD_LABEL: Record<string, string> = {
+  CREDIT_CARD: 'Tarjeta de crédito',
+  DEBIT_CARD: 'Tarjeta de débito',
+  PAYPAL: 'PayPal',
+  TRANSFER: 'Transferencia',
+};
 
-const TICKET_LABEL: Record<string, string> = { ADULT: 'Adulto', CHILD: 'Niño', SENIOR: 'Adulto mayor', INFANT: 'Infante', STUDENT: 'Estudiante' };
+const TICKET_LABEL: Record<string, string> = {
+  ADULT: 'Adulto',
+  CHILD: 'Niño',
+  SENIOR: 'Adulto mayor',
+  INFANT: 'Infante',
+  STUDENT: 'Estudiante',
+};
 
 /** Reserva de Booking con su orden (ms-order) y, si ya se emitió, la factura (ms-invoicing). */
 export default function ReservationDetailPage() {
   const { reservationId = '' } = useParams();
   const reservation = useAsync((signal) => getReservation(reservationId, signal), [reservationId]);
   const ordNumero = reservation.data?.external_order_id;
-  const order = useAsync((signal) => getOrder(ordNumero!, signal), [ordNumero, reservation.data?.status], !!ordNumero);
+  const order = useAsync(
+    (signal) => getOrder(ordNumero!, signal),
+    [ordNumero, reservation.data?.status],
+    !!ordNumero,
+  );
+  // Ficha de la atracción (código público que devuelve Booking): foto y enlace.
+  const attraction = useAttraction(reservation.data?.attraction_id || undefined);
   const [cancelOpen, setCancelOpen] = useState(false);
 
   if (reservation.status === 'error') {
@@ -46,67 +77,114 @@ export default function ReservationDetailPage() {
   if (!reservation.data) return <div className="page-container skeleton mt-10 h-80" aria-busy="true" />;
 
   const r = reservation.data;
-  const name = order.data?.lineas[0] ? lineAttractionName(order.data.lineas[0].descripcion) : 'Tu experiencia';
+  const attractionId = r.attraction_id || attraction.data?.id;
+  const name =
+    r.attraction_name ||
+    attraction.data?.name ||
+    (order.data?.lineas[0] ? lineAttractionName(order.data.lineas[0].descripcion) : 'Tu experiencia');
+  const photo = attraction.data?.photos?.[0];
 
   return (
     <div className="page-container max-w-4xl pt-4">
-      <Breadcrumbs items={[{ label: 'Inicio', to: '/' }, { label: 'Mis reservas', to: paths.profile('reservas') }, { label: r.reservation_code }]} />
+      <Breadcrumbs
+        items={[
+          { label: 'Inicio', to: '/' },
+          { label: 'Mis reservas', to: paths.profile('reservas') },
+          { label: r.reservation_code },
+        ]}
+      />
 
       {r.status === 'CONFIRMED' && (
         <div className="mt-6 flex items-center gap-3 rounded-md bg-[#EEF7F2] p-4 text-success" role="status">
           <CheckCircle2 size={28} aria-hidden="true" />
-          <p className="font-semibold">Tu compra está confirmada. Presenta el código QR y tu documento en el punto de encuentro.</p>
+          <p className="font-semibold">
+            Tu compra está confirmada. Presenta el código QR y tu documento en el punto de encuentro.
+          </p>
         </div>
       )}
       {r.status === 'PENDING' && (
-        <Alert className="mt-6">Tu reserva está registrada y el pago está pendiente de confirmación. Los cupos quedan reservados mientras tanto.</Alert>
+        <Alert className="mt-6">
+          Tu reserva está registrada y el pago está pendiente de confirmación. Los cupos quedan reservados
+          mientras tanto.
+        </Alert>
       )}
 
       <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-[1fr_300px]">
         <div className="space-y-6">
-          <section className="card-surface p-6">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className="font-mono text-sm text-ink-muted">Reserva {r.reservation_code}</p>
-                <h1 className="mt-1 text-2xl">{name}</h1>
+          <section className="card-surface overflow-hidden">
+            {photo && attractionId && (
+              <Link to={paths.attraction(attractionId)} aria-hidden="true" tabIndex={-1}>
+                <img src={photoAt(photo, 960)} alt="" className="h-48 w-full object-cover" />
+              </Link>
+            )}
+            <div className="p-6">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="font-mono text-sm text-ink-muted">Reserva {r.reservation_code}</p>
+                  <h1 className="mt-1 text-2xl">
+                    {attractionId ? (
+                      <Link to={paths.attraction(attractionId)} className="hover:underline">
+                        {name}
+                      </Link>
+                    ) : (
+                      name
+                    )}
+                  </h1>
+                  {attraction.data?.city && (
+                    <p className="mt-1 text-sm text-ink-soft">{attraction.data.city}, Ecuador</p>
+                  )}
+                </div>
+                <ReservationStatusBadge status={r.status} />
               </div>
-              <ReservationStatusBadge status={r.status} />
-            </div>
-            <ul className="mt-5 grid gap-3 sm:grid-cols-2">
-              <li className="flex items-center gap-2">
-                <CalendarDays size={18} aria-hidden="true" /> {formatDate(r.date, { weekday: 'long', month: 'long' })}
-              </li>
-              <li className="flex items-center gap-2">
-                <Clock size={18} aria-hidden="true" /> {r.time}
-              </li>
-              <li className="flex items-center gap-2">
-                <Users size={18} aria-hidden="true" />
-                {describeTickets({ adult: r.adult_count, child: r.child_count, senior: r.senior_count, infant: r.infant_count })}
-              </li>
-              <li className="flex items-center gap-2">
-                <Ticket size={18} aria-hidden="true" /> Total {formatMoney(r.total_price, r.currency)}
-              </li>
-              <li className="flex items-center gap-2">
-                <User size={18} aria-hidden="true" /> Guía: {r.guia_asignado}
-              </li>
-              {r.punto_encuentro && (
+              <ul className="mt-5 grid gap-3 sm:grid-cols-2">
                 <li className="flex items-center gap-2">
-                  <MapPin size={18} aria-hidden="true" /> {r.punto_encuentro}
+                  <CalendarDays size={18} aria-hidden="true" />{' '}
+                  {formatDate(r.date, { weekday: 'long', month: 'long' })}
                 </li>
+                <li className="flex items-center gap-2">
+                  <Clock size={18} aria-hidden="true" /> {r.time}
+                </li>
+                <li className="flex items-center gap-2">
+                  <Users size={18} aria-hidden="true" />
+                  {describeTickets({
+                    adult: r.adult_count,
+                    child: r.child_count,
+                    senior: r.senior_count,
+                    infant: r.infant_count,
+                  })}
+                </li>
+                <li className="flex items-center gap-2">
+                  <Ticket size={18} aria-hidden="true" /> Total {formatMoney(r.total_price, r.currency)}
+                </li>
+                <li className="flex items-center gap-2">
+                  <User size={18} aria-hidden="true" /> Guía: {r.guia_asignado}
+                </li>
+                {r.punto_encuentro && (
+                  <li className="flex items-center gap-2">
+                    <MapPin size={18} aria-hidden="true" /> {r.punto_encuentro}
+                  </li>
+                )}
+              </ul>
+              {r.reembolso_id && (
+                <Alert tone="success" className="mt-5">
+                  Reembolso {r.reembolso_id}: {formatMoney(r.monto_reembolsado ?? 0, r.currency)}.
+                </Alert>
               )}
-            </ul>
-            {r.reembolso_id && (
-              <Alert tone="success" className="mt-5">
-                Reembolso {r.reembolso_id}: {formatMoney(r.monto_reembolsado ?? 0, r.currency)}.
-              </Alert>
-            )}
-            {CANCELLABLE.includes(r.status) && (
-              <div className="mt-6 border-t border-line pt-5">
-                <Button variant="danger" onClick={() => setCancelOpen(true)}>
-                  Cancelar reserva
-                </Button>
-              </div>
-            )}
+              {(attractionId || CANCELLABLE.includes(r.status)) && (
+                <div className="mt-6 flex flex-wrap gap-3 border-t border-line pt-5">
+                  {attractionId && (
+                    <ButtonLink to={paths.attraction(attractionId)} variant="secondary">
+                      Ver la experiencia <ArrowRight size={16} aria-hidden="true" />
+                    </ButtonLink>
+                  )}
+                  {CANCELLABLE.includes(r.status) && (
+                    <Button variant="danger" onClick={() => setCancelOpen(true)}>
+                      Cancelar reserva
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
           </section>
 
           <section className="card-surface p-6" aria-labelledby="holder-title">
@@ -131,8 +209,12 @@ export default function ReservationDetailPage() {
                 <QrCode size={18} aria-hidden="true" /> Voucher
               </h2>
               <p className="mt-2 text-3xl font-extrabold tracking-wider">{r.reservation_code}</p>
-              <p className="mt-3 break-all rounded-sm bg-surface p-2 text-left font-mono text-[11px] text-ink-soft">{r.voucher_qr_payload}</p>
-              <p className="mt-2 text-xs text-ink-muted">El guía escanea este código en el check-in. También lo recibiste por correo.</p>
+              <p className="mt-3 break-all rounded-sm bg-surface p-2 text-left font-mono text-[11px] text-ink-soft">
+                {r.voucher_qr_payload}
+              </p>
+              <p className="mt-2 text-xs text-ink-muted">
+                El guía escanea este código en el check-in. También lo recibiste por correo.
+              </p>
             </section>
           )}
           {order.data && <InvoiceCard order={order.data} />}
@@ -173,7 +255,8 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 function OrderSection({ order }: { order: ReturnType<typeof useAsync<OrderDetail>> }) {
-  if (order.status === 'error') return <ErrorState error={order.error} onRetry={order.retry} className="py-8" />;
+  if (order.status === 'error')
+    return <ErrorState error={order.error} onRetry={order.retry} className="py-8" />;
   if (!order.data) return <div className="skeleton h-40" aria-busy="true" />;
   const { orden, lineas, metodo, fecha } = order.data;
   return (
@@ -202,7 +285,9 @@ function OrderSection({ order }: { order: ReturnType<typeof useAsync<OrderDetail
       </ul>
       <dl className="mt-3 space-y-1 border-t border-line pt-3 text-sm">
         <Amount label="Subtotal" value={formatMoney(orden.subtotal, orden.moneda)} />
-        {orden.descuento > 0 && <Amount label="Descuento" value={`−${formatMoney(orden.descuento, orden.moneda)}`} />}
+        {orden.descuento > 0 && (
+          <Amount label="Descuento" value={`−${formatMoney(orden.descuento, orden.moneda)}`} />
+        )}
         <Amount label="IVA" value={formatMoney(orden.iva, orden.moneda)} />
         <div className="flex justify-between pt-1 text-lg font-extrabold">
           <dt>Total</dt>
@@ -224,7 +309,10 @@ function Amount({ label, value }: { label: string; value: string }) {
 
 /** La factura la emite Invoicing al pagarse la orden; si aún no existe (o no se puede consultar), no se muestra. */
 function InvoiceCard({ order }: { order: OrderDetail }) {
-  const invoice = useAsync((signal) => getOrderInvoice(order.orden.ord_id, signal), [order.orden.ord_id, order.orden.estado]);
+  const invoice = useAsync(
+    (signal) => getOrderInvoice(order.orden.ord_id, signal),
+    [order.orden.ord_id, order.orden.estado],
+  );
   if (!invoice.data) return null;
   const f = invoice.data;
   return (
@@ -236,10 +324,23 @@ function InvoiceCard({ order }: { order: OrderDetail }) {
         <Amount label="Número" value={f.numero} />
         <Amount label="Emitida" value={formatDateTime(f.emitida_en)} />
         <Amount label="A nombre de" value={f.razon_social} />
-        <Amount label="SRI" value={f.estado_sri === 'AUTORIZADA' ? 'Autorizada' : f.estado_sri === 'RECHAZADA' ? 'Rechazada' : 'En proceso'} />
+        <Amount
+          label="SRI"
+          value={
+            f.estado_sri === 'AUTORIZADA'
+              ? 'Autorizada'
+              : f.estado_sri === 'RECHAZADA'
+                ? 'Rechazada'
+                : 'En proceso'
+          }
+        />
         <Amount label="Total" value={formatMoney(f.total)} />
       </dl>
-      {f.autorizacion_sri && <p className="mt-3 break-all font-mono text-[11px] text-ink-muted">Autorización {f.autorizacion_sri}</p>}
+      {f.autorizacion_sri && (
+        <p className="mt-3 break-all font-mono text-[11px] text-ink-muted">
+          Autorización {f.autorizacion_sri}
+        </p>
+      )}
     </section>
   );
 }
@@ -291,7 +392,9 @@ function CancelDialog({
       }
     >
       <form onSubmit={submit} noValidate className="space-y-4">
-        <p className="text-ink-soft">Esta acción no se puede deshacer. Los cupos se liberan y, si pagaste, se emite el reembolso.</p>
+        <p className="text-ink-soft">
+          Esta acción no se puede deshacer. Los cupos se liberan y, si pagaste, se emite el reembolso.
+        </p>
         <TextArea label="Motivo de la cancelación" error={errors.reason?.message} {...register('reason')} />
         {!!error && <Alert tone="error">{errorMessage(error)}</Alert>}
       </form>

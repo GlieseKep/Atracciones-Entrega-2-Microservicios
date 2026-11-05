@@ -1,4 +1,4 @@
-import type { CreateReservationRequest, Reservation, ReservationPage, ReservationStatus } from '@/types/booking';
+import type { CheckinRequest, CheckinResult, CreateReservationRequest, Reservation, ReservationPage, ReservationStatus } from '@/types/booking';
 import { gql } from './client';
 
 /**
@@ -16,3 +16,6 @@ export const listMyReservations = (params: { estado?: ReservationStatus; page?: 
 
 export const cancelReservation = (id: string, reason: string, idempotencyKey: string) =>
   gql.mutation<Reservation>('bookingCancelReservation', { id, reason, solicitante: 'CLIENTE' }, { idempotencyKey });
+
+/** Check-in presencial (guía, operador o ADMIN). Booking avisa a Booking Central si la compra vino de un socio. */
+export const checkIn = (body: CheckinRequest, idempotencyKey: string) => gql.mutation<CheckinResult>('bookingCheckIn', body, { idempotencyKey });

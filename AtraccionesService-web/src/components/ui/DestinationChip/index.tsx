@@ -1,24 +1,29 @@
 import { Link } from 'react-router-dom';
-import { photoAt } from '@/components/attractions/AttractionCard';
+import { photoAt } from '@/features/content/photos';
 
 interface Props {
   name: string;
-  image: string;
+  /** Imagen de la ciudad (ms-location) o, si no tiene, de una de sus experiencias. */
+  image?: string;
   to: string;
   caption?: string;
 }
 
-/** Tile de destino / atracción principal: foto cuadrada con el nombre debajo (estilo "Principales atracciones"). */
+/** Tile de destino: foto cuadrada con el nombre debajo. */
 export function DestinationChip({ name, image, to, caption }: Props) {
   return (
     <Link to={to} className="group block w-[160px] shrink-0 sm:w-auto">
       <div className="aspect-square overflow-hidden rounded-md">
-        <img
-          src={photoAt(image, 330)}
-          alt=""
-          loading="lazy"
-          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-        />
+        {image ? (
+          <img
+            src={photoAt(image, 330)}
+            alt=""
+            loading="lazy"
+            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+          />
+        ) : (
+          <div className="h-full w-full bg-gradient-to-br from-brand-100 to-brand-300/60" />
+        )}
       </div>
       <p className="mt-2 font-bold leading-snug group-hover:underline">{name}</p>
       {caption && <p className="text-sm text-ink-muted">{caption}</p>}

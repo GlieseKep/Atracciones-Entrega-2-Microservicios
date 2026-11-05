@@ -1,11 +1,12 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { Activity, BarChart3, CalendarRange, ClipboardList, CreditCard, LayoutDashboard, Map, Receipt, UserCog, Users } from 'lucide-react';
+import { Activity, BarChart3, CalendarRange, ClipboardList, CreditCard, LayoutDashboard, Map, Receipt, ScanLine, UserCog, Users } from 'lucide-react';
 
 export const ADMIN_SECTIONS = [
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/admin/catalogo', label: 'Catálogo', icon: Map },
   { to: '/admin/disponibilidad', label: 'Disponibilidad', icon: CalendarRange },
   { to: '/admin/reservas', label: 'Reservas', icon: ClipboardList },
+  { to: '/admin/checkin', label: 'Check-in', icon: ScanLine },
   { to: '/admin/pedidos', label: 'Pedidos', icon: Receipt },
   { to: '/admin/pagos', label: 'Pagos', icon: CreditCard },
   { to: '/admin/clientes', label: 'Clientes', icon: Users },

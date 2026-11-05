@@ -68,6 +68,39 @@ export interface Reservation {
   voucher_qr_payload: string;
   reembolso_id?: string;
   monto_reembolsado?: number;
+  /** Código público de la atracción (`3GdwkIAEDKjp`) y su nombre: enlazan la reserva con su ficha. */
+  attraction_id?: string;
+  attraction_name?: string;
+  /** Turista de `cliente_api` (solo compras de Booking). */
+  client_id?: string;
+  notificacion_booking?: BookingNotificationStatus;
+}
+
+/** Aviso del check-in a Booking Central. */
+export type BookingNotificationStatus = 'NO_APLICA' | 'PENDIENTE' | 'ENVIADA' | 'FALLIDA';
+
+/** `POST /atracciones/reservas/{id}/checkin` (contrato v3) y sus opcionales para Booking Central. */
+export interface CheckinRequest {
+  id: string;
+  documento_identidad: string;
+  codigo_voucher_qr?: string;
+  guia_codigo?: string;
+  scanner_device_id?: string;
+  asistentes_reales?: number;
+  observaciones?: string;
+}
+
+export interface CheckinResult {
+  reserva_id: string;
+  reservation_code: string;
+  estado: ReservationStatus;
+  titular_nombre: string;
+  titular_documento: string;
+  guia_asignado: string;
+  punto_encuentro: string;
+  hora_checkin: string;
+  pase_abordar_qr: string;
+  notificacion_booking: BookingNotificationStatus;
 }
 
 export interface ReservationPage {

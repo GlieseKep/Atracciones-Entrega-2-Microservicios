@@ -2,7 +2,7 @@ import type { IsoDate, IsoDateTime } from './api';
 
 /** Cuentas y sesión de ms-identity (`/api/v3/auth/**` y GraphQL `identity*`). */
 
-export type RoleName = 'ADMIN' | 'OPERADOR' | 'CLIENTE';
+export type RoleName = 'ADMIN' | 'OPERADOR' | 'CLIENTE' | 'GUIA';
 
 export interface User {
   id: number;

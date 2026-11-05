@@ -1,23 +1,23 @@
 import { lazy } from 'react';
-import { createBrowserRouter } from 'react-router-dom';
-import { ADMIN_SCOPE } from '@/api/admin';
+import { createBrowserRouter, Navigate, useLocation, useParams } from 'react-router-dom';
 import { ProtectedRoute } from '@/features/auth/ProtectedRoute';
 import HomePage from '@/pages/HomePage';
 import { AppLayout } from './AppLayout';
 import { ROUTES } from './routes';
 
-// Carga diferida por página (plan §18, fase 8).
+// Carga diferida por página.
 const AttractionsPage = lazy(() => import('@/pages/AttractionsPage'));
 const AttractionDetailPage = lazy(() => import('@/pages/AttractionDetailPage'));
 const SearchPage = lazy(() => import('@/pages/SearchPage'));
-const ReservationPage = lazy(() => import('@/pages/ReservationPage'));
+const CheckoutPage = lazy(() => import('@/pages/CheckoutPage'));
 const ReservationDetailPage = lazy(() => import('@/pages/ReservationDetailPage'));
-const PurchasePage = lazy(() => import('@/pages/PurchasePage'));
-const OrderPage = lazy(() => import('@/pages/OrderPage'));
 const ProfilePage = lazy(() => import('@/pages/ProfilePage'));
 const HelpPage = lazy(() => import('@/pages/HelpPage'));
 const LoginPage = lazy(() => import('@/pages/AuthPages').then((m) => ({ default: m.LoginPage })));
 const RegisterPage = lazy(() => import('@/pages/AuthPages').then((m) => ({ default: m.RegisterPage })));
+const RecoverPage = lazy(() => import('@/pages/AuthPages').then((m) => ({ default: m.RecoverPage })));
+const ResetPasswordPage = lazy(() => import('@/pages/AuthPages').then((m) => ({ default: m.ResetPasswordPage })));
+const VerifyEmailPage = lazy(() => import('@/pages/AuthPages').then((m) => ({ default: m.VerifyEmailPage })));
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'));
 const AdminLayout = lazy(() => import('@/pages/admin/AdminLayout'));
 const AdminDashboardPage = lazy(() => import('@/pages/admin/AdminDashboardPage'));
@@ -28,9 +28,17 @@ const AdminReportsPage = lazy(() => import('@/pages/admin/AdminReportsPage'));
 const AdminObservabilityPage = lazy(() => import('@/pages/admin/AdminObservabilityPage'));
 const AdminReservationsPage = lazy(() => import('@/pages/admin/AdminOperationsPages').then((m) => ({ default: m.AdminReservationsPage })));
 const AdminOrdersPage = lazy(() => import('@/pages/admin/AdminOrdersPage'));
+const AdminCheckinPage = lazy(() => import('@/pages/admin/AdminCheckinPage'));
 const AdminPaymentsPage = lazy(() => import('@/pages/admin/AdminOperationsPages').then((m) => ({ default: m.AdminPaymentsPage })));
 
 const privateRoute = (element: React.ReactNode) => <ProtectedRoute>{element}</ProtectedRoute>;
+
+/** `/atracciones/:id/reservar` ("reservar sin pagar" del portal anterior) ya no existe: la compra es un solo paso. */
+function LegacyReserveRedirect() {
+  const { id = '' } = useParams();
+  const { search } = useLocation();
+  return <Navigate to={`/atracciones/${id}/comprar${search}`} replace />;
+}
 
 export const router = createBrowserRouter([
   {
@@ -43,15 +51,19 @@ export const router = createBrowserRouter([
       { path: ROUTES.help, element: <HelpPage /> },
       { path: ROUTES.login, element: <LoginPage /> },
       { path: ROUTES.register, element: <RegisterPage /> },
-      { path: ROUTES.reserve, element: privateRoute(<ReservationPage />) },
-      { path: ROUTES.purchase, element: privateRoute(<PurchasePage />) },
+      { path: ROUTES.recover, element: <RecoverPage /> },
+      { path: ROUTES.resetPassword, element: <ResetPasswordPage /> },
+      { path: ROUTES.verifyEmail, element: <VerifyEmailPage /> },
+      { path: ROUTES.legacyReserve, element: <LegacyReserveRedirect /> },
+      { path: ROUTES.checkout, element: privateRoute(<CheckoutPage />) },
       { path: ROUTES.reservation, element: privateRoute(<ReservationDetailPage />) },
-      { path: ROUTES.order, element: privateRoute(<OrderPage />) },
       { path: ROUTES.profile, element: privateRoute(<ProfilePage />) },
+      // Fuera del bloque /admin (que exige ADMIN): también la usan el guía (GUIA) y el operador. La página valida el rol.
+      { path: ROUTES.adminCheckin, element: privateRoute(<AdminCheckinPage />) },
       {
         path: ROUTES.admin,
         element: (
-          <ProtectedRoute scope={ADMIN_SCOPE}>
+          <ProtectedRoute role="ADMIN">
             <AdminLayout />
           </ProtectedRoute>
         ),

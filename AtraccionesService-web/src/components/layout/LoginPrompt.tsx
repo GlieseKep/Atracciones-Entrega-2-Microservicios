@@ -33,10 +33,10 @@ export function LoginPrompt() {
         </>
       }
     >
-      <p className="text-ink-soft">{prompt?.reason ?? 'Necesitas una cuenta para reservar y comprar experiencias.'}</p>
+      <p className="text-ink-soft">{prompt?.reason ?? 'Necesitas una cuenta para comprar experiencias.'}</p>
       <p className="mt-4 flex items-start gap-2 text-sm text-ink-soft">
         <ShieldCheck size={18} className="mt-0.5 shrink-0 text-success" aria-hidden="true" />
-        Te llevaremos al acceso seguro de TourGirls. Crear una cuenta es gratis y solo toma un minuto.
+        Crear una cuenta es gratis y solo toma un minuto. Después volverás a esta compra.
       </p>
     </Modal>
   );

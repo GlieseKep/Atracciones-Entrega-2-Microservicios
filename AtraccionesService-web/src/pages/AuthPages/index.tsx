@@ -1,52 +1,36 @@
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
+import { useForm, type FieldValues, type Path, type UseFormSetError } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ShieldCheck } from 'lucide-react';
+import { CheckCircle2, ShieldCheck } from 'lucide-react';
 import { z } from 'zod';
-import { ADMIN_SCOPE } from '@/api/admin';
-import { login, register } from '@/api/auth';
-import { Button } from '@/components/common/Button';
+import { confirmPasswordRecovery, login, register, requestPasswordRecovery, verifyEmail } from '@/api/auth';
+import { Button, ButtonLink } from '@/components/common/Button';
 import { Alert } from '@/components/common/Feedback';
 import { Input } from '@/components/common/Input';
-import { photoAt } from '@/components/attractions/AttractionCard';
-import { DEMO_ATTRACTIONS } from '@/features/attractions/demoCatalog';
-import { AuthError } from '@/features/auth/session';
-import { hasScope, useAuthStore } from '@/stores/authStore';
+import { AUTH_PHOTO, photoAt } from '@/features/content/photos';
+import { hasRole, useAuthStore } from '@/stores/authStore';
 import { useUiStore } from '@/stores/uiStore';
+import { ApiError, errorMessage } from '@/utils/api';
 import { paths, safeReturnPath } from '@/utils/routes';
-
-const loginSchema = z.object({
-  email: z.string().trim().email('Introduce un correo válido.'),
-  password: z.string().min(1, 'Indica tu contraseña.'),
-});
-
-const registerSchema = z
-  .object({
-    name: z.string().trim().min(1, 'Indica tu nombre.').max(200, 'Máximo 200 caracteres.'),
-    email: z.string().trim().email('Introduce un correo válido.').max(254),
-    password: z
-      .string()
-      .min(8, 'Mínimo 8 caracteres.')
-      .max(128, 'Máximo 128 caracteres.')
-      .regex(/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'Incluye mayúscula, minúscula y número.'),
-    confirm: z.string(),
-    acceptTerms: z.literal(true, { errorMap: () => ({ message: 'Debes aceptar los términos de uso.' }) }),
-  })
-  .refine((v) => v.password === v.confirm, { path: ['confirm'], message: 'Las contraseñas no coinciden.' });
-
-type LoginValues = z.infer<typeof loginSchema>;
-type RegisterValues = z.infer<typeof registerSchema>;
+import {
+  loginSchema,
+  recoverySchema,
+  registerSchema,
+  resetPasswordSchema,
+  type LoginValues,
+  type RegisterValues,
+} from '@/utils/validation';
 
 /**
- * Sin ruta solicitada, los administradores entran directamente al panel. Un cliente nunca vuelve al panel
- * (p. ej. `returnTo=/admin` tras cerrar la sesión de un administrador): va a la página principal.
+ * Sin ruta solicitada, los administradores entran directamente al panel. Quien no es administrador nunca vuelve al
+ * panel (p. ej. `returnTo=/admin` tras cerrar la sesión de un administrador): va a la página principal.
  */
 function destination(returnTo: string) {
-  const isAdmin = hasScope(useAuthStore.getState().claims, ADMIN_SCOPE);
+  const isAdmin = hasRole(useAuthStore.getState().user, 'ADMIN');
   const adminPath = returnTo === paths.admin() || returnTo.startsWith(`${paths.admin()}/`) || returnTo.startsWith(`${paths.admin()}?`);
   if (isAdmin) return returnTo === '/' ? paths.admin() : returnTo;
-  return adminPath ? paths.home() : returnTo;
+  return adminPath && !returnTo.startsWith('/admin/checkin') ? paths.home() : returnTo;
 }
 
 /** Si ya hay sesión, vuelve directamente a la ruta solicitada. */
@@ -61,18 +45,22 @@ function useReturnTo() {
   return returnTo;
 }
 
-/** Une el mensaje del servicio y los errores por campo. */
-function describe(error: unknown): { message: string; fields: Record<string, string[]> } {
-  if (error instanceof AuthError) return { message: error.message, fields: error.fieldErrors };
-  return { message: 'No se pudo completar la operación. Inténtalo de nuevo.', fields: {} };
+/** Copia los errores por campo de Identity (`invalid_params`) al formulario y deja el mensaje general. */
+function showErrors<T extends FieldValues>(error: unknown, setError: UseFormSetError<T>, fields: Path<T>[]) {
+  if (error instanceof ApiError) {
+    for (const name of fields) {
+      const message = error.fieldErrors[name]?.[0];
+      if (message) setError(name, { message });
+    }
+  }
+  setError('root' as Path<T>, { message: errorMessage(error) });
 }
 
 function AuthLayout({ title, subtitle, children }: { title: string; subtitle: string; children: ReactNode }) {
-  const photo = DEMO_ATTRACTIONS[3].photos[0].url;
   return (
     <div className="page-container grid grid-cols-1 gap-8 py-10 lg:grid-cols-[1fr_440px]">
       <section aria-hidden="true" className="relative hidden overflow-hidden rounded-lg lg:block">
-        <img src={photoAt(photo, 960)} alt="" className="absolute inset-0 h-full w-full object-cover" />
+        <img src={photoAt(AUTH_PHOTO, 960)} alt="" className="absolute inset-0 h-full w-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-night/80 via-night/20 to-transparent" />
         <p className="absolute bottom-8 left-8 right-8 text-2xl text-white">
           Volcanes, lagunas y ciudades coloniales.
@@ -107,20 +95,25 @@ export function LoginPage() {
 
   const submit = handleSubmit(async (values) => {
     try {
-      await login(values.email, values.password);
-      notify('¡Hola de nuevo!', 'success');
+      const user = await login(values.correo, values.password);
+      notify(`¡Hola de nuevo, ${user.nombre}!`, 'success');
       navigate(destination(returnTo), { replace: true });
     } catch (error) {
-      setError('root', { message: describe(error).message });
+      showErrors(error, setError, ['correo', 'password']);
     }
   });
 
   return (
-    <AuthLayout title="Iniciar sesión" subtitle="Accede para reservar y comprar experiencias en Ecuador.">
+    <AuthLayout title="Iniciar sesión" subtitle="Accede para comprar experiencias y ver tus reservas.">
       <form onSubmit={submit} noValidate className="space-y-4">
         {sessionExpired && <Alert>Tu sesión expiró. Vuelve a iniciar sesión para continuar.</Alert>}
-        <Input label="Correo electrónico" type="email" autoComplete="email" autoFocus error={errors.email?.message} {...field('email')} />
+        <Input label="Correo electrónico" type="email" autoComplete="email" autoFocus error={errors.correo?.message} {...field('correo')} />
         <Input label="Contraseña" type="password" autoComplete="current-password" error={errors.password?.message} {...field('password')} />
+        <p className="text-right text-sm">
+          <Link to={paths.recover()} className="link">
+            ¿Olvidaste tu contraseña?
+          </Link>
+        </p>
         {errors.root && <Alert tone="error">{errors.root.message}</Alert>}
         <Button type="submit" size="lg" fullWidth loading={isSubmitting}>
           Iniciar sesión
@@ -149,28 +142,34 @@ export function RegisterPage() {
 
   const submit = handleSubmit(async (values) => {
     try {
-      await register(values.name, values.email, values.password);
-      notify('¡Cuenta creada! Ya puedes reservar.', 'success');
+      await register({
+        correo: values.correo.trim().toLowerCase(),
+        password: values.password,
+        nombre: values.nombre.trim(),
+        apellido: values.apellido.trim(),
+        telefono: values.telefono?.trim() || null,
+      });
+      notify('¡Cuenta creada! Te enviamos un correo para verificarla.', 'success');
       navigate(destination(returnTo), { replace: true });
     } catch (error) {
-      const { message, fields } = describe(error);
-      for (const [name, messages] of Object.entries(fields)) {
-        if (name === 'name' || name === 'email' || name === 'password') setError(name, { message: messages[0] });
-      }
-      setError('root', { message });
+      showErrors(error, setError, ['nombre', 'apellido', 'correo', 'telefono', 'password']);
     }
   });
 
   return (
-    <AuthLayout title="Crear cuenta" subtitle="Regístrate gratis para reservar tours, entradas y experiencias.">
+    <AuthLayout title="Crear cuenta" subtitle="Regístrate gratis para comprar tours, entradas y experiencias.">
       <form onSubmit={submit} noValidate className="space-y-4">
-        <Input label="Nombre" autoComplete="name" autoFocus error={errors.name?.message} {...field('name')} />
-        <Input label="Correo electrónico" type="email" autoComplete="email" error={errors.email?.message} {...field('email')} />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Input label="Nombre" autoComplete="given-name" autoFocus error={errors.nombre?.message} {...field('nombre')} />
+          <Input label="Apellido" autoComplete="family-name" error={errors.apellido?.message} {...field('apellido')} />
+        </div>
+        <Input label="Correo electrónico" type="email" autoComplete="email" error={errors.correo?.message} {...field('correo')} />
+        <Input label="Teléfono (opcional)" type="tel" autoComplete="tel" error={errors.telefono?.message} {...field('telefono')} />
         <Input
           label="Contraseña"
           type="password"
           autoComplete="new-password"
-          help="Mínimo 8 caracteres, con mayúscula, minúscula y número."
+          help="Entre 8 y 72 caracteres."
           error={errors.password?.message}
           {...field('password')}
         />
@@ -178,8 +177,15 @@ export function RegisterPage() {
         <label className="flex items-start gap-3 text-sm">
           <input type="checkbox" className="mt-0.5 h-[18px] w-[18px] accent-[#C94D6B]" {...field('acceptTerms')} />
           <span>
-            Acepto los <Link to="/ayuda#terminos" className="link">términos de uso</Link> y la{' '}
-            <Link to="/ayuda#privacidad" className="link">política de privacidad</Link>.
+            Acepto los{' '}
+            <Link to={paths.help('terminos')} className="link">
+              términos de uso
+            </Link>{' '}
+            y la{' '}
+            <Link to={paths.help('privacidad')} className="link">
+              política de privacidad
+            </Link>
+            .
           </span>
         </label>
         {errors.acceptTerms && <p className="field-error">{errors.acceptTerms.message}</p>}
@@ -194,6 +200,127 @@ export function RegisterPage() {
           Iniciar sesión
         </Link>
       </p>
+    </AuthLayout>
+  );
+}
+
+/** Pide el enlace de recuperación. Identity responde igual exista o no la cuenta. */
+export function RecoverPage() {
+  const [sent, setSent] = useState(false);
+  const {
+    register: field,
+    handleSubmit,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<z.infer<typeof recoverySchema>>({ resolver: zodResolver(recoverySchema) });
+
+  const submit = handleSubmit(async ({ correo }) => {
+    try {
+      await requestPasswordRecovery(correo);
+      setSent(true);
+    } catch (error) {
+      showErrors(error, setError, ['correo']);
+    }
+  });
+
+  return (
+    <AuthLayout title="Recuperar contraseña" subtitle="Te enviaremos un enlace para crear una contraseña nueva.">
+      {sent ? (
+        <Alert tone="success">Si el correo está registrado, recibirás un enlace en unos minutos. Revisa también la carpeta de spam.</Alert>
+      ) : (
+        <form onSubmit={submit} noValidate className="space-y-4">
+          <Input label="Correo electrónico" type="email" autoComplete="email" autoFocus error={errors.correo?.message} {...field('correo')} />
+          {errors.root && <Alert tone="error">{errors.root.message}</Alert>}
+          <Button type="submit" size="lg" fullWidth loading={isSubmitting}>
+            Enviar enlace
+          </Button>
+        </form>
+      )}
+      <p className="mt-6 text-center text-ink-soft">
+        <Link to={paths.login()} className="link">
+          Volver a iniciar sesión
+        </Link>
+      </p>
+    </AuthLayout>
+  );
+}
+
+/** Destino del enlace del correo de recuperación: `/recuperar-clave?token=`. */
+export function ResetPasswordPage() {
+  const [params] = useSearchParams();
+  const token = params.get('token') ?? '';
+  const [done, setDone] = useState(false);
+  const {
+    register: field,
+    handleSubmit,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<z.infer<typeof resetPasswordSchema>>({ resolver: zodResolver(resetPasswordSchema) });
+
+  const submit = handleSubmit(async ({ password }) => {
+    try {
+      await confirmPasswordRecovery(token, password);
+      setDone(true);
+    } catch (error) {
+      showErrors(error, setError, ['password']);
+    }
+  });
+
+  return (
+    <AuthLayout title="Nueva contraseña" subtitle="Elige una contraseña nueva para tu cuenta.">
+      {!token ? (
+        <Alert tone="error">El enlace no es válido. Solicita uno nuevo desde “¿Olvidaste tu contraseña?”.</Alert>
+      ) : done ? (
+        <div className="space-y-4">
+          <Alert tone="success">Tu contraseña se actualizó. Ya puedes iniciar sesión.</Alert>
+          <ButtonLink to={paths.login()} fullWidth>
+            Iniciar sesión
+          </ButtonLink>
+        </div>
+      ) : (
+        <form onSubmit={submit} noValidate className="space-y-4">
+          <Input label="Contraseña nueva" type="password" autoComplete="new-password" autoFocus help="Entre 8 y 72 caracteres." error={errors.password?.message} {...field('password')} />
+          <Input label="Repite la contraseña" type="password" autoComplete="new-password" error={errors.confirm?.message} {...field('confirm')} />
+          {errors.root && <Alert tone="error">{errors.root.message}</Alert>}
+          <Button type="submit" size="lg" fullWidth loading={isSubmitting}>
+            Guardar contraseña
+          </Button>
+        </form>
+      )}
+    </AuthLayout>
+  );
+}
+
+/** Destino del enlace de verificación: `/verificar-correo?token=`. */
+export function VerifyEmailPage() {
+  const [params] = useSearchParams();
+  const token = params.get('token') ?? '';
+  const [state, setState] = useState<{ status: 'loading' | 'done' | 'error'; error?: unknown }>({ status: token ? 'loading' : 'error' });
+
+  useEffect(() => {
+    if (!token) return;
+    verifyEmail(token).then(
+      () => setState({ status: 'done' }),
+      (error: unknown) => setState({ status: 'error', error }),
+    );
+  }, [token]);
+
+  return (
+    <AuthLayout title="Verificar correo" subtitle="Confirmamos que el correo de tu cuenta es tuyo.">
+      {state.status === 'loading' && <div className="skeleton h-12" aria-busy="true" />}
+      {state.status === 'done' && (
+        <div className="space-y-4">
+          <p className="flex items-center gap-2 font-semibold text-success">
+            <CheckCircle2 size={22} aria-hidden="true" /> Tu correo quedó verificado.
+          </p>
+          <ButtonLink to={paths.home()} fullWidth>
+            Ir al inicio
+          </ButtonLink>
+        </div>
+      )}
+      {state.status === 'error' && (
+        <Alert tone="error">{state.error ? errorMessage(state.error) : 'El enlace no es válido.'} Puedes pedir otro desde “Mi cuenta”.</Alert>
+      )}
     </AuthLayout>
   );
 }

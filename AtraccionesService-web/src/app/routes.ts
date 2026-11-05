@@ -17,4 +17,6 @@ export const ROUTES = {
   resetPassword: '/recuperar-clave',
   verifyEmail: '/verificar-correo',
   admin: '/admin',
+  /** Check-in en el punto de encuentro (ADMIN, OPERADOR o GUIA). */
+  adminCheckin: '/admin/checkin',
 } as const;
