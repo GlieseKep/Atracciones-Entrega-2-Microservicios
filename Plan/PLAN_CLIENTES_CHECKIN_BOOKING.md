@@ -9,16 +9,24 @@
 
 ## 1. Estado actual
 
+Actualizado el 2026-11-05: el plan está **programado completo** (secciones 3 a 7) y el backend compila con
+`npm run build` (`tsc -b`). Falta correr el guion de demostración (sección 8) contra Azure.
+
 | Requisito | Estado | Dónde |
 |---|---|---|
-| Crear atracción en la web | Hecho | `AdminCatalogPage` → `catalogAdmin.create` |
-| Crear y editar cupos en la web | Hecho | `AdminAvailabilityPage` → `POST /admin/availability`, `PATCH /admin/availability/{id}` |
+| Crear atracción en la web | Hecho (panel anterior) | `AdminCatalogPage`. El panel todavía usa la API del monolito: se migra con `AUDITORIA_PANEL_ADMIN.md` §2.2 |
+| Crear y editar cupos en la web | Hecho (panel anterior) | `AdminAvailabilityPage`. Mismo caso: `AUDITORIA_PANEL_ADMIN.md` §2.3 |
 | Reserva desde Booking descuenta cupos | Hecho | `PurchaseFlow` → `inventory.reserveSeats` (se compensa con `releaseSeats`) |
-| `GET/POST /api/v3/clientes` | **Falta** | No existe la ruta ni un `client_id` |
-| Turista sin duplicar | **Falta** | El titular solo se guarda en `reserva_pasajero`, una copia por reserva |
-| Check-in presencial | Hecho (API) | `POST /atracciones/reservas/{id}/checkin` → `CheckinService` |
-| Aviso del check-in a Booking Central | **Falta** | No se llama a `booking-core-api` |
-| Pantalla de check-in para el guía | **Falta** | La web solo le muestra el QR al turista |
+| `GET/POST /api/v3/clientes` | Hecho | `partner-api/handlers/clients.ts` → `identity.findClient` / `identity.createClient` → `client-service` |
+| Turista sin duplicar | Hecho | `cliente_api` (`cla_tipo = 'TURISTA'`, índices únicos parciales) y `identity.ensureClient` en la compra de un socio |
+| Datos de facturación del turista | Hecho | `dato_facturacion.cla_id` y `billing.ensurePrincipalForClient` / `getPrincipalForClient` |
+| Check-in presencial | Hecho | `POST /atracciones/reservas/{id}/checkin` → `CheckinService` (acepta `GUIA`) |
+| Aviso del check-in a Booking Central | Hecho | `notificacion_checkin` + `CheckinNotifier` → ESB `bookingCore.notifyCheckin` (`X-API-Key`) |
+| Pantalla de check-in para el guía | Hecho | `/admin/checkin` (`AdminCheckinPage`), enlace «Check-in» en la cabecera para `GUIA` y `OPERADOR` |
+| Columna «Aviso a Booking» en la lista de reservas del admin | Pendiente | Llega con la migración del panel (`AUDITORIA_PANEL_ADMIN.md` §2.4: `notificacion_booking` de `bookingListReservations`) |
+
+En Azure, el ESB usa `BOOKING_CORE_API_KEY` y, si no está, `BOOKING_API_KEY` (`tools/azure-configurar-app-unica.sh` ya
+fija `BOOKING_CORE_URL`). `CHECKIN_NOTIFY_INTERVAL_MS` es opcional (60 s por defecto, mínimo 5 s).
 
 El punto 1 no necesita código: solo se comprueba con el guion de la sección 8.
 
