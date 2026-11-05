@@ -6,7 +6,12 @@
 | Origen | `AUDITORIA_PANEL_ADMIN.md` §4.4 |
 | Servicios | ms-identity (publica), ms-audit (ya consume), panel administrativo (consulta) |
 
-## 1. Situación actual
+> **Estado (2026-11-05): programado** (secciones 3.1, 3.2 y 3.3). ms-identity compila con `tsc`; falta desplegar y
+> correr la comprobación de la sección 5. La parte del panel (3.4) llega con la migración del panel administrativo.
+> Cambio respecto del plan: `USUARIO_DESACTIVADO` no lleva `sesiones_revocadas` (la revocación no devuelve cuántas
+> sesiones cerró; siempre se revocan todas al desactivar).
+
+## 1. Situación inicial
 
 - **ms-audit ya guarda cualquier evento del bus.** Su cola `ms-audit` escucha `#` y `toRecord` no tiene lista de tipos.
   De cada evento toma `type` → `accion`, el último tramo de `source` → `entidad`, `subject` → `entidad_id`,
@@ -25,7 +30,7 @@ En `data`, `usu_id` es **quien hizo el cambio**, como pide `bitacora.usu_id`, y 
 |---|---|---|
 | `ROL_ASIGNADO` | `identityAssignRole` con éxito | `{ usu_id, usuario_id, correo, rol }` |
 | `ROL_REVOCADO` | `identityRemoveRole` con éxito | `{ usu_id, usuario_id, correo, rol }` |
-| `USUARIO_DESACTIVADO` | `identitySetUserActive { activo: false }` | `{ usu_id, usuario_id, correo, sesiones_revocadas }` |
+| `USUARIO_DESACTIVADO` | `identitySetUserActive { activo: false }` | `{ usu_id, usuario_id, correo }` (sus sesiones se revocan en la misma transacción) |
 | `USUARIO_REACTIVADO` | `identitySetUserActive { activo: true }` | `{ usu_id, usuario_id, correo }` |
 | `ADMIN_INICIAL_CREADO` | `createFirstAdmin` (`tools/create-admin.mjs`) | `{ usu_id: null, usuario_id, correo }` |
 | `CLIENTE_API_CREADO` / `CLIENTE_API_ACTIVADO` / `CLIENTE_API_DESACTIVADO` | Altas y cambios de socios (`X-API-Key`) | `{ usu_id, cla_id, codigo }`; **nunca** la `api_key` |

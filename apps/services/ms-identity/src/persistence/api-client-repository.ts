@@ -1,5 +1,5 @@
 import { AppError, returnedRows } from '@atracciones/platform';
-import type { DataSource } from 'typeorm';
+import type { DataSource, EntityManager } from 'typeorm';
 import type { ClienteApiDto, ClienteDto, ClienteFiltros, ClienteRequest } from '../contract';
 
 interface ClienteApiRow {
@@ -43,9 +43,9 @@ const toDto = (row: ClienteApiRow): ClienteApiDto => ({
 export class ApiClientRepository {
   constructor(private readonly db: DataSource) {}
 
-  async create(codigo: string, nombre: string, keyHash: string): Promise<ClienteApiDto> {
+  async create(codigo: string, nombre: string, keyHash: string, db: DataSource | EntityManager = this.db): Promise<ClienteApiDto> {
     try {
-      const [row] = await this.db.query(
+      const [row] = await db.query(
         `INSERT INTO cliente_api (cla_codigo, cla_nombre, cla_clave_hash) VALUES ($1, $2, $3) RETURNING ${COLUMNS}`,
         [codigo, nombre, keyHash],
       );
@@ -64,9 +64,15 @@ export class ApiClientRepository {
     return rows.map(toDto);
   }
 
-  async setActive(id: number, activo: boolean): Promise<ClienteApiDto | null> {
+  /** Estado actual de un socio (bloquea la fila dentro de una transacción); `null` si no existe. */
+  async activeState(id: number, db: DataSource | EntityManager = this.db): Promise<boolean | null> {
+    const [row] = await db.query(`SELECT cla_activo FROM cliente_api WHERE cla_id = $1 AND cla_tipo = 'SOCIO' FOR UPDATE`, [id]);
+    return row ? row.cla_activo : null;
+  }
+
+  async setActive(id: number, activo: boolean, db: DataSource | EntityManager = this.db): Promise<ClienteApiDto | null> {
     const rows = returnedRows<ClienteApiRow>(
-      await this.db.query(`UPDATE cliente_api SET cla_activo = $2 WHERE cla_id = $1 AND cla_tipo = 'SOCIO' RETURNING ${COLUMNS}`, [id, activo]),
+      await db.query(`UPDATE cliente_api SET cla_activo = $2 WHERE cla_id = $1 AND cla_tipo = 'SOCIO' RETURNING ${COLUMNS}`, [id, activo]),
     );
     return rows.length > 0 ? toDto(rows[0]) : null;
   }

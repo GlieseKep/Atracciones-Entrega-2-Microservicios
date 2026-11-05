@@ -30,6 +30,24 @@ Programar el servicio dueño de las identidades del sistema:
 
 `ms_identity.sql` es la sección 1 del script general, sin cambios.
 
+> **Actualización 2026-11-05 (`Plan/PLAN_BITACORA_IDENTITY.md`):** Identity ya **publica eventos** para la bitácora,
+> con una tabla `outbox` propia (sección 1 del script general) y `OutboxRelay` (`source = /servicios/identity`).
+
+## 2.1 Eventos
+
+Todos van al bus con `subject` = ID afectado; en `data`, `usu_id` es quien hizo el cambio (`null` si no fue un
+administrador). Se guardan en `outbox` en la misma transacción que el cambio. Una operación rechazada o sin cambio no
+publica nada. Nunca incluyen contraseñas, hashes, tokens ni API keys.
+
+| Tipo | Cuándo | `data` |
+|---|---|---|
+| `ROL_ASIGNADO` | `POST /usuarios/{id}/roles` | `usu_id`, `usuario_id`, `correo`, `rol` |
+| `ROL_REVOCADO` | `DELETE /usuarios/{id}/roles/{rol}` | `usu_id`, `usuario_id`, `correo`, `rol` |
+| `USUARIO_DESACTIVADO` / `USUARIO_REACTIVADO` | `PUT /usuarios/{id}/activo` cuando el estado cambia | `usu_id`, `usuario_id`, `correo` |
+| `ADMIN_INICIAL_CREADO` | `tools/create-admin.mjs` | `usu_id: null`, `usuario_id`, `correo` |
+| `CLIENTE_API_CREADO` | `POST /clientes-api` | `usu_id`, `cla_id`, `codigo` |
+| `CLIENTE_API_ACTIVADO` / `CLIENTE_API_DESACTIVADO` | `PUT /clientes-api/{id}/activo` cuando el estado cambia | `usu_id`, `cla_id`, `codigo` |
+
 ## 3. Decisiones (confirmadas el 2026-10-30)
 
 El diseño no define estos puntos. `usu_id` y `cla_id` son `BIGINT`, como en el script general: el contrato v3 no expone IDs de usuario.

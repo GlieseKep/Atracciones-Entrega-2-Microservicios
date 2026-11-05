@@ -258,6 +258,23 @@ CREATE TRIGGER trg_cliente_api_actualizado BEFORE UPDATE ON cliente_api
 INSERT INTO rol (rol_nombre, rol_descripcion)
     VALUES ('GUIA', 'Guía que valida el check-in en el punto de encuentro');
 
+-- Outbox transaccional: cambios de roles, cuentas y socios hacia el bus
+-- (ROL_ASIGNADO, ROL_REVOCADO, USUARIO_DESACTIVADO, USUARIO_REACTIVADO,
+-- ADMIN_INICIAL_CREADO, CLIENTE_API_*). ms-audit los guarda en la bitacora.
+CREATE TABLE outbox (
+    id             UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+    event_id       UUID         NOT NULL CONSTRAINT uq_outbox_event_id UNIQUE,
+    tipo_evento    VARCHAR(60)  NOT NULL,
+    agregado_id    VARCHAR(60)  NOT NULL,    -- usu_id o cla_id afectado
+    payload        JSONB        NOT NULL,    -- usu_id = quien hizo el cambio
+    correlation_id VARCHAR(100) NOT NULL,
+    creado_en      TIMESTAMPTZ  NOT NULL DEFAULT now(),
+    publicado_en   TIMESTAMPTZ,
+    intentos       INT          NOT NULL DEFAULT 0 CONSTRAINT ck_outbox_intentos CHECK (intentos >= 0),
+    ultimo_error   VARCHAR(500)
+);
+CREATE INDEX ix_outbox_pendientes ON outbox (creado_en) WHERE publicado_en IS NULL;
+
 
 -- ============================================================================
 --  2 · BILLING PROFILE SERVICE  (REST)

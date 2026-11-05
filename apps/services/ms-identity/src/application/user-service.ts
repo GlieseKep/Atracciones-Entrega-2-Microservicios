@@ -3,6 +3,7 @@ import type { DataSource } from 'typeorm';
 import type { PerfilUpdateRequest, RolNombre, UsuarioDto, UsuarioPageDto } from '../contract';
 import type { SessionRepository } from '../persistence/session-repository';
 import type { UserRepository, UsuarioFiltros } from '../persistence/user-repository';
+import { recordUserEvent } from './audit-events';
 import { hashPassword } from './passwords';
 
 const userNotFound = (id: number) => AppError.notFound(`No existe el usuario ${id}.`, 'USER_NOT_FOUND');
@@ -34,27 +35,38 @@ export class UserService {
     };
   }
 
-  /** Desactivar revoca sus sesiones. Un administrador no puede desactivarse a sí mismo. */
+  /**
+   * Desactivar revoca sus sesiones. Un administrador no puede desactivarse a sí mismo. El cambio va a la bitácora
+   * (`USUARIO_DESACTIVADO` / `USUARIO_REACTIVADO`); si la cuenta ya estaba así, no hay evento.
+   */
   async setActive(id: number, activo: boolean, adminId: number): Promise<UsuarioDto> {
     if (!activo && id === adminId) throw AppError.conflict('CANNOT_DISABLE_SELF', 'Un administrador no puede desactivarse a sí mismo.');
+    const user = await this.get(id);
     await this.dataSource.transaction(async (m) => {
       if (!(await this.users.setActive(id, activo, m))) throw userNotFound(id);
       if (!activo) await this.sessions.revokeAll(id, m);
+      if (user.activo !== activo) await recordUserEvent(m, activo ? 'USUARIO_REACTIVADO' : 'USUARIO_DESACTIVADO', adminId, user);
     });
     return this.get(id);
   }
 
   async assignRole(id: number, rol: RolNombre, adminId: number): Promise<UsuarioDto> {
-    await this.get(id);
-    if (!(await this.users.assignRole(id, rol, adminId))) throw AppError.conflict('ROLE_ALREADY_ASSIGNED', `El usuario ya tiene el rol ${rol}.`);
+    const user = await this.get(id);
+    await this.dataSource.transaction(async (m) => {
+      if (!(await this.users.assignRole(id, rol, adminId, m))) throw AppError.conflict('ROLE_ALREADY_ASSIGNED', `El usuario ya tiene el rol ${rol}.`);
+      await recordUserEvent(m, 'ROL_ASIGNADO', adminId, user, { rol });
+    });
     return this.get(id);
   }
 
   /** Un administrador no puede quitarse su propio rol `ADMIN`: perdería el acceso al panel. */
   async removeRole(id: number, rol: RolNombre, adminId: number): Promise<UsuarioDto> {
     if (rol === 'ADMIN' && id === adminId) throw AppError.conflict('CANNOT_REMOVE_OWN_ADMIN', 'Un administrador no puede quitarse su propio rol ADMIN.');
-    await this.get(id);
-    if (!(await this.users.removeRole(id, rol))) throw AppError.notFound(`El usuario no tiene el rol ${rol}.`, 'ROLE_NOT_ASSIGNED');
+    const user = await this.get(id);
+    await this.dataSource.transaction(async (m) => {
+      if (!(await this.users.removeRole(id, rol, m))) throw AppError.notFound(`El usuario no tiene el rol ${rol}.`, 'ROLE_NOT_ASSIGNED');
+      await recordUserEvent(m, 'ROL_REVOCADO', adminId, user, { rol });
+    });
     return this.get(id);
   }
 
@@ -66,6 +78,7 @@ export class UserService {
       const usuId = await this.users.create(m, { ...input, documento: null, telefono: null, fecha_nacimiento: null }, passwordHash);
       await this.users.assignRole(usuId, 'ADMIN', null, m);
       await this.users.markVerified(usuId, m);
+      await recordUserEvent(m, 'ADMIN_INICIAL_CREADO', null, { id: usuId, correo: input.correo });
       return usuId;
     });
     return this.get(id);

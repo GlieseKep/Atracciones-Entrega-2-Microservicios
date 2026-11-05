@@ -194,7 +194,7 @@ siguientes administradores se crean con el panel (opción A o B) o promoviendo u
 | ✅ **Hecho:** `removeRole` rechaza quitarse el propio `ADMIN` (409 `CANNOT_REMOVE_OWN_ADMIN`, documentado en el OpenAPI de ms-identity) | Un administrador perdía el acceso al panel con un clic |
 | No hace falta proteger "el último administrador" | Quitarse el propio `ADMIN` y desactivarse a sí mismo (`CANNOT_DISABLE_SELF`) ya están bloqueados, y quien hace el cambio es administrador: el sistema nunca queda sin `ADMIN` |
 | Revocar las sesiones al quitar `ADMIN`, `OPERADOR` o `GUIA` | El token vigente conserva los roles hasta vencer |
-| Registrar en la bitácora los cambios de roles, cuentas y socios | Plan en [PLAN_BITACORA_IDENTITY.md](PLAN_BITACORA_IDENTITY.md): ms-identity no publica eventos ni tiene tabla `outbox`; ms-audit ya guarda cualquier evento del bus |
+| ✅ **Hecho:** registrar en la bitácora los cambios de roles, cuentas y socios | [PLAN_BITACORA_IDENTITY.md](PLAN_BITACORA_IDENTITY.md): ms-identity publica `ROL_ASIGNADO`, `ROL_REVOCADO`, `USUARIO_DESACTIVADO`/`REACTIVADO`, `ADMIN_INICIAL_CREADO` y `CLIENTE_API_*` por su `outbox`; ms-audit los guarda. Falta la pestaña Historial del panel |
 | (Opción B) `POST /usuarios` | §4.3 |
 
 ### 4.5 Turistas de socios

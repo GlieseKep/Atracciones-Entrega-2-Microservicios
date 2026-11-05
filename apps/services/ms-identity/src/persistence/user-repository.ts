@@ -215,9 +215,9 @@ export class UserRepository {
   }
 
   /** `false` si el usuario no tenía el rol. */
-  async removeRole(usuId: number, rol: RolNombre): Promise<boolean> {
+  async removeRole(usuId: number, rol: RolNombre, db: Db = this.db): Promise<boolean> {
     const rows = returnedRows(
-      await this.db.query(
+      await db.query(
         `DELETE FROM usuario_rol WHERE usu_id = $1 AND rol_id = (SELECT rol_id FROM rol WHERE rol_nombre = $2) RETURNING usu_id`,
         [usuId, rol],
       ),

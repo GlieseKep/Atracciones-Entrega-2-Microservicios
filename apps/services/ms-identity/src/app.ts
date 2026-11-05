@@ -113,7 +113,7 @@ export function createMsIdentityService(config: MsIdentityConfig, dataSource: Da
   const verification = new VerificationService(dataSource, userRepository, sessions, new TokenRepository(dataSource), deps.mailer ?? new LogMailer(logger), config, logger);
   const auth = new AuthService(dataSource, userRepository, sessions, verification, config);
   const users = new UserService(dataSource, userRepository, sessions);
-  const apiClients = new ApiClientService(apiClientRepository);
+  const apiClients = new ApiClientService(dataSource, apiClientRepository);
   const clients = new ClientService(apiClientRepository, deps.esb ?? new EsbClient(config.esbUrl), logger);
   const credentials = new CredentialValidator(userRepository, sessions, apiClientRepository, config.jwtSecret, config.internalTokenSecret);
 
@@ -257,14 +257,14 @@ export function createMsIdentityService(config: MsIdentityConfig, dataSource: Da
   });
 
   api.post('/clientes-api', async (req, res) => {
-    await requireAdmin(req);
+    const { principal } = await requireAdmin(req);
     const { codigo, nombre } = parseClienteApi(req.body);
-    res.status(201).json(await apiClients.create(codigo, nombre));
+    res.status(201).json(await apiClients.create(codigo, nombre, principal.id));
   });
 
   api.put('/clientes-api/:id/activo', async (req, res) => {
-    await requireAdmin(req);
-    res.json(await apiClients.setActive(parseId(req.params.id), parseActivo(req.body)));
+    const { principal } = await requireAdmin(req);
+    res.json(await apiClients.setActive(parseId(req.params.id), parseActivo(req.body), principal.id));
   });
 
   // Clientes turistas (socio o ADMIN) -------------------------------------------
