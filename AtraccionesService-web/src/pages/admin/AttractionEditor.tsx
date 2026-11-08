@@ -23,6 +23,12 @@ const TYPES: { value: AttractionType; label: string }[] = [
   { value: 'PACKAGE', label: 'Paquete' },
 ];
 
+/**
+ * Operador propio (TourGirls Tours & Experiences, en `seed/catalogo-v2.json`). El portal solo publica atracciones propias,
+ * así que el formulario no deja elegirlo: Catalog lo exige y con él asigna los guías.
+ */
+const HOUSE_OPERATOR = 'proveedor-atracciones-dilan';
+
 const num = (min: number, max: number, message: string) => z.coerce.number({ invalid_type_error: message }).min(min, message).max(max, message);
 
 const schema = z
@@ -32,7 +38,7 @@ const schema = z
     short_description: z.string().trim().max(280),
     description: z.string().trim().min(1, 'Describe la experiencia.'),
     tipo: z.enum(['GUIDED_TOUR', 'ADMISSION', 'DAY_TRIP', 'TRANSPORT', 'PACKAGE']),
-    operador: z.string().min(1, 'Elige el operador.'),
+    operador: z.string().min(1),
     ciu_id: z.coerce.number().int().min(1, 'Elige la ciudad.'),
     duration_hours: num(0.01, 720, 'Entre 0,01 y 720 horas.'),
     latitude: num(-90, 90, 'Latitud entre -90 y 90.'),
@@ -92,7 +98,7 @@ const toValues = (a: AdminAttraction | null): Values => ({
   short_description: a?.short_description ?? '',
   description: a?.description ?? '',
   tipo: a?.tipo ?? 'GUIDED_TOUR',
-  operador: a?.operador ?? '',
+  operador: a?.operador ?? HOUSE_OPERATOR,
   ciu_id: a?.ciu_id ?? 0,
   duration_hours: a?.duration_hours ?? 2,
   latitude: a?.meeting_point_geo.latitude ?? -0.1807,
@@ -173,14 +179,13 @@ export function AttractionEditor({ attraction, onClose, onSaved }: { attraction:
   const [error, setError] = useState<unknown>(null);
   const options = useAsync(
     async (signal) => {
-      const [operators, cities, categories, languages, inclusions] = await Promise.all([
-        catalogApi.operators(signal),
+      const [cities, categories, languages, inclusions] = await Promise.all([
         listCities(signal),
         catalogApi.categories(signal),
         catalogApi.languages(signal),
         catalogApi.inclusions(signal),
       ]);
-      return { operators, cities, categories, languages, inclusions };
+      return { cities, categories, languages, inclusions };
     },
     [],
   );
@@ -250,12 +255,6 @@ export function AttractionEditor({ attraction, onClose, onSaved }: { attraction:
           <Fieldset title="Datos generales">
             <Input label="Nombre" className="sm:col-span-2" error={errors.name?.message ?? err('name')} {...register('name')} />
             <Select label="Tipo" options={TYPES} {...register('tipo')} />
-            <Select
-              label="Operador"
-              options={[{ value: '', label: 'Elige…' }, ...o.operators.map((op) => ({ value: op.id, label: op.nombre_comercial }))]}
-              error={errors.operador?.message ?? err('operador')}
-              {...register('operador')}
-            />
             <Select
               label="Provincia"
               value={String(provinceId)}
