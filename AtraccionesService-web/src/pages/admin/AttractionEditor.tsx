@@ -188,8 +188,11 @@ export function AttractionEditor({ attraction, onClose, onSaved }: { attraction:
     register,
     control,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<Values>({ resolver: zodResolver(schema), defaultValues: toValues(attraction) });
+  /** Provincia elegida; `null` mientras no se toque, y entonces se toma la de la ciudad que ya tiene la atracción. */
+  const [province, setProvince] = useState<number | null>(null);
   const stops = useFieldArray({ control, name: 'itinerario' });
   const photos = useFieldArray({ control, name: 'fotos' });
 
@@ -209,7 +212,13 @@ export function AttractionEditor({ attraction, onClose, onSaved }: { attraction:
 
   const err = (name: string) => fieldError(error, name);
   const o = options.data;
-  const check = (name: keyof Values, label: string) => (
+  // Las ciudades ya traen su provincia: el filtro se hace aquí, sin otra llamada a ms-location.
+  const provinces = o
+    ? [...new Map(o.cities.map((c) => [c.provincia.id, c.provincia])).values()].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
+    : [];
+  const provinceId = province ?? o?.cities.find((c) => c.id === attraction?.ciu_id)?.provincia.id ?? 0;
+  const citiesOfProvince = o ? o.cities.filter((c) => c.provincia.id === provinceId).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')) : [];
+  const check =(name: keyof Values, label: string) => (
     <label className="flex items-center gap-2 text-sm">
       <input type="checkbox" className="h-[18px] w-[18px] accent-[#C94D6B]" {...register(name)} /> {label}
     </label>
@@ -248,8 +257,21 @@ export function AttractionEditor({ attraction, onClose, onSaved }: { attraction:
               {...register('operador')}
             />
             <Select
+              label="Provincia"
+              value={String(provinceId)}
+              onChange={(e) => {
+                setProvince(Number(e.target.value));
+                setValue('ciu_id', 0);
+              }}
+              options={[{ value: '0', label: 'Elige…' }, ...provinces.map((p) => ({ value: String(p.id), label: p.nombre }))]}
+            />
+            <Select
               label="Ciudad"
-              options={[{ value: '0', label: 'Elige…' }, ...o.cities.map((c) => ({ value: String(c.id), label: `${c.nombre} (${c.provincia.nombre})` }))]}
+              disabled={provinceId === 0}
+              options={[
+                { value: '0', label: provinceId === 0 ? 'Elige primero la provincia' : 'Elige…' },
+                ...citiesOfProvince.map((c) => ({ value: String(c.id), label: c.nombre })),
+              ]}
               error={errors.ciu_id?.message ?? err('ciu_id')}
               {...register('ciu_id')}
             />

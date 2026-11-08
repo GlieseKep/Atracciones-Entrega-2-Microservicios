@@ -2,7 +2,6 @@ import { Link } from 'react-router-dom';
 import { catalogApi, operationsApi, supportApi, systemHealth, usersApi } from '@/api/admin';
 import { Badge } from '@/components/common/Badge';
 import { useAsync } from '@/hooks/useAsync';
-import { ADMIN_SECTIONS } from './AdminLayout';
 
 const one = { page: 1, limit: 1 };
 
@@ -74,18 +73,6 @@ export default function AdminDashboardPage() {
           {down.length > 0 && <dd className="mt-2 text-xs text-danger">Con problemas: {down.map((s) => s.service).join(', ')}</dd>}
         </Link>
       </dl>
-
-      <h2 className="mt-10 text-xl">Secciones</h2>
-      <ul className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {ADMIN_SECTIONS.slice(1).map(({ to, label, icon: Icon }) => (
-          <li key={to}>
-            <Link to={to} className="card-surface flex items-center gap-3 p-4 hover:shadow-card">
-              <Icon size={22} className="text-brand-500" aria-hidden="true" />
-              <span className="flex-1 font-semibold">{label}</span>
-            </Link>
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }
