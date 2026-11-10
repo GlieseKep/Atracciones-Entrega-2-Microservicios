@@ -248,7 +248,7 @@ function SlotGuideDialog({ slot, guides, onClose, onSaved }: { slot: Slot; guide
       }
     >
       <div className="space-y-4">
-        <Select label="Guía" value={guide} onChange={(e) => setGuide(e.target.value)} options={activeGuideOptions(guides, 'Volver al guía del horario')} />
+        <Select label="Guía (opcional)" value={guide} onChange={(e) => setGuide(e.target.value)} options={activeGuideOptions(guides, 'Volver al guía del horario')} />
         {slot.cupo_reservado > 0 && <Alert>Este turno ya tiene {slot.cupo_reservado} cupos reservados: esas reservas conservan su guía actual.</Alert>}
         {error !== null && <Alert tone="error">{errorMessage(error)}</Alert>}
       </div>
@@ -317,7 +317,7 @@ function RangeGuideDialog({ attraction, guides, onClose, onSaved }: { attraction
       }
     >
       <div className="grid gap-4 sm:grid-cols-2">
-        <Select label="Guía" value={guide} onChange={(e) => setGuide(e.target.value)} options={activeGuideOptions(guides, 'Volver al guía de cada horario')} />
+        <Select label="Guía (opcional)" value={guide} onChange={(e) => setGuide(e.target.value)} options={activeGuideOptions(guides, 'Volver al guía de cada horario')} />
         <Select
           label="Horario"
           value={horId}
@@ -488,7 +488,7 @@ function ScheduleDialog({
         />
         <Input label="Cupo por turno" inputMode="numeric" value={cupo} onChange={(e) => setCupo(e.target.value)} help={schedule ? 'Rige para los turnos nuevos; cada turno se ajusta aparte.' : undefined} />
         <Select
-          label="Guía por defecto"
+          label="Guía por defecto (opcional)"
           value={guide}
           onChange={(e) => setGuide(e.target.value)}
           options={activeGuideOptions(guides, 'Sin guía (el primero activo del operador)')}
