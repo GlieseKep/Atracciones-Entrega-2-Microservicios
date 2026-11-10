@@ -1,0 +1,533 @@
+- generic [ref=f1e3]:
+  - banner [ref=f1e4]:
+    - link "Saltar al contenido" [ref=f1e5] [cursor=pointer]:
+      - /url: "#contenido"
+    - generic [ref=f1e6]:
+      - link "TourGirls, administración" [ref=f1e2063] [cursor=pointer]:
+        - /url: /admin
+        - generic [ref=f1e12]: TourGirls
+      - navigation "Accesos de cuenta" [ref=f1e13]:
+        - link "Panel" [ref=f1e2064] [cursor=pointer]:
+          - /url: /admin
+        - button "Administrador Descubre EC" [ref=f1e2071] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f1e2072]: A
+        - button "Abrir menú" [ref=f1e19] [cursor=pointer]
+  - main [ref=f1e21]:
+    - generic [ref=f1e2076]:
+      - paragraph [ref=f1e2077]: Administración
+      - generic [ref=f1e2078]:
+        - navigation "Administración" [ref=f1e2079]:
+          - list [ref=f1e2080]:
+            - listitem [ref=f1e2081]:
+              - link "Dashboard" [ref=f1e2082] [cursor=pointer]:
+                - /url: /admin
+            - listitem [ref=f1e2088]:
+              - link "Usuarios" [ref=f1e2089] [cursor=pointer]:
+                - /url: /admin/usuarios
+            - listitem [ref=f1e2095]:
+              - link "Catálogo" [ref=f1e2096] [cursor=pointer]:
+                - /url: /admin/catalogo
+            - listitem [ref=f1e2099]:
+              - link "Qué incluye" [ref=f1e2100] [cursor=pointer]:
+                - /url: /admin/incluye
+            - listitem [ref=f1e2104]:
+              - link "Categorías" [ref=f1e2105] [cursor=pointer]:
+                - /url: /admin/categorias
+            - listitem [ref=f1e2111]:
+              - link "Idiomas" [ref=f1e2112] [cursor=pointer]:
+                - /url: /admin/idiomas
+            - listitem [ref=f1e2117]:
+              - link "Guías y operadores" [ref=f1e2118] [cursor=pointer]:
+                - /url: /admin/guias
+            - listitem [ref=f1e2122]:
+              - link "Disponibilidad" [ref=f1e2123] [cursor=pointer]:
+                - /url: /admin/disponibilidad
+            - listitem [ref=f1e2126]:
+              - link "Reservas" [active] [ref=f1e2127] [cursor=pointer]:
+                - /url: /admin/reservas
+            - listitem [ref=f1e2131]:
+              - link "Check-in" [ref=f1e2132] [cursor=pointer]:
+                - /url: /admin/checkin
+            - listitem [ref=f1e2138]:
+              - link "Pedidos" [ref=f1e2139] [cursor=pointer]:
+                - /url: /admin/pedidos
+            - listitem [ref=f1e2143]:
+              - link "Pagos" [ref=f1e2144] [cursor=pointer]:
+                - /url: /admin/pagos
+            - listitem [ref=f1e2147]:
+              - link "Facturas" [ref=f1e2148] [cursor=pointer]:
+                - /url: /admin/facturas
+            - listitem [ref=f1e2152]:
+              - link "Cupones" [ref=f1e2153] [cursor=pointer]:
+                - /url: /admin/cupones
+            - listitem [ref=f1e2157]:
+              - link "Reseñas" [ref=f1e2158] [cursor=pointer]:
+                - /url: /admin/resenas
+            - listitem [ref=f1e2161]:
+              - link "Mensajes" [ref=f1e2162] [cursor=pointer]:
+                - /url: /admin/mensajes
+            - listitem [ref=f1e2166]:
+              - link "Socios" [ref=f1e2167] [cursor=pointer]:
+                - /url: /admin/socios
+            - listitem [ref=f1e2173]:
+              - link "Reportes" [ref=f1e2174] [cursor=pointer]:
+                - /url: /admin/reportes
+            - listitem [ref=f1e2177]:
+              - link "Observabilidad" [ref=f1e2178] [cursor=pointer]:
+                - /url: /admin/observabilidad
+        - generic [ref=f1e2226]:
+          - heading "Reservas" [level=1] [ref=f1e2228]
+          - generic [ref=f1e2229]:
+            - generic [ref=f1e2230]:
+              - generic [ref=f1e2231]: Buscar
+              - searchbox "Buscar" [ref=f1e2233]
+            - generic [ref=f1e2234]:
+              - generic [ref=f1e2235]: Estado
+              - combobox "Estado" [ref=f1e2237]:
+                - option "Todos" [selected]
+                - option "Pendientes de pago"
+                - option "Reservado · pendiente de asistencia"
+                - option "Confirmado asistido"
+                - option "Completadas"
+                - option "Canceladas"
+                - option "Vencidas"
+          - generic [ref=f1e2238]:
+            - paragraph [ref=f1e2239]: 35 resultados
+            - table [ref=f1e2241]:
+              - caption [ref=f1e2242]: Reservas
+              - rowgroup [ref=f1e2243]:
+                - row [ref=f1e2244]:
+                  - columnheader "Reserva" [ref=f1e2245]
+                  - columnheader "Experiencia" [ref=f1e2246]
+                  - columnheader "Titular" [ref=f1e2247]
+                  - columnheader "Boletos" [ref=f1e2248]
+                  - columnheader "Guía" [ref=f1e2249]
+                  - columnheader "Total" [ref=f1e2250]
+                  - columnheader "Estado" [ref=f1e2251]
+                  - columnheader "Booking" [ref=f1e2252]
+                  - columnheader [ref=f1e2253]
+              - rowgroup [ref=f1e2254]:
+                - row [ref=f1e2255]:
+                  - cell [ref=f1e2256]:
+                    - link "DEC-9DYP82 Orden ORD-DILAN-C2QRQM" [ref=f1e2257] [cursor=pointer]:
+                      - /url: /reservas/7147461c-f55e-41f0-a01b-b4819d7217ef
+                      - text: DEC-9DYP82
+                      - generic [ref=f1e2258]: Orden ORD-DILAN-C2QRQM
+                  - cell "TelefériQo Quito y mirador del Pichincha dom, 15 nov 2026 · 10:30 a.m." [ref=f1e2259]:
+                    - generic [ref=f1e2260]:
+                      - link "TelefériQo Quito y mirador del Pichincha" [ref=f1e2261] [cursor=pointer]:
+                        - /url: /atracciones/sDNGLgZWJqft
+                      - generic [ref=f1e2262]: dom, 15 nov 2026 · 10:30 a.m.
+                  - cell "Michael Molina CEDULA 1710034065" [ref=f1e2263]:
+                    - generic [ref=f1e2264]:
+                      - text: Michael Molina
+                      - generic [ref=f1e2265]: CEDULA 1710034065
+                  - cell "2 adultos, 1 niño" [ref=f1e2266]
+                  - cell "Por asignar" [ref=f1e2267]
+                  - cell "US$ 24" [ref=f1e2268]
+                  - cell "RESERVADO · pendiente de asistencia" [ref=f1e2269]
+                  - cell "Web" [ref=f1e2271]
+                  - cell [ref=f1e2272]:
+                    - generic [ref=f1e2273]:
+                      - button "Confirmar Asistencia" [ref=f1e2274] [cursor=pointer]
+                      - button "Cancelar" [ref=f1e2275] [cursor=pointer]
+                - row [ref=f1e2276]:
+                  - cell [ref=f1e2277]:
+                    - link "DEC-ZCWF2V Orden ORD-DILAN-KDPF9C" [ref=f1e2278] [cursor=pointer]:
+                      - /url: /reservas/fd39adba-0b4d-4be3-81b6-e1df2091266b
+                      - text: DEC-ZCWF2V
+                      - generic [ref=f1e2279]: Orden ORD-DILAN-KDPF9C
+                  - cell "Museo Intiñan en la línea ecuatorial lun, 9 nov 2026 · 09:00 a.m." [ref=f1e2280]:
+                    - generic [ref=f1e2281]:
+                      - link "Museo Intiñan en la línea ecuatorial" [ref=f1e2282] [cursor=pointer]:
+                        - /url: /atracciones/VRqJDNwJo8lN
+                      - generic [ref=f1e2283]: lun, 9 nov 2026 · 09:00 a.m.
+                  - cell "Michael Molina CEDULA 1756156137" [ref=f1e2284]:
+                    - generic [ref=f1e2285]:
+                      - text: Michael Molina
+                      - generic [ref=f1e2286]: CEDULA 1756156137
+                  - cell "1 adulto, 2 niños" [ref=f1e2287]
+                  - cell "Por asignar" [ref=f1e2288]
+                  - cell "US$ 15" [ref=f1e2289]
+                  - cell "CONFIRMADO_ASISTIDO" [ref=f1e2290]
+                  - cell "Web" [ref=f1e2292]
+                  - cell [ref=f1e2293]
+                - row [ref=f1e2294]:
+                  - cell [ref=f1e2295]:
+                    - link "DEC-YDXUPT Orden ORD-DILAN-YSMPEQ" [ref=f1e2296] [cursor=pointer]:
+                      - /url: /reservas/bd6135cf-8fcb-4551-8293-d37955c6a77f
+                      - text: DEC-YDXUPT
+                      - generic [ref=f1e2297]: Orden ORD-DILAN-YSMPEQ
+                  - cell "ijTzx6CrJPxQ lun, 9 nov 2026 · 09:00 a.m." [ref=f1e2298]:
+                    - generic [ref=f1e2299]:
+                      - link "ijTzx6CrJPxQ" [ref=f1e2300] [cursor=pointer]:
+                        - /url: /atracciones/ijTzx6CrJPxQ
+                      - generic [ref=f1e2301]: lun, 9 nov 2026 · 09:00 a.m.
+                  - cell "Prueba Grupal CEDULA 1722959465" [ref=f1e2302]:
+                    - generic [ref=f1e2303]:
+                      - text: Prueba Grupal
+                      - generic [ref=f1e2304]: CEDULA 1722959465
+                  - cell "5 adultos" [ref=f1e2305]
+                  - cell "Por asignar" [ref=f1e2306]
+                  - cell "US$ 20" [ref=f1e2307]
+                  - cell "Completada" [ref=f1e2308]
+                  - 'cell "Aviso: Fallido Turista 4" [ref=f1e2310]':
+                    - generic [ref=f1e2311]:
+                      - generic [ref=f1e2312]: "Aviso: Fallido"
+                      - generic [ref=f1e2313]: Turista 4
+                  - cell [ref=f1e2314]
+                - row [ref=f1e2315]:
+                  - cell [ref=f1e2316]:
+                    - link "DEC-YVCXYS Orden ORD-DILAN-ALWS4W" [ref=f1e2317] [cursor=pointer]:
+                      - /url: /reservas/7c083997-9172-402e-99e6-ae228517894d
+                      - text: DEC-YVCXYS
+                      - generic [ref=f1e2318]: Orden ORD-DILAN-ALWS4W
+                  - cell "Prueba de integración Tour Girls lun, 16 nov 2026 · 09:00 a.m." [ref=f1e2319]:
+                    - generic [ref=f1e2320]:
+                      - link "Prueba de integración Tour Girls" [ref=f1e2321] [cursor=pointer]:
+                        - /url: /atracciones/rLohsmEh6809
+                      - generic [ref=f1e2322]: lun, 16 nov 2026 · 09:00 a.m.
+                  - cell "Michael Michael CEDULA 1756156137" [ref=f1e2323]:
+                    - generic [ref=f1e2324]:
+                      - text: Michael Michael
+                      - generic [ref=f1e2325]: CEDULA 1756156137
+                  - cell "5 adultos" [ref=f1e2326]
+                  - cell "Por asignar" [ref=f1e2327]
+                  - cell "US$ 150" [ref=f1e2328]
+                  - cell "Completada" [ref=f1e2329]
+                  - 'cell "Aviso: Fallido Turista 3" [ref=f1e2331]':
+                    - generic [ref=f1e2332]:
+                      - generic [ref=f1e2333]: "Aviso: Fallido"
+                      - generic [ref=f1e2334]: Turista 3
+                  - cell [ref=f1e2335]
+                - row [ref=f1e2336]:
+                  - cell [ref=f1e2337]:
+                    - link "DEC-ZU45MH Orden ORD-DILAN-L64DG6" [ref=f1e2338] [cursor=pointer]:
+                      - /url: /reservas/86220ac4-03ca-4cc9-a559-53c600310914
+                      - text: DEC-ZU45MH
+                      - generic [ref=f1e2339]: Orden ORD-DILAN-L64DG6
+                  - cell "Prueba de integración Tour Girls dom, 15 nov 2026 · 09:00 a.m." [ref=f1e2340]:
+                    - generic [ref=f1e2341]:
+                      - link "Prueba de integración Tour Girls" [ref=f1e2342] [cursor=pointer]:
+                        - /url: /atracciones/rLohsmEh6809
+                      - generic [ref=f1e2343]: dom, 15 nov 2026 · 09:00 a.m.
+                  - cell "Michael Michael CEDULA 1756156137" [ref=f1e2344]:
+                    - generic [ref=f1e2345]:
+                      - text: Michael Michael
+                      - generic [ref=f1e2346]: CEDULA 1756156137
+                  - cell "5 adultos" [ref=f1e2347]
+                  - cell "Por asignar" [ref=f1e2348]
+                  - cell "US$ 150" [ref=f1e2349]
+                  - cell "Completada" [ref=f1e2350]
+                  - 'cell "Aviso: Fallido Turista 3" [ref=f1e2352]':
+                    - generic [ref=f1e2353]:
+                      - generic [ref=f1e2354]: "Aviso: Fallido"
+                      - generic [ref=f1e2355]: Turista 3
+                  - cell [ref=f1e2356]
+                - row [ref=f1e2357]:
+                  - cell [ref=f1e2358]:
+                    - link "DEC-GN7JGQ Orden ORD-DILAN-WFB2RE" [ref=f1e2359] [cursor=pointer]:
+                      - /url: /reservas/dc2575bf-25d2-41a9-b2a2-c405efc93d03
+                      - text: DEC-GN7JGQ
+                      - generic [ref=f1e2360]: Orden ORD-DILAN-WFB2RE
+                  - cell "Prueba de integración Tour Girls sáb, 14 nov 2026 · 09:00 a.m." [ref=f1e2361]:
+                    - generic [ref=f1e2362]:
+                      - link "Prueba de integración Tour Girls" [ref=f1e2363] [cursor=pointer]:
+                        - /url: /atracciones/rLohsmEh6809
+                      - generic [ref=f1e2364]: sáb, 14 nov 2026 · 09:00 a.m.
+                  - cell "Michael Michael CEDULA 1756156137" [ref=f1e2365]:
+                    - generic [ref=f1e2366]:
+                      - text: Michael Michael
+                      - generic [ref=f1e2367]: CEDULA 1756156137
+                  - cell "5 adultos" [ref=f1e2368]
+                  - cell "Por asignar" [ref=f1e2369]
+                  - cell "US$ 150" [ref=f1e2370]
+                  - cell "CONFIRMADO_ASISTIDO" [ref=f1e2371]
+                  - 'cell "Aviso: Pendiente Turista 3" [ref=f1e2373]':
+                    - generic [ref=f1e2374]:
+                      - generic [ref=f1e2375]: "Aviso: Pendiente"
+                      - generic [ref=f1e2376]: Turista 3
+                  - cell [ref=f1e2377]
+                - row [ref=f1e2378]:
+                  - cell [ref=f1e2379]:
+                    - link "DEC-RX3SAZ Orden ORD-DILAN-7PWKH6" [ref=f1e2380] [cursor=pointer]:
+                      - /url: /reservas/13a994a4-36b1-43be-9e9b-19ee1fa3dd5d
+                      - text: DEC-RX3SAZ
+                      - generic [ref=f1e2381]: Orden ORD-DILAN-7PWKH6
+                  - cell "Prueba de integración Tour Girls vie, 13 nov 2026 · 09:00 a.m." [ref=f1e2382]:
+                    - generic [ref=f1e2383]:
+                      - link "Prueba de integración Tour Girls" [ref=f1e2384] [cursor=pointer]:
+                        - /url: /atracciones/rLohsmEh6809
+                      - generic [ref=f1e2385]: vie, 13 nov 2026 · 09:00 a.m.
+                  - cell "Michael Michael CEDULA 1756156137" [ref=f1e2386]:
+                    - generic [ref=f1e2387]:
+                      - text: Michael Michael
+                      - generic [ref=f1e2388]: CEDULA 1756156137
+                  - cell "5 adultos" [ref=f1e2389]
+                  - cell "Por asignar" [ref=f1e2390]
+                  - cell "US$ 150" [ref=f1e2391]
+                  - cell "RESERVADO · pendiente de asistencia" [ref=f1e2392]
+                  - 'cell "Aviso: — Turista 3" [ref=f1e2394]':
+                    - generic [ref=f1e2395]:
+                      - generic [ref=f1e2396]: "Aviso: —"
+                      - generic [ref=f1e2397]: Turista 3
+                  - cell [ref=f1e2398]:
+                    - generic [ref=f1e2399]:
+                      - button "Confirmar Asistencia" [ref=f1e2400] [cursor=pointer]
+                      - button "Cancelar" [ref=f1e2401] [cursor=pointer]
+                - row [ref=f1e2402]:
+                  - cell [ref=f1e2403]:
+                    - link "DEC-ZYH97A Orden ORD-DILAN-7UYUMZ" [ref=f1e2404] [cursor=pointer]:
+                      - /url: /reservas/d7dc6854-97e8-4220-89fb-95cb462394c0
+                      - text: DEC-ZYH97A
+                      - generic [ref=f1e2405]: Orden ORD-DILAN-7UYUMZ
+                  - cell "Prueba de integración Tour Girls vie, 6 nov 2026 · 09:00 a.m." [ref=f1e2406]:
+                    - generic [ref=f1e2407]:
+                      - link "Prueba de integración Tour Girls" [ref=f1e2408] [cursor=pointer]:
+                        - /url: /atracciones/rLohsmEh6809
+                      - generic [ref=f1e2409]: vie, 6 nov 2026 · 09:00 a.m.
+                  - cell "Paul Pruebas CEDULA 1752693620" [ref=f1e2410]:
+                    - generic [ref=f1e2411]:
+                      - text: Paul Pruebas
+                      - generic [ref=f1e2412]: CEDULA 1752693620
+                  - cell "1 adulto" [ref=f1e2413]
+                  - cell "Por asignar" [ref=f1e2414]
+                  - cell "US$ 30" [ref=f1e2415]
+                  - cell "Vencida" [ref=f1e2416]
+                  - 'cell "Aviso: — Turista 2" [ref=f1e2418]':
+                    - generic [ref=f1e2419]:
+                      - generic [ref=f1e2420]: "Aviso: —"
+                      - generic [ref=f1e2421]: Turista 2
+                  - cell [ref=f1e2422]
+                - row [ref=f1e2423]:
+                  - cell [ref=f1e2424]:
+                    - link "DEC-G7PJDJ Orden ORD-DILAN-FXGVN9" [ref=f1e2425] [cursor=pointer]:
+                      - /url: /reservas/0a095c31-ecd6-4459-ad89-b14eb21e8866
+                      - text: DEC-G7PJDJ
+                      - generic [ref=f1e2426]: Orden ORD-DILAN-FXGVN9
+                  - cell "Prueba de integración Tour Girls vie, 13 nov 2026 · 09:00 a.m." [ref=f1e2427]:
+                    - generic [ref=f1e2428]:
+                      - link "Prueba de integración Tour Girls" [ref=f1e2429] [cursor=pointer]:
+                        - /url: /atracciones/rLohsmEh6809
+                      - generic [ref=f1e2430]: vie, 13 nov 2026 · 09:00 a.m.
+                  - cell "Michael Michael CEDULA 1756156137" [ref=f1e2431]:
+                    - generic [ref=f1e2432]:
+                      - text: Michael Michael
+                      - generic [ref=f1e2433]: CEDULA 1756156137
+                  - cell "10 adultos" [ref=f1e2434]
+                  - cell "Por asignar" [ref=f1e2435]
+                  - cell "US$ 300" [ref=f1e2436]
+                  - cell "RESERVADO · pendiente de asistencia" [ref=f1e2437]
+                  - 'cell "Aviso: — Turista 3" [ref=f1e2439]':
+                    - generic [ref=f1e2440]:
+                      - generic [ref=f1e2441]: "Aviso: —"
+                      - generic [ref=f1e2442]: Turista 3
+                  - cell [ref=f1e2443]:
+                    - generic [ref=f1e2444]:
+                      - button "Confirmar Asistencia" [ref=f1e2445] [cursor=pointer]
+                      - button "Cancelar" [ref=f1e2446] [cursor=pointer]
+                - row [ref=f1e2447]:
+                  - cell [ref=f1e2448]:
+                    - link "DEC-RKSMW5 Orden ORD-DILAN-6TA967" [ref=f1e2449] [cursor=pointer]:
+                      - /url: /reservas/06413051-89a1-4fb9-bbca-5b73081a8353
+                      - text: DEC-RKSMW5
+                      - generic [ref=f1e2450]: Orden ORD-DILAN-6TA967
+                  - cell "Prueba de integración Tour Girls mar, 10 nov 2026 · 09:00 a.m." [ref=f1e2451]:
+                    - generic [ref=f1e2452]:
+                      - link "Prueba de integración Tour Girls" [ref=f1e2453] [cursor=pointer]:
+                        - /url: /atracciones/rLohsmEh6809
+                      - generic [ref=f1e2454]: mar, 10 nov 2026 · 09:00 a.m.
+                  - cell "Michael Michael CEDULA 1756156137" [ref=f1e2455]:
+                    - generic [ref=f1e2456]:
+                      - text: Michael Michael
+                      - generic [ref=f1e2457]: CEDULA 1756156137
+                  - cell "10 adultos" [ref=f1e2458]
+                  - cell "Por asignar" [ref=f1e2459]
+                  - cell "US$ 300" [ref=f1e2460]
+                  - cell "RESERVADO · pendiente de asistencia" [ref=f1e2461]
+                  - 'cell "Aviso: — Turista 3" [ref=f1e2463]':
+                    - generic [ref=f1e2464]:
+                      - generic [ref=f1e2465]: "Aviso: —"
+                      - generic [ref=f1e2466]: Turista 3
+                  - cell [ref=f1e2467]:
+                    - generic [ref=f1e2468]:
+                      - button "Confirmar Asistencia" [ref=f1e2469] [cursor=pointer]
+                      - button "Cancelar" [ref=f1e2470] [cursor=pointer]
+                - row [ref=f1e2471]:
+                  - cell [ref=f1e2472]:
+                    - link "DEC-R75WJ3 Orden ORD-DILAN-ECXDPZ" [ref=f1e2473] [cursor=pointer]:
+                      - /url: /reservas/3441c6c1-ef50-4325-83aa-11b2517acbcb
+                      - text: DEC-R75WJ3
+                      - generic [ref=f1e2474]: Orden ORD-DILAN-ECXDPZ
+                  - cell "Prueba de integración Tour Girls mar, 10 nov 2026 · 09:00 a.m." [ref=f1e2475]:
+                    - generic [ref=f1e2476]:
+                      - link "Prueba de integración Tour Girls" [ref=f1e2477] [cursor=pointer]:
+                        - /url: /atracciones/rLohsmEh6809
+                      - generic [ref=f1e2478]: mar, 10 nov 2026 · 09:00 a.m.
+                  - cell "Michael Michael CEDULA 1756156137" [ref=f1e2479]:
+                    - generic [ref=f1e2480]:
+                      - text: Michael Michael
+                      - generic [ref=f1e2481]: CEDULA 1756156137
+                  - cell "10 adultos" [ref=f1e2482]
+                  - cell "Por asignar" [ref=f1e2483]
+                  - cell "US$ 300" [ref=f1e2484]
+                  - cell "RESERVADO · pendiente de asistencia" [ref=f1e2485]
+                  - 'cell "Aviso: — Turista 3" [ref=f1e2487]':
+                    - generic [ref=f1e2488]:
+                      - generic [ref=f1e2489]: "Aviso: —"
+                      - generic [ref=f1e2490]: Turista 3
+                  - cell [ref=f1e2491]:
+                    - generic [ref=f1e2492]:
+                      - button "Confirmar Asistencia" [ref=f1e2493] [cursor=pointer]
+                      - button "Cancelar" [ref=f1e2494] [cursor=pointer]
+                - row [ref=f1e2495]:
+                  - cell [ref=f1e2496]:
+                    - link "DEC-R33FGE Orden ORD-DILAN-FG5TQ3" [ref=f1e2497] [cursor=pointer]:
+                      - /url: /reservas/bea6e475-f9ad-4022-a04a-ff146d8e1dc3
+                      - text: DEC-R33FGE
+                      - generic [ref=f1e2498]: Orden ORD-DILAN-FG5TQ3
+                  - cell "Prueba de integración Tour Girls vie, 6 nov 2026 · 09:00 a.m." [ref=f1e2499]:
+                    - generic [ref=f1e2500]:
+                      - link "Prueba de integración Tour Girls" [ref=f1e2501] [cursor=pointer]:
+                        - /url: /atracciones/rLohsmEh6809
+                      - generic [ref=f1e2502]: vie, 6 nov 2026 · 09:00 a.m.
+                  - cell "Paúl Rosero CEDULA 1752693620" [ref=f1e2503]:
+                    - generic [ref=f1e2504]:
+                      - text: Paúl Rosero
+                      - generic [ref=f1e2505]: CEDULA 1752693620
+                  - cell "1 adulto" [ref=f1e2506]
+                  - cell "Por asignar" [ref=f1e2507]
+                  - cell "US$ 30" [ref=f1e2508]
+                  - cell "Vencida" [ref=f1e2509]
+                  - 'cell "Aviso: — Turista 2" [ref=f1e2511]':
+                    - generic [ref=f1e2512]:
+                      - generic [ref=f1e2513]: "Aviso: —"
+                      - generic [ref=f1e2514]: Turista 2
+                  - cell [ref=f1e2515]
+                - row [ref=f1e2516]:
+                  - cell [ref=f1e2517]:
+                    - link "DEC-J5PMGC Orden ORD-DILAN-WCQ5QS" [ref=f1e2518] [cursor=pointer]:
+                      - /url: /reservas/2a379c88-e088-42d7-8741-d25305b311d7
+                      - text: DEC-J5PMGC
+                      - generic [ref=f1e2519]: Orden ORD-DILAN-WCQ5QS
+                  - 'cell "Tortuga Bay: caminata y playa sáb, 5 dic 2026 · 08:00 a.m." [ref=f1e2520]':
+                    - generic [ref=f1e2521]:
+                      - 'link "Tortuga Bay: caminata y playa" [ref=f1e2522] [cursor=pointer]':
+                        - /url: /atracciones/3GdwkIAEDKjp
+                      - generic [ref=f1e2523]: sáb, 5 dic 2026 · 08:00 a.m.
+                  - cell "Paúl Rosero CEDULA 1710034065" [ref=f1e2524]:
+                    - generic [ref=f1e2525]:
+                      - text: Paúl Rosero
+                      - generic [ref=f1e2526]: CEDULA 1710034065
+                  - cell "20 adultos" [ref=f1e2527]
+                  - cell "Por asignar" [ref=f1e2528]
+                  - cell "US$ 700" [ref=f1e2529]
+                  - cell "Cancelada" [ref=f1e2530]
+                  - cell "Web" [ref=f1e2532]
+                  - cell [ref=f1e2533]
+                - row [ref=f1e2534]:
+                  - cell [ref=f1e2535]:
+                    - link "DEC-JS4JNG Orden ORD-DILAN-KWJ7ZU" [ref=f1e2536] [cursor=pointer]:
+                      - /url: /reservas/2898abb1-c69a-4028-a648-f7a529ba7992
+                      - text: DEC-JS4JNG
+                      - generic [ref=f1e2537]: Orden ORD-DILAN-KWJ7ZU
+                  - 'cell "Tortuga Bay: caminata y playa sáb, 5 dic 2026 · 08:00 a.m." [ref=f1e2538]':
+                    - generic [ref=f1e2539]:
+                      - 'link "Tortuga Bay: caminata y playa" [ref=f1e2540] [cursor=pointer]':
+                        - /url: /atracciones/3GdwkIAEDKjp
+                      - generic [ref=f1e2541]: sáb, 5 dic 2026 · 08:00 a.m.
+                  - cell "Ana Belén Morales CEDULA 1714890314" [ref=f1e2542]:
+                    - generic [ref=f1e2543]:
+                      - text: Ana Belén Morales
+                      - generic [ref=f1e2544]: CEDULA 1714890314
+                  - cell "20 adultos" [ref=f1e2545]
+                  - cell "Por asignar" [ref=f1e2546]
+                  - cell "US$ 700" [ref=f1e2547]
+                  - cell "Cancelada" [ref=f1e2548]
+                  - cell "Web" [ref=f1e2550]
+                  - cell [ref=f1e2551]
+                - row [ref=f1e2552]:
+                  - cell [ref=f1e2553]:
+                    - link "DEC-VFBQEX Orden ORD-DILAN-3E8HBZ" [ref=f1e2554] [cursor=pointer]:
+                      - /url: /reservas/6b94f7b4-c609-4187-8ce9-cb722bc37634
+                      - text: DEC-VFBQEX
+                      - generic [ref=f1e2555]: Orden ORD-DILAN-3E8HBZ
+                  - 'cell "Tortuga Bay: caminata y playa sáb, 5 dic 2026 · 08:00 a.m." [ref=f1e2556]':
+                    - generic [ref=f1e2557]:
+                      - 'link "Tortuga Bay: caminata y playa" [ref=f1e2558] [cursor=pointer]':
+                        - /url: /atracciones/3GdwkIAEDKjp
+                      - generic [ref=f1e2559]: sáb, 5 dic 2026 · 08:00 a.m.
+                  - cell "Paúl Rosero CEDULA 1710034065" [ref=f1e2560]:
+                    - generic [ref=f1e2561]:
+                      - text: Paúl Rosero
+                      - generic [ref=f1e2562]: CEDULA 1710034065
+                  - cell "20 adultos" [ref=f1e2563]
+                  - cell "Por asignar" [ref=f1e2564]
+                  - cell "US$ 700" [ref=f1e2565]
+                  - cell "Cancelada" [ref=f1e2566]
+                  - cell "Web" [ref=f1e2568]
+                  - cell [ref=f1e2569]
+            - navigation "Paginación" [ref=f1e2570]:
+              - button "Página anterior" [disabled] [ref=f1e2571]
+              - button "1" [ref=f1e2574] [cursor=pointer]
+              - button "2" [ref=f1e2575] [cursor=pointer]
+              - button "3" [ref=f1e2576] [cursor=pointer]
+              - button "Página siguiente" [ref=f1e2577] [cursor=pointer]
+  - contentinfo [ref=f1e27]:
+    - generic [ref=f1e28]:
+      - generic [ref=f1e29]:
+        - link "TourGirls, administración" [ref=f1e2195] [cursor=pointer]:
+          - /url: /admin
+          - generic [ref=f1e35]: TourGirls
+        - paragraph [ref=f1e36]: Tours, entradas y experiencias en Ecuador, con cupos verificados en tiempo real.
+        - link "Escríbenos" [ref=f1e37] [cursor=pointer]:
+          - /url: /ayuda#contacto
+      - navigation "Ayuda" [ref=f1e40]:
+        - heading "Ayuda" [level=2] [ref=f1e41]
+        - list [ref=f1e42]:
+          - listitem [ref=f1e43]:
+            - link "Centro de ayuda" [ref=f1e44] [cursor=pointer]:
+              - /url: /ayuda
+          - listitem [ref=f1e45]:
+            - link "Política de cancelación" [ref=f1e46] [cursor=pointer]:
+              - /url: /ayuda#cancelacion
+          - listitem [ref=f1e47]:
+            - link "Pagos y facturación" [ref=f1e48] [cursor=pointer]:
+              - /url: /ayuda#pagos
+          - listitem [ref=f1e49]:
+            - link "Contacto" [ref=f1e50] [cursor=pointer]:
+              - /url: /ayuda#contacto
+      - navigation "Explora" [ref=f1e51]:
+        - heading "Explora" [level=2] [ref=f1e52]
+        - list [ref=f1e53]:
+          - listitem [ref=f1e54]:
+            - link "Todas las experiencias" [ref=f1e55] [cursor=pointer]:
+              - /url: /atracciones
+          - listitem [ref=f1e321]:
+            - link "Aventura" [ref=f1e322] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-aventura-100
+          - listitem [ref=f1e323]:
+            - link "Cultural" [ref=f1e324] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-cultural-100
+          - listitem [ref=f1e325]:
+            - link "Naturales" [ref=f1e326] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-naturales-100
+          - listitem [ref=f1e327]:
+            - link "Gastronomia" [ref=f1e328] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-gastronomia-100
+      - navigation "Acerca de" [ref=f1e56]:
+        - heading "Acerca de" [level=2] [ref=f1e57]
+        - list [ref=f1e58]:
+          - listitem [ref=f1e59]:
+            - link "Quiénes somos" [ref=f1e60] [cursor=pointer]:
+              - /url: /ayuda#nosotros
+          - listitem [ref=f1e61]:
+            - link "Términos de uso" [ref=f1e62] [cursor=pointer]:
+              - /url: /ayuda#terminos
+          - listitem [ref=f1e63]:
+            - link "Privacidad y cookies" [ref=f1e64] [cursor=pointer]:
+              - /url: /ayuda#privacidad
+    - generic [ref=f1e66]:
+      - paragraph [ref=f1e67]: © 2026 TourGirls · Proyecto académico de Integración de Sistemas.
+      - paragraph [ref=f1e68]: "Fotografías de portada: Wikimedia Commons (CC BY-SA y dominio público)."
+      - generic [ref=f1e69]: Español · US$

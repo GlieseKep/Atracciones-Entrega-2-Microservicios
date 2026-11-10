@@ -1,0 +1,323 @@
+- generic [ref=f1e3]:
+  - banner [ref=f1e4]:
+    - link "Saltar al contenido" [ref=f1e5] [cursor=pointer]:
+      - /url: "#contenido"
+    - generic [ref=f1e6]:
+      - link "TourGirls, administración" [ref=f1e2063] [cursor=pointer]:
+        - /url: /admin
+        - generic [ref=f1e12]: TourGirls
+      - navigation "Accesos de cuenta" [ref=f1e13]:
+        - link "Panel" [ref=f1e2064] [cursor=pointer]:
+          - /url: /admin
+        - button "Administrador Descubre EC" [ref=f1e2071] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f1e2072]: A
+        - button "Abrir menú" [ref=f1e19] [cursor=pointer]
+  - main [ref=f1e21]:
+    - generic [ref=f1e2076]:
+      - paragraph [ref=f1e2077]: Administración
+      - generic [ref=f1e2078]:
+        - navigation "Administración" [ref=f1e2079]:
+          - list [ref=f1e2080]:
+            - listitem [ref=f1e2081]:
+              - link "Dashboard" [ref=f1e2082] [cursor=pointer]:
+                - /url: /admin
+            - listitem [ref=f1e2088]:
+              - link "Usuarios" [ref=f1e2089] [cursor=pointer]:
+                - /url: /admin/usuarios
+            - listitem [ref=f1e2095]:
+              - link "Catálogo" [ref=f1e2096] [cursor=pointer]:
+                - /url: /admin/catalogo
+            - listitem [ref=f1e2099]:
+              - link "Qué incluye" [ref=f1e2100] [cursor=pointer]:
+                - /url: /admin/incluye
+            - listitem [ref=f1e2104]:
+              - link "Categorías" [ref=f1e2105] [cursor=pointer]:
+                - /url: /admin/categorias
+            - listitem [ref=f1e2111]:
+              - link "Idiomas" [ref=f1e2112] [cursor=pointer]:
+                - /url: /admin/idiomas
+            - listitem [ref=f1e2117]:
+              - link "Guías y operadores" [ref=f1e2118] [cursor=pointer]:
+                - /url: /admin/guias
+            - listitem [ref=f1e2122]:
+              - link "Disponibilidad" [ref=f1e2123] [cursor=pointer]:
+                - /url: /admin/disponibilidad
+            - listitem [ref=f1e2126]:
+              - link "Reservas" [ref=f1e2127] [cursor=pointer]:
+                - /url: /admin/reservas
+            - listitem [ref=f1e2131]:
+              - link "Check-in" [ref=f1e2132] [cursor=pointer]:
+                - /url: /admin/checkin
+            - listitem [ref=f1e2138]:
+              - link "Pedidos" [ref=f1e2139] [cursor=pointer]:
+                - /url: /admin/pedidos
+            - listitem [ref=f1e2143]:
+              - link "Pagos" [active] [ref=f1e2144] [cursor=pointer]:
+                - /url: /admin/pagos
+            - listitem [ref=f1e2147]:
+              - link "Facturas" [ref=f1e2148] [cursor=pointer]:
+                - /url: /admin/facturas
+            - listitem [ref=f1e2152]:
+              - link "Cupones" [ref=f1e2153] [cursor=pointer]:
+                - /url: /admin/cupones
+            - listitem [ref=f1e2157]:
+              - link "Reseñas" [ref=f1e2158] [cursor=pointer]:
+                - /url: /admin/resenas
+            - listitem [ref=f1e2161]:
+              - link "Mensajes" [ref=f1e2162] [cursor=pointer]:
+                - /url: /admin/mensajes
+            - listitem [ref=f1e2166]:
+              - link "Socios" [ref=f1e2167] [cursor=pointer]:
+                - /url: /admin/socios
+            - listitem [ref=f1e2173]:
+              - link "Reportes" [ref=f1e2174] [cursor=pointer]:
+                - /url: /admin/reportes
+            - listitem [ref=f1e2177]:
+              - link "Observabilidad" [ref=f1e2178] [cursor=pointer]:
+                - /url: /admin/observabilidad
+        - generic [ref=f1e3718]:
+          - heading "Pagos" [level=1] [ref=f1e3720]
+          - generic [ref=f1e3721]:
+            - generic [ref=f1e3722]:
+              - generic [ref=f1e3723]: Estado
+              - combobox "Estado" [ref=f1e3725]:
+                - option "Todos" [selected]
+                - option "Pendientes"
+                - option "Aprobados"
+                - option "Rechazados"
+                - option "Fallidos"
+            - generic [ref=f1e3726]:
+              - generic [ref=f1e3727]: Método
+              - combobox "Método" [ref=f1e3729]:
+                - option "Todos" [selected]
+                - option "Tarjeta de crédito"
+                - option "Tarjeta de débito"
+                - option "PayPal"
+                - option "Transferencia"
+          - generic [ref=f1e3730]:
+            - paragraph [ref=f1e3731]: 35 resultados
+            - table [ref=f1e3733]:
+              - caption [ref=f1e3734]: Pagos
+              - rowgroup [ref=f1e3735]:
+                - row [ref=f1e3736]:
+                  - columnheader "Pago" [ref=f1e3737]
+                  - columnheader "Método" [ref=f1e3738]
+                  - columnheader "Monto" [ref=f1e3739]
+                  - columnheader "Estado" [ref=f1e3740]
+                  - columnheader "Referencia" [ref=f1e3741]
+                  - columnheader "Fecha" [ref=f1e3742]
+              - rowgroup [ref=f1e3743]:
+                - row [ref=f1e3744]:
+                  - 'cell "PAG-ORD-DILAN-C2QRQM-1 Orden #56" [ref=f1e3745]':
+                    - generic [ref=f1e3746]:
+                      - text: PAG-ORD-DILAN-C2QRQM-1
+                      - generic [ref=f1e3747]: "Orden #56"
+                  - cell "Tarjeta de crédito" [ref=f1e3748]
+                  - cell "US$ 24" [ref=f1e3749]
+                  - cell "Aprobado" [ref=f1e3750]
+                  - cell "SIM-301592f3-0dcb-4f93-b4f1-8fa79a855b52" [ref=f1e3753]
+                  - cell "8 nov 2026, 4:11 p. m." [ref=f1e3754]
+                - row [ref=f1e3755]:
+                  - 'cell "PAG-ORD-DILAN-KDPF9C-1 Orden #55" [ref=f1e3756]':
+                    - generic [ref=f1e3757]:
+                      - text: PAG-ORD-DILAN-KDPF9C-1
+                      - generic [ref=f1e3758]: "Orden #55"
+                  - cell "Tarjeta de crédito" [ref=f1e3759]
+                  - cell "US$ 15" [ref=f1e3760]
+                  - cell "Aprobado" [ref=f1e3761]
+                  - cell "SIM-d959f034-b958-4832-aa36-c5dd54037f41" [ref=f1e3764]
+                  - cell "8 nov 2026, 3:56 p. m." [ref=f1e3765]
+                - row [ref=f1e3766]:
+                  - 'cell "PAG-ORD-DILAN-YSMPEQ-1 Orden #54" [ref=f1e3767]':
+                    - generic [ref=f1e3768]:
+                      - text: PAG-ORD-DILAN-YSMPEQ-1
+                      - generic [ref=f1e3769]: "Orden #54"
+                  - cell "Tarjeta de crédito" [ref=f1e3770]
+                  - cell "US$ 20" [ref=f1e3771]
+                  - cell "Aprobado" [ref=f1e3772]
+                  - cell "—" [ref=f1e3775]
+                  - cell "6 nov 2026, 11:00 a. m." [ref=f1e3776]
+                - row [ref=f1e3777]:
+                  - 'cell "PAG-ORD-DILAN-ALWS4W-1 Orden #53" [ref=f1e3778]':
+                    - generic [ref=f1e3779]:
+                      - text: PAG-ORD-DILAN-ALWS4W-1
+                      - generic [ref=f1e3780]: "Orden #53"
+                  - cell "Tarjeta de crédito" [ref=f1e3781]
+                  - cell "US$ 150" [ref=f1e3782]
+                  - cell "Aprobado" [ref=f1e3783]
+                  - cell "—" [ref=f1e3786]
+                  - cell "6 nov 2026, 8:43 a. m." [ref=f1e3787]
+                - row [ref=f1e3788]:
+                  - 'cell "PAG-ORD-DILAN-L64DG6-1 Orden #52" [ref=f1e3789]':
+                    - generic [ref=f1e3790]:
+                      - text: PAG-ORD-DILAN-L64DG6-1
+                      - generic [ref=f1e3791]: "Orden #52"
+                  - cell "Tarjeta de crédito" [ref=f1e3792]
+                  - cell "US$ 150" [ref=f1e3793]
+                  - cell "Aprobado" [ref=f1e3794]
+                  - cell "—" [ref=f1e3797]
+                  - cell "6 nov 2026, 8:00 a. m." [ref=f1e3798]
+                - row [ref=f1e3799]:
+                  - 'cell "PAG-ORD-DILAN-WFB2RE-1 Orden #51" [ref=f1e3800]':
+                    - generic [ref=f1e3801]:
+                      - text: PAG-ORD-DILAN-WFB2RE-1
+                      - generic [ref=f1e3802]: "Orden #51"
+                  - cell "Tarjeta de crédito" [ref=f1e3803]
+                  - cell "US$ 150" [ref=f1e3804]
+                  - cell "Aprobado" [ref=f1e3805]
+                  - cell "—" [ref=f1e3808]
+                  - cell "6 nov 2026, 7:33 a. m." [ref=f1e3809]
+                - row [ref=f1e3810]:
+                  - 'cell "PAG-ORD-DILAN-7PWKH6-1 Orden #50" [ref=f1e3811]':
+                    - generic [ref=f1e3812]:
+                      - text: PAG-ORD-DILAN-7PWKH6-1
+                      - generic [ref=f1e3813]: "Orden #50"
+                  - cell "Tarjeta de crédito" [ref=f1e3814]
+                  - cell "US$ 150" [ref=f1e3815]
+                  - cell "Aprobado" [ref=f1e3816]
+                  - cell "—" [ref=f1e3819]
+                  - cell "6 nov 2026, 7:31 a. m." [ref=f1e3820]
+                - row [ref=f1e3821]:
+                  - 'cell "PAG-ORD-DILAN-7UYUMZ-1 Orden #49" [ref=f1e3822]':
+                    - generic [ref=f1e3823]:
+                      - text: PAG-ORD-DILAN-7UYUMZ-1
+                      - generic [ref=f1e3824]: "Orden #49"
+                  - cell "Tarjeta de crédito" [ref=f1e3825]
+                  - cell "US$ 30" [ref=f1e3826]
+                  - cell "Aprobado" [ref=f1e3827]
+                  - cell "—" [ref=f1e3830]
+                  - cell "6 nov 2026, 7:12 a. m." [ref=f1e3831]
+                - row [ref=f1e3832]:
+                  - 'cell "PAG-ORD-DILAN-FXGVN9-1 Orden #48" [ref=f1e3833]':
+                    - generic [ref=f1e3834]:
+                      - text: PAG-ORD-DILAN-FXGVN9-1
+                      - generic [ref=f1e3835]: "Orden #48"
+                  - cell "Tarjeta de crédito" [ref=f1e3836]
+                  - cell "US$ 300" [ref=f1e3837]
+                  - cell "Aprobado" [ref=f1e3838]
+                  - cell "—" [ref=f1e3841]
+                  - cell "6 nov 2026, 7:10 a. m." [ref=f1e3842]
+                - row [ref=f1e3843]:
+                  - 'cell "PAG-ORD-DILAN-6TA967-1 Orden #47" [ref=f1e3844]':
+                    - generic [ref=f1e3845]:
+                      - text: PAG-ORD-DILAN-6TA967-1
+                      - generic [ref=f1e3846]: "Orden #47"
+                  - cell "Tarjeta de crédito" [ref=f1e3847]
+                  - cell "US$ 300" [ref=f1e3848]
+                  - cell "Aprobado" [ref=f1e3849]
+                  - cell "—" [ref=f1e3852]
+                  - cell "6 nov 2026, 7:09 a. m." [ref=f1e3853]
+                - row [ref=f1e3854]:
+                  - 'cell "PAG-ORD-DILAN-ECXDPZ-1 Orden #46" [ref=f1e3855]':
+                    - generic [ref=f1e3856]:
+                      - text: PAG-ORD-DILAN-ECXDPZ-1
+                      - generic [ref=f1e3857]: "Orden #46"
+                  - cell "Tarjeta de crédito" [ref=f1e3858]
+                  - cell "US$ 300" [ref=f1e3859]
+                  - cell "Aprobado" [ref=f1e3860]
+                  - cell "—" [ref=f1e3863]
+                  - cell "6 nov 2026, 7:09 a. m." [ref=f1e3864]
+                - row [ref=f1e3865]:
+                  - 'cell "PAG-ORD-DILAN-FG5TQ3-1 Orden #45" [ref=f1e3866]':
+                    - generic [ref=f1e3867]:
+                      - text: PAG-ORD-DILAN-FG5TQ3-1
+                      - generic [ref=f1e3868]: "Orden #45"
+                  - cell "Tarjeta de crédito" [ref=f1e3869]
+                  - cell "US$ 30" [ref=f1e3870]
+                  - cell "Aprobado" [ref=f1e3871]
+                  - cell "—" [ref=f1e3874]
+                  - cell "5 nov 2026, 7:59 p. m." [ref=f1e3875]
+                - row [ref=f1e3876]:
+                  - 'cell "PAG-ORD-DILAN-WCQ5QS-1 Orden #43" [ref=f1e3877]':
+                    - generic [ref=f1e3878]:
+                      - text: PAG-ORD-DILAN-WCQ5QS-1
+                      - generic [ref=f1e3879]: "Orden #43"
+                  - cell "Tarjeta de crédito" [ref=f1e3880]
+                  - cell "US$ 700" [ref=f1e3881]
+                  - cell "Aprobado" [ref=f1e3882]
+                  - cell "—" [ref=f1e3885]
+                  - cell "4 nov 2026, 11:53 a. m." [ref=f1e3886]
+                - row [ref=f1e3887]:
+                  - 'cell "PAG-ORD-DILAN-KWJ7ZU-1 Orden #41" [ref=f1e3888]':
+                    - generic [ref=f1e3889]:
+                      - text: PAG-ORD-DILAN-KWJ7ZU-1
+                      - generic [ref=f1e3890]: "Orden #41"
+                  - cell "Tarjeta de crédito" [ref=f1e3891]
+                  - cell "US$ 700" [ref=f1e3892]
+                  - cell "Aprobado" [ref=f1e3893]
+                  - cell "—" [ref=f1e3896]
+                  - cell "4 nov 2026, 11:52 a. m." [ref=f1e3897]
+                - row [ref=f1e3898]:
+                  - 'cell "PAG-ORD-DILAN-3E8HBZ-1 Orden #39" [ref=f1e3899]':
+                    - generic [ref=f1e3900]:
+                      - text: PAG-ORD-DILAN-3E8HBZ-1
+                      - generic [ref=f1e3901]: "Orden #39"
+                  - cell "Tarjeta de crédito" [ref=f1e3902]
+                  - cell "US$ 700" [ref=f1e3903]
+                  - cell "Aprobado" [ref=f1e3904]
+                  - cell "—" [ref=f1e3907]
+                  - cell "4 nov 2026, 11:49 a. m." [ref=f1e3908]
+            - navigation "Paginación" [ref=f1e3909]:
+              - button "Página anterior" [disabled] [ref=f1e3910]
+              - button "1" [ref=f1e3913] [cursor=pointer]
+              - button "2" [ref=f1e3914] [cursor=pointer]
+              - button "3" [ref=f1e3915] [cursor=pointer]
+              - button "Página siguiente" [ref=f1e3916] [cursor=pointer]
+  - contentinfo [ref=f1e27]:
+    - generic [ref=f1e28]:
+      - generic [ref=f1e29]:
+        - link "TourGirls, administración" [ref=f1e2195] [cursor=pointer]:
+          - /url: /admin
+          - generic [ref=f1e35]: TourGirls
+        - paragraph [ref=f1e36]: Tours, entradas y experiencias en Ecuador, con cupos verificados en tiempo real.
+        - link "Escríbenos" [ref=f1e37] [cursor=pointer]:
+          - /url: /ayuda#contacto
+      - navigation "Ayuda" [ref=f1e40]:
+        - heading "Ayuda" [level=2] [ref=f1e41]
+        - list [ref=f1e42]:
+          - listitem [ref=f1e43]:
+            - link "Centro de ayuda" [ref=f1e44] [cursor=pointer]:
+              - /url: /ayuda
+          - listitem [ref=f1e45]:
+            - link "Política de cancelación" [ref=f1e46] [cursor=pointer]:
+              - /url: /ayuda#cancelacion
+          - listitem [ref=f1e47]:
+            - link "Pagos y facturación" [ref=f1e48] [cursor=pointer]:
+              - /url: /ayuda#pagos
+          - listitem [ref=f1e49]:
+            - link "Contacto" [ref=f1e50] [cursor=pointer]:
+              - /url: /ayuda#contacto
+      - navigation "Explora" [ref=f1e51]:
+        - heading "Explora" [level=2] [ref=f1e52]
+        - list [ref=f1e53]:
+          - listitem [ref=f1e54]:
+            - link "Todas las experiencias" [ref=f1e55] [cursor=pointer]:
+              - /url: /atracciones
+          - listitem [ref=f1e321]:
+            - link "Aventura" [ref=f1e322] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-aventura-100
+          - listitem [ref=f1e323]:
+            - link "Cultural" [ref=f1e324] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-cultural-100
+          - listitem [ref=f1e325]:
+            - link "Naturales" [ref=f1e326] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-naturales-100
+          - listitem [ref=f1e327]:
+            - link "Gastronomia" [ref=f1e328] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-gastronomia-100
+      - navigation "Acerca de" [ref=f1e56]:
+        - heading "Acerca de" [level=2] [ref=f1e57]
+        - list [ref=f1e58]:
+          - listitem [ref=f1e59]:
+            - link "Quiénes somos" [ref=f1e60] [cursor=pointer]:
+              - /url: /ayuda#nosotros
+          - listitem [ref=f1e61]:
+            - link "Términos de uso" [ref=f1e62] [cursor=pointer]:
+              - /url: /ayuda#terminos
+          - listitem [ref=f1e63]:
+            - link "Privacidad y cookies" [ref=f1e64] [cursor=pointer]:
+              - /url: /ayuda#privacidad
+    - generic [ref=f1e66]:
+      - paragraph [ref=f1e67]: © 2026 TourGirls · Proyecto académico de Integración de Sistemas.
+      - paragraph [ref=f1e68]: "Fotografías de portada: Wikimedia Commons (CC BY-SA y dominio público)."
+      - generic [ref=f1e69]: Español · US$

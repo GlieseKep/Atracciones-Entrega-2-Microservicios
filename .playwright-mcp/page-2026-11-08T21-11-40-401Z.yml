@@ -1,0 +1,308 @@
+- generic [ref=f1e3]:
+  - banner [ref=f1e4]:
+    - link "Saltar al contenido" [ref=f1e5] [cursor=pointer]:
+      - /url: "#contenido"
+    - generic [ref=f1e6]:
+      - link "TourGirls, inicio" [ref=f1e7] [cursor=pointer]:
+        - /url: /
+        - generic [ref=f1e12]: TourGirls
+      - navigation "Accesos de cuenta" [ref=f1e13]:
+        - link "Mis reservas" [ref=f1e657] [cursor=pointer]:
+          - /url: /perfil?tab=reservas
+        - button "Michael Molina" [ref=f1e662] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f1e663]: M
+        - button "Abrir menú" [ref=f1e19] [cursor=pointer]
+  - main [ref=f1e21]:
+    - generic [ref=f1e1076]:
+      - navigation "Ruta de navegación" [ref=f1e1077]:
+        - list [ref=f1e1078]:
+          - listitem [ref=f1e1079]:
+            - link "Inicio" [ref=f1e1080] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=f1e1083]:
+            - link "TelefériQo Quito y mirador del Pichincha" [ref=f1e1084] [cursor=pointer]:
+              - /url: /atracciones/sDNGLgZWJqft
+          - listitem [ref=f1e1087]: Comprar
+      - generic [ref=f1e1088]:
+        - heading "Finaliza tu compra" [level=1] [ref=f1e1089]
+        - paragraph [ref=f1e1090]: Proceso seguro
+      - generic [ref=f1e1094]:
+        - generic [ref=f1e1095]:
+          - region [ref=f1e1096]:
+            - heading "Fecha, boletos y horario" [level=2] [ref=f1e1097]:
+              - generic [aria-hidden] [ref=f1e1098]: "1"
+              - text: Fecha, boletos y horario
+            - generic [ref=f1e1099]:
+              - generic [ref=f1e1100]:
+                - paragraph [ref=f1e1101]: Fecha
+                - generic [ref=f1e1102]:
+                  - generic [ref=f1e1103]:
+                    - button "Mes anterior" [disabled] [ref=f1e1104]
+                    - paragraph [ref=f1e1107]: noviembre de 2026
+                    - button "Mes siguiente" [ref=f1e1108] [cursor=pointer]
+                  - generic [aria-hidden] [ref=f1e1111]:
+                    - generic [ref=f1e1112]: L
+                    - generic [ref=f1e1113]: M
+                    - generic [ref=f1e1114]: X
+                    - generic [ref=f1e1115]: J
+                    - generic [ref=f1e1116]: V
+                    - generic [ref=f1e1117]: S
+                    - generic [ref=f1e1118]: D
+                  - group "Días de noviembre de 2026" [ref=f1e1119]:
+                    - button "domingo, 1 de noviembre" [disabled] [ref=f1e1126]: "1"
+                    - button "lunes, 2 de noviembre" [disabled] [ref=f1e1127]: "2"
+                    - button "martes, 3 de noviembre" [disabled] [ref=f1e1128]: "3"
+                    - button "miércoles, 4 de noviembre" [disabled] [ref=f1e1129]: "4"
+                    - button "jueves, 5 de noviembre" [disabled] [ref=f1e1130]: "5"
+                    - button "viernes, 6 de noviembre" [disabled] [ref=f1e1131]: "6"
+                    - button "sábado, 7 de noviembre" [disabled] [ref=f1e1132]: "7"
+                    - button "domingo, 8 de noviembre" [ref=f1e1133] [cursor=pointer]: "8"
+                    - button "lunes, 9 de noviembre" [ref=f1e1134] [cursor=pointer]: "9"
+                    - button "martes, 10 de noviembre" [ref=f1e1135] [cursor=pointer]: "10"
+                    - button "miércoles, 11 de noviembre" [ref=f1e1136] [cursor=pointer]: "11"
+                    - button "jueves, 12 de noviembre" [ref=f1e1137] [cursor=pointer]: "12"
+                    - button "viernes, 13 de noviembre" [ref=f1e1138] [cursor=pointer]: "13"
+                    - button "sábado, 14 de noviembre" [ref=f1e1139] [cursor=pointer]: "14"
+                    - button "domingo, 15 de noviembre" [pressed] [ref=f1e1140] [cursor=pointer]: "15"
+                    - button "lunes, 16 de noviembre" [ref=f1e1141] [cursor=pointer]: "16"
+                    - button "martes, 17 de noviembre" [ref=f1e1142] [cursor=pointer]: "17"
+                    - button "miércoles, 18 de noviembre" [ref=f1e1143] [cursor=pointer]: "18"
+                    - button "jueves, 19 de noviembre" [ref=f1e1144] [cursor=pointer]: "19"
+                    - button "viernes, 20 de noviembre" [ref=f1e1145] [cursor=pointer]: "20"
+                    - button "sábado, 21 de noviembre" [ref=f1e1146] [cursor=pointer]: "21"
+                    - button "domingo, 22 de noviembre" [ref=f1e1147] [cursor=pointer]: "22"
+                    - button "lunes, 23 de noviembre" [ref=f1e1148] [cursor=pointer]: "23"
+                    - button "martes, 24 de noviembre" [ref=f1e1149] [cursor=pointer]: "24"
+                    - button "miércoles, 25 de noviembre" [ref=f1e1150] [cursor=pointer]: "25"
+                    - button "jueves, 26 de noviembre" [ref=f1e1151] [cursor=pointer]: "26"
+                    - button "viernes, 27 de noviembre" [ref=f1e1152] [cursor=pointer]: "27"
+                    - button "sábado, 28 de noviembre" [ref=f1e1153] [cursor=pointer]: "28"
+                    - button "domingo, 29 de noviembre" [ref=f1e1154] [cursor=pointer]: "29"
+                    - button "lunes, 30 de noviembre" [ref=f1e1155] [cursor=pointer]: "30"
+              - generic [ref=f1e1156]:
+                - list [ref=f1e1157]:
+                  - listitem [ref=f1e1158]:
+                    - generic [ref=f1e1159]:
+                      - generic [ref=f1e1161]:
+                        - text: Adultos
+                        - generic [ref=f1e1162]: 13 a 64 años · US$ 9
+                      - group "Adultos 13 a 64 años · US$ 9" [ref=f1e1163]:
+                        - button "Quitar uno" [ref=f1e1164] [cursor=pointer]
+                        - status [ref=f1e1166]: "2"
+                        - button "Añadir uno" [ref=f1e1167] [cursor=pointer]
+                  - listitem [ref=f1e1169]:
+                    - generic [ref=f1e1170]:
+                      - generic [ref=f1e1172]:
+                        - text: Niños
+                        - generic [ref=f1e1173]: 5 a 12 años · US$ 6
+                      - group "Niños 5 a 12 años · US$ 6" [ref=f1e1174]:
+                        - button "Quitar uno" [ref=f1e1175] [cursor=pointer]
+                        - status [ref=f1e1177]: "1"
+                        - button "Añadir uno" [ref=f1e1178] [cursor=pointer]
+                  - listitem [ref=f1e1180]:
+                    - generic [ref=f1e1181]:
+                      - generic [ref=f1e1183]:
+                        - text: Adultos mayores
+                        - generic [ref=f1e1184]: 65 años o más · US$ 7
+                      - group "Adultos mayores 65 años o más · US$ 7" [ref=f1e1185]:
+                        - button "Quitar uno" [disabled] [ref=f1e1186]
+                        - status [ref=f1e1188]: "0"
+                        - button "Añadir uno" [ref=f1e1189] [cursor=pointer]
+                  - listitem [ref=f1e1191]:
+                    - generic [ref=f1e1192]:
+                      - generic [ref=f1e1194]:
+                        - text: Infantes
+                        - generic [ref=f1e1195]: 0 a 4 años, ocupan cupo · Gratis
+                      - group "Infantes 0 a 4 años, ocupan cupo · Gratis" [ref=f1e1196]:
+                        - button "Quitar uno" [disabled] [ref=f1e1197]
+                        - status [ref=f1e1199]: "0"
+                        - button "Añadir uno" [ref=f1e1200] [cursor=pointer]
+                - generic [ref=f1e1202]:
+                  - paragraph [ref=f1e1203]: Horario
+                  - group "Horario" [ref=f1e1311]:
+                    - generic [ref=f1e1313]:
+                      - generic [ref=f1e1314] [cursor=pointer]:
+                        - radio "09:00 a.m. 40 cupos" [ref=f1e1315]
+                        - generic [ref=f1e1316]: 09:00 a.m.
+                        - generic [ref=f1e1320]: 40 cupos
+                      - generic [ref=f1e1321] [cursor=pointer]:
+                        - radio "10:30 a.m. 40 cupos" [checked] [ref=f1e1322]
+                        - generic [ref=f1e1323]: 10:30 a.m.
+                        - generic [ref=f1e1327]: 40 cupos
+                      - generic [ref=f1e1328] [cursor=pointer]:
+                        - radio "12:00 p.m. 40 cupos" [ref=f1e1329]
+                        - generic [ref=f1e1330]: 12:00 p.m.
+                        - generic [ref=f1e1334]: 40 cupos
+                      - generic [ref=f1e1335] [cursor=pointer]:
+                        - radio "02:00 p.m. 40 cupos" [ref=f1e1336]
+                        - generic [ref=f1e1337]: 02:00 p.m.
+                        - generic [ref=f1e1341]: 40 cupos
+                    - paragraph [ref=f1e1342]: Hora de Ecuador continental.
+          - region [ref=f1e1208]:
+            - heading "Datos del titular" [level=2] [ref=f1e1209]:
+              - generic [aria-hidden] [ref=f1e1210]: "2"
+              - text: Datos del titular
+            - paragraph [ref=f1e1211]: Presentarás este documento en el punto de encuentro junto con el código QR.
+            - generic [ref=f1e1212]:
+              - generic [ref=f1e1213]:
+                - generic [ref=f1e1214]: Nombre completo
+                - textbox "Nombre completo" [ref=f1e1216]: Michael Molina
+              - generic [ref=f1e1217]:
+                - generic [ref=f1e1218]: Correo electrónico
+                - textbox "Correo electrónico" [ref=f1e1220]: prueba@ejemplo.com
+                - paragraph [ref=f1e1221]: Aquí recibirás el voucher.
+              - generic [ref=f1e1222]:
+                - generic [ref=f1e1223]: Teléfono
+                - textbox "Teléfono" [ref=f1e1225]:
+                  - /placeholder: 0991234567 o +593991234567
+                  - text: "0987432008"
+              - generic [ref=f1e1226]:
+                - generic [ref=f1e1227]:
+                  - generic [ref=f1e1228]: Documento
+                  - combobox "Documento" [ref=f1e1230]:
+                    - option "Cédula" [selected]
+                    - option "Pasaporte"
+                    - option "RUC"
+                - generic [ref=f1e1231]:
+                  - generic [ref=f1e1232]: Número
+                  - textbox "Número" [ref=f1e1234]: "1710034065"
+              - generic [ref=f1e1235]:
+                - generic [ref=f1e1236]: Requerimientos especiales (opcional)
+                - textbox "Requerimientos especiales (opcional)" [ref=f1e1237]:
+                  - /placeholder: Alergias, dieta, silla de ruedas…
+          - region [ref=f1e1238]:
+            - heading "Pago" [level=2] [ref=f1e1239]:
+              - generic [aria-hidden] [ref=f1e1240]: "3"
+              - text: Pago
+            - group "Método de pago" [ref=f1e1241]:
+              - generic [ref=f1e1243]:
+                - generic [ref=f1e1244] [cursor=pointer]:
+                  - radio "Tarjeta de credito" [checked] [ref=f1e1245]
+                  - generic [ref=f1e1248]: Tarjeta de credito
+                - generic [ref=f1e1249] [cursor=pointer]:
+                  - radio "Tarjeta de debito" [ref=f1e1250]
+                  - generic [ref=f1e1253]: Tarjeta de debito
+                - generic [ref=f1e1254] [cursor=pointer]:
+                  - radio "PayPal" [ref=f1e1255]
+                  - generic [ref=f1e1259]: PayPal
+                - generic [ref=f1e1260] [cursor=pointer]:
+                  - radio "Transferencia bancaria" [ref=f1e1261]
+                  - generic [ref=f1e1264]: Transferencia bancaria
+            - generic [ref=f1e1343]:
+              - generic [ref=f1e1344]:
+                - generic [ref=f1e1345]: Marca
+                - combobox "Marca" [ref=f1e1347]:
+                  - option "VISA" [selected]
+                  - option "MASTERCARD"
+                  - option "AMEX"
+                  - option "DINERS"
+              - generic [ref=f1e1348]:
+                - generic [ref=f1e1349]: Titular de la tarjeta
+                - textbox "Titular de la tarjeta" [ref=f1e1351]: Michael Molina
+              - generic [ref=f1e1352]:
+                - generic [ref=f1e1353]: Últimos 4 dígitos
+                - textbox "Últimos 4 dígitos" [ref=f1e1355]: "4234"
+                - paragraph [ref=f1e1356]: "Solo los 4 últimos: nunca el número completo."
+              - generic [ref=f1e1357]:
+                - generic [ref=f1e1358]:
+                  - generic [ref=f1e1359]: Mes
+                  - textbox "Mes" [ref=f1e1361]:
+                    - /placeholder: MM
+                    - text: "09"
+                - generic [ref=f1e1362]:
+                  - generic [ref=f1e1363]: Año
+                  - textbox "Año" [invalid] [ref=f1e1365]:
+                    - /placeholder: AAAA
+                    - text: "27"
+                  - paragraph [ref=f1e1366]: La tarjeta está vencida.
+            - generic [ref=f1e1265]:
+              - generic [ref=f1e1266]:
+                - generic [ref=f1e1267]: Cupón de descuento (opcional)
+                - textbox "Cupón de descuento (opcional)" [ref=f1e1269]
+              - button "Aplicar" [disabled] [ref=f1e1270]
+            - generic [ref=f1e1271]:
+              - checkbox "Acepto la política de cancelación (gratuita hasta 24 horas antes) y los términos de uso." [checked] [ref=f1e1272]
+              - generic [ref=f1e1273]: Acepto la política de cancelación (gratuita hasta 24 horas antes) y los términos de uso.
+          - alert [ref=f1e1367]:
+            - generic [ref=f1e1370]: Revisa los datos de la tarjeta.
+          - generic [ref=f1e1274]:
+            - paragraph [ref=f1e1275]: "Orden, cupos y pago se confirman juntos: si algo falla, no se cobra."
+            - button "Pagar y confirmar" [active] [ref=f1e1279] [cursor=pointer]
+        - complementary "Resumen de la compra" [ref=f1e1281]:
+          - generic [ref=f1e1283]:
+            - paragraph [ref=f1e1284]: TelefériQo Quito y mirador del Pichincha
+            - paragraph [ref=f1e1285]: Quito
+          - list [ref=f1e1286]:
+            - listitem [ref=f1e1287]: domingo, 15 de noviembre de 2026
+            - listitem [ref=f1e1290]: 10:30:00 · 2 horas
+            - listitem [ref=f1e1294]: Cancelación gratuita hasta 24 h antes
+          - generic [ref=f1e1297]:
+            - list [ref=f1e1298]:
+              - listitem [ref=f1e1299]:
+                - generic [ref=f1e1300]: Adultos × 2
+                - generic [ref=f1e1301]: US$ 18
+              - listitem [ref=f1e1302]:
+                - generic [ref=f1e1303]: Niños × 1
+                - generic [ref=f1e1304]: US$ 6
+            - generic [ref=f1e1305]:
+              - generic [ref=f1e1306]: Total estimado
+              - generic [ref=f1e1307]: US$ 24
+            - paragraph [ref=f1e1308]: Precio según la tarifa publicada. El total final (con impuestos y descuentos) lo calcula el servidor al pagar.
+  - contentinfo [ref=f1e27]:
+    - generic [ref=f1e28]:
+      - generic [ref=f1e29]:
+        - link "TourGirls, inicio" [ref=f1e30] [cursor=pointer]:
+          - /url: /
+          - generic [ref=f1e35]: TourGirls
+        - paragraph [ref=f1e36]: Tours, entradas y experiencias en Ecuador, con cupos verificados en tiempo real.
+        - link "Escríbenos" [ref=f1e37] [cursor=pointer]:
+          - /url: /ayuda#contacto
+      - navigation "Ayuda" [ref=f1e40]:
+        - heading "Ayuda" [level=2] [ref=f1e41]
+        - list [ref=f1e42]:
+          - listitem [ref=f1e43]:
+            - link "Centro de ayuda" [ref=f1e44] [cursor=pointer]:
+              - /url: /ayuda
+          - listitem [ref=f1e45]:
+            - link "Política de cancelación" [ref=f1e46] [cursor=pointer]:
+              - /url: /ayuda#cancelacion
+          - listitem [ref=f1e47]:
+            - link "Pagos y facturación" [ref=f1e48] [cursor=pointer]:
+              - /url: /ayuda#pagos
+          - listitem [ref=f1e49]:
+            - link "Contacto" [ref=f1e50] [cursor=pointer]:
+              - /url: /ayuda#contacto
+      - navigation "Explora" [ref=f1e51]:
+        - heading "Explora" [level=2] [ref=f1e52]
+        - list [ref=f1e53]:
+          - listitem [ref=f1e54]:
+            - link "Todas las experiencias" [ref=f1e55] [cursor=pointer]:
+              - /url: /atracciones
+          - listitem [ref=f1e321]:
+            - link "Aventura" [ref=f1e322] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-aventura-100
+          - listitem [ref=f1e323]:
+            - link "Cultural" [ref=f1e324] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-cultural-100
+          - listitem [ref=f1e325]:
+            - link "Naturales" [ref=f1e326] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-naturales-100
+          - listitem [ref=f1e327]:
+            - link "Gastronomia" [ref=f1e328] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-gastronomia-100
+      - navigation "Acerca de" [ref=f1e56]:
+        - heading "Acerca de" [level=2] [ref=f1e57]
+        - list [ref=f1e58]:
+          - listitem [ref=f1e59]:
+            - link "Quiénes somos" [ref=f1e60] [cursor=pointer]:
+              - /url: /ayuda#nosotros
+          - listitem [ref=f1e61]:
+            - link "Términos de uso" [ref=f1e62] [cursor=pointer]:
+              - /url: /ayuda#terminos
+          - listitem [ref=f1e63]:
+            - link "Privacidad y cookies" [ref=f1e64] [cursor=pointer]:
+              - /url: /ayuda#privacidad
+    - generic [ref=f1e66]:
+      - paragraph [ref=f1e67]: © 2026 TourGirls · Proyecto académico de Integración de Sistemas.
+      - paragraph [ref=f1e68]: "Fotografías de portada: Wikimedia Commons (CC BY-SA y dominio público)."
+      - generic [ref=f1e69]: Español · US$

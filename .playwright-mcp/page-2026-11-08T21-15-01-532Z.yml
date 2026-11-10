@@ -1,0 +1,415 @@
+- generic [ref=f1e3]:
+  - banner [ref=f1e4]:
+    - link "Saltar al contenido" [ref=f1e5] [cursor=pointer]:
+      - /url: "#contenido"
+    - generic [ref=f1e6]:
+      - link "TourGirls, administración" [ref=f1e2063] [cursor=pointer]:
+        - /url: /admin
+        - generic [ref=f1e12]: TourGirls
+      - navigation "Accesos de cuenta" [ref=f1e13]:
+        - link "Panel" [ref=f1e2064] [cursor=pointer]:
+          - /url: /admin
+        - generic [ref=f1e2070]:
+          - button "Administrador Descubre EC" [expanded] [active] [ref=f1e2071] [cursor=pointer]:
+            - generic [aria-hidden] [ref=f1e2072]: A
+          - menu [ref=f1e4180]:
+            - menuitem "Administración" [ref=f1e4181] [cursor=pointer]
+            - menuitem "Cerrar sesión" [ref=f1e4187] [cursor=pointer]
+        - button "Abrir menú" [ref=f1e19] [cursor=pointer]
+  - main [ref=f1e21]:
+    - generic [ref=f1e2076]:
+      - paragraph [ref=f1e2077]: Administración
+      - generic [ref=f1e2078]:
+        - navigation "Administración" [ref=f1e2079]:
+          - list [ref=f1e2080]:
+            - listitem [ref=f1e2081]:
+              - link "Dashboard" [ref=f1e2082] [cursor=pointer]:
+                - /url: /admin
+            - listitem [ref=f1e2088]:
+              - link "Usuarios" [ref=f1e2089] [cursor=pointer]:
+                - /url: /admin/usuarios
+            - listitem [ref=f1e2095]:
+              - link "Catálogo" [ref=f1e2096] [cursor=pointer]:
+                - /url: /admin/catalogo
+            - listitem [ref=f1e2099]:
+              - link "Qué incluye" [ref=f1e2100] [cursor=pointer]:
+                - /url: /admin/incluye
+            - listitem [ref=f1e2104]:
+              - link "Categorías" [ref=f1e2105] [cursor=pointer]:
+                - /url: /admin/categorias
+            - listitem [ref=f1e2111]:
+              - link "Idiomas" [ref=f1e2112] [cursor=pointer]:
+                - /url: /admin/idiomas
+            - listitem [ref=f1e2117]:
+              - link "Guías y operadores" [ref=f1e2118] [cursor=pointer]:
+                - /url: /admin/guias
+            - listitem [ref=f1e2122]:
+              - link "Disponibilidad" [ref=f1e2123] [cursor=pointer]:
+                - /url: /admin/disponibilidad
+            - listitem [ref=f1e2126]:
+              - link "Reservas" [ref=f1e2127] [cursor=pointer]:
+                - /url: /admin/reservas
+            - listitem [ref=f1e2131]:
+              - link "Check-in" [ref=f1e2132] [cursor=pointer]:
+                - /url: /admin/checkin
+            - listitem [ref=f1e2138]:
+              - link "Pedidos" [ref=f1e2139] [cursor=pointer]:
+                - /url: /admin/pedidos
+            - listitem [ref=f1e2143]:
+              - link "Pagos" [ref=f1e2144] [cursor=pointer]:
+                - /url: /admin/pagos
+            - listitem [ref=f1e2147]:
+              - link "Facturas" [ref=f1e2148] [cursor=pointer]:
+                - /url: /admin/facturas
+            - listitem [ref=f1e2152]:
+              - link "Cupones" [ref=f1e2153] [cursor=pointer]:
+                - /url: /admin/cupones
+            - listitem [ref=f1e2157]:
+              - link "Reseñas" [ref=f1e2158] [cursor=pointer]:
+                - /url: /admin/resenas
+            - listitem [ref=f1e2161]:
+              - link "Mensajes" [ref=f1e2162] [cursor=pointer]:
+                - /url: /admin/mensajes
+            - listitem [ref=f1e2166]:
+              - link "Socios" [ref=f1e2167] [cursor=pointer]:
+                - /url: /admin/socios
+            - listitem [ref=f1e2173]:
+              - link "Reportes" [ref=f1e2174] [cursor=pointer]:
+                - /url: /admin/reportes
+            - listitem [ref=f1e2177]:
+              - link "Observabilidad" [ref=f1e2178] [cursor=pointer]:
+                - /url: /admin/observabilidad
+        - generic [ref=f1e3919]:
+          - heading "Facturas" [level=1] [ref=f1e3921]
+          - generic [ref=f1e3922]:
+            - generic [ref=f1e3923]:
+              - generic [ref=f1e3924]: Estado
+              - combobox "Estado" [ref=f1e3926]:
+                - option "Todos" [selected]
+                - option "Pagadas"
+                - option "No pagadas"
+                - option "Anuladas"
+            - generic [ref=f1e3927]:
+              - generic [ref=f1e3928]: SRI
+              - combobox "SRI" [ref=f1e3930]:
+                - option "Todos" [selected]
+                - option "Pendientes"
+                - option "Autorizadas"
+                - option "Rechazadas"
+          - generic [ref=f1e3931]:
+            - paragraph [ref=f1e3932]: 35 resultados
+            - table [ref=f1e3934]:
+              - caption [ref=f1e3935]: Facturas
+              - rowgroup [ref=f1e3936]:
+                - row [ref=f1e3937]:
+                  - columnheader "Factura" [ref=f1e3938]
+                  - columnheader "A nombre de" [ref=f1e3939]
+                  - columnheader "Emitida" [ref=f1e3940]
+                  - columnheader "Total" [ref=f1e3941]
+                  - columnheader "Estado" [ref=f1e3942]
+                  - columnheader "SRI" [ref=f1e3943]
+              - rowgroup [ref=f1e3944]:
+                - row [ref=f1e3945]:
+                  - 'cell "001-001-000000035 Orden #56" [ref=f1e3946]':
+                    - generic [ref=f1e3947]:
+                      - text: 001-001-000000035
+                      - generic [ref=f1e3948]: "Orden #56"
+                  - cell "CONSUMIDOR FINAL 9999999999999" [ref=f1e3949]:
+                    - generic [ref=f1e3950]:
+                      - text: CONSUMIDOR FINAL
+                      - generic [ref=f1e3951]: "9999999999999"
+                  - cell "8 nov 2026, 4:12 p. m." [ref=f1e3952]
+                  - cell "US$ 24" [ref=f1e3953]
+                  - cell "PAGADA" [ref=f1e3954]
+                  - cell "AUTORIZADA 0811202601179234812300110010010000000355888475118" [ref=f1e3956]:
+                    - generic [ref=f1e3957]:
+                      - generic [ref=f1e3958]: AUTORIZADA
+                      - generic [ref=f1e3959]: "0811202601179234812300110010010000000355888475118"
+                - row [ref=f1e3960]:
+                  - 'cell "001-001-000000034 Orden #55" [ref=f1e3961]':
+                    - generic [ref=f1e3962]:
+                      - text: 001-001-000000034
+                      - generic [ref=f1e3963]: "Orden #55"
+                  - cell "CONSUMIDOR FINAL 9999999999999" [ref=f1e3964]:
+                    - generic [ref=f1e3965]:
+                      - text: CONSUMIDOR FINAL
+                      - generic [ref=f1e3966]: "9999999999999"
+                  - cell "8 nov 2026, 3:56 p. m." [ref=f1e3967]
+                  - cell "US$ 15" [ref=f1e3968]
+                  - cell "PAGADA" [ref=f1e3969]
+                  - cell "AUTORIZADA 0811202601179234812300110010010000000349147980516" [ref=f1e3971]:
+                    - generic [ref=f1e3972]:
+                      - generic [ref=f1e3973]: AUTORIZADA
+                      - generic [ref=f1e3974]: "0811202601179234812300110010010000000349147980516"
+                - row [ref=f1e3975]:
+                  - 'cell "001-001-000000033 Orden #54" [ref=f1e3976]':
+                    - generic [ref=f1e3977]:
+                      - text: 001-001-000000033
+                      - generic [ref=f1e3978]: "Orden #54"
+                  - cell "CONSUMIDOR FINAL 9999999999999" [ref=f1e3979]:
+                    - generic [ref=f1e3980]:
+                      - text: CONSUMIDOR FINAL
+                      - generic [ref=f1e3981]: "9999999999999"
+                  - cell "6 nov 2026, 11:00 a. m." [ref=f1e3982]
+                  - cell "US$ 20" [ref=f1e3983]
+                  - cell "PAGADA" [ref=f1e3984]
+                  - cell "AUTORIZADA 0611202601179234812300110010010000000339242874311" [ref=f1e3986]:
+                    - generic [ref=f1e3987]:
+                      - generic [ref=f1e3988]: AUTORIZADA
+                      - generic [ref=f1e3989]: "0611202601179234812300110010010000000339242874311"
+                - row [ref=f1e3990]:
+                  - 'cell "001-001-000000032 Orden #53" [ref=f1e3991]':
+                    - generic [ref=f1e3992]:
+                      - text: 001-001-000000032
+                      - generic [ref=f1e3993]: "Orden #53"
+                  - cell "CONSUMIDOR FINAL 9999999999999" [ref=f1e3994]:
+                    - generic [ref=f1e3995]:
+                      - text: CONSUMIDOR FINAL
+                      - generic [ref=f1e3996]: "9999999999999"
+                  - cell "6 nov 2026, 8:43 a. m." [ref=f1e3997]
+                  - cell "US$ 150" [ref=f1e3998]
+                  - cell "PAGADA" [ref=f1e3999]
+                  - cell "AUTORIZADA 0611202601179234812300110010010000000326727925815" [ref=f1e4001]:
+                    - generic [ref=f1e4002]:
+                      - generic [ref=f1e4003]: AUTORIZADA
+                      - generic [ref=f1e4004]: "0611202601179234812300110010010000000326727925815"
+                - row [ref=f1e4005]:
+                  - 'cell "001-001-000000031 Orden #52" [ref=f1e4006]':
+                    - generic [ref=f1e4007]:
+                      - text: 001-001-000000031
+                      - generic [ref=f1e4008]: "Orden #52"
+                  - cell "CONSUMIDOR FINAL 9999999999999" [ref=f1e4009]:
+                    - generic [ref=f1e4010]:
+                      - text: CONSUMIDOR FINAL
+                      - generic [ref=f1e4011]: "9999999999999"
+                  - cell "6 nov 2026, 8:00 a. m." [ref=f1e4012]
+                  - cell "US$ 150" [ref=f1e4013]
+                  - cell "PAGADA" [ref=f1e4014]
+                  - cell "AUTORIZADA 0611202601179234812300110010010000000318396828110" [ref=f1e4016]:
+                    - generic [ref=f1e4017]:
+                      - generic [ref=f1e4018]: AUTORIZADA
+                      - generic [ref=f1e4019]: "0611202601179234812300110010010000000318396828110"
+                - row [ref=f1e4020]:
+                  - 'cell "001-001-000000030 Orden #51" [ref=f1e4021]':
+                    - generic [ref=f1e4022]:
+                      - text: 001-001-000000030
+                      - generic [ref=f1e4023]: "Orden #51"
+                  - cell "CONSUMIDOR FINAL 9999999999999" [ref=f1e4024]:
+                    - generic [ref=f1e4025]:
+                      - text: CONSUMIDOR FINAL
+                      - generic [ref=f1e4026]: "9999999999999"
+                  - cell "6 nov 2026, 7:33 a. m." [ref=f1e4027]
+                  - cell "US$ 150" [ref=f1e4028]
+                  - cell "PAGADA" [ref=f1e4029]
+                  - cell "AUTORIZADA 0611202601179234812300110010010000000302474110511" [ref=f1e4031]:
+                    - generic [ref=f1e4032]:
+                      - generic [ref=f1e4033]: AUTORIZADA
+                      - generic [ref=f1e4034]: "0611202601179234812300110010010000000302474110511"
+                - row [ref=f1e4035]:
+                  - 'cell "001-001-000000029 Orden #50" [ref=f1e4036]':
+                    - generic [ref=f1e4037]:
+                      - text: 001-001-000000029
+                      - generic [ref=f1e4038]: "Orden #50"
+                  - cell "CONSUMIDOR FINAL 9999999999999" [ref=f1e4039]:
+                    - generic [ref=f1e4040]:
+                      - text: CONSUMIDOR FINAL
+                      - generic [ref=f1e4041]: "9999999999999"
+                  - cell "6 nov 2026, 7:31 a. m." [ref=f1e4042]
+                  - cell "US$ 150" [ref=f1e4043]
+                  - cell "PAGADA" [ref=f1e4044]
+                  - cell "AUTORIZADA 0611202601179234812300110010010000000295537345917" [ref=f1e4046]:
+                    - generic [ref=f1e4047]:
+                      - generic [ref=f1e4048]: AUTORIZADA
+                      - generic [ref=f1e4049]: "0611202601179234812300110010010000000295537345917"
+                - row [ref=f1e4050]:
+                  - 'cell "001-001-000000028 Orden #49" [ref=f1e4051]':
+                    - generic [ref=f1e4052]:
+                      - text: 001-001-000000028
+                      - generic [ref=f1e4053]: "Orden #49"
+                  - cell "CONSUMIDOR FINAL 9999999999999" [ref=f1e4054]:
+                    - generic [ref=f1e4055]:
+                      - text: CONSUMIDOR FINAL
+                      - generic [ref=f1e4056]: "9999999999999"
+                  - cell "6 nov 2026, 7:12 a. m." [ref=f1e4057]
+                  - cell "US$ 30" [ref=f1e4058]
+                  - cell "PAGADA" [ref=f1e4059]
+                  - cell "AUTORIZADA 0611202601179234812300110010010000000287313512513" [ref=f1e4061]:
+                    - generic [ref=f1e4062]:
+                      - generic [ref=f1e4063]: AUTORIZADA
+                      - generic [ref=f1e4064]: "0611202601179234812300110010010000000287313512513"
+                - row [ref=f1e4065]:
+                  - 'cell "001-001-000000027 Orden #48" [ref=f1e4066]':
+                    - generic [ref=f1e4067]:
+                      - text: 001-001-000000027
+                      - generic [ref=f1e4068]: "Orden #48"
+                  - cell "CONSUMIDOR FINAL 9999999999999" [ref=f1e4069]:
+                    - generic [ref=f1e4070]:
+                      - text: CONSUMIDOR FINAL
+                      - generic [ref=f1e4071]: "9999999999999"
+                  - cell "6 nov 2026, 7:10 a. m." [ref=f1e4072]
+                  - cell "US$ 300" [ref=f1e4073]
+                  - cell "PAGADA" [ref=f1e4074]
+                  - cell "AUTORIZADA 0611202601179234812300110010010000000273277601511" [ref=f1e4076]:
+                    - generic [ref=f1e4077]:
+                      - generic [ref=f1e4078]: AUTORIZADA
+                      - generic [ref=f1e4079]: "0611202601179234812300110010010000000273277601511"
+                - row [ref=f1e4080]:
+                  - 'cell "001-001-000000026 Orden #47" [ref=f1e4081]':
+                    - generic [ref=f1e4082]:
+                      - text: 001-001-000000026
+                      - generic [ref=f1e4083]: "Orden #47"
+                  - cell "CONSUMIDOR FINAL 9999999999999" [ref=f1e4084]:
+                    - generic [ref=f1e4085]:
+                      - text: CONSUMIDOR FINAL
+                      - generic [ref=f1e4086]: "9999999999999"
+                  - cell "6 nov 2026, 7:09 a. m." [ref=f1e4087]
+                  - cell "US$ 300" [ref=f1e4088]
+                  - cell "PAGADA" [ref=f1e4089]
+                  - cell "AUTORIZADA 0611202601179234812300110010010000000266009862411" [ref=f1e4091]:
+                    - generic [ref=f1e4092]:
+                      - generic [ref=f1e4093]: AUTORIZADA
+                      - generic [ref=f1e4094]: "0611202601179234812300110010010000000266009862411"
+                - row [ref=f1e4095]:
+                  - 'cell "001-001-000000025 Orden #46" [ref=f1e4096]':
+                    - generic [ref=f1e4097]:
+                      - text: 001-001-000000025
+                      - generic [ref=f1e4098]: "Orden #46"
+                  - cell "CONSUMIDOR FINAL 9999999999999" [ref=f1e4099]:
+                    - generic [ref=f1e4100]:
+                      - text: CONSUMIDOR FINAL
+                      - generic [ref=f1e4101]: "9999999999999"
+                  - cell "6 nov 2026, 7:09 a. m." [ref=f1e4102]
+                  - cell "US$ 300" [ref=f1e4103]
+                  - cell "PAGADA" [ref=f1e4104]
+                  - cell "AUTORIZADA 0611202601179234812300110010010000000253891404217" [ref=f1e4106]:
+                    - generic [ref=f1e4107]:
+                      - generic [ref=f1e4108]: AUTORIZADA
+                      - generic [ref=f1e4109]: "0611202601179234812300110010010000000253891404217"
+                - row [ref=f1e4110]:
+                  - 'cell "001-001-000000024 Orden #45" [ref=f1e4111]':
+                    - generic [ref=f1e4112]:
+                      - text: 001-001-000000024
+                      - generic [ref=f1e4113]: "Orden #45"
+                  - cell "CONSUMIDOR FINAL 9999999999999" [ref=f1e4114]:
+                    - generic [ref=f1e4115]:
+                      - text: CONSUMIDOR FINAL
+                      - generic [ref=f1e4116]: "9999999999999"
+                  - cell "5 nov 2026, 7:59 p. m." [ref=f1e4117]
+                  - cell "US$ 30" [ref=f1e4118]
+                  - cell "PAGADA" [ref=f1e4119]
+                  - cell "AUTORIZADA 0511202601179234812300110010010000000249445592210" [ref=f1e4121]:
+                    - generic [ref=f1e4122]:
+                      - generic [ref=f1e4123]: AUTORIZADA
+                      - generic [ref=f1e4124]: "0511202601179234812300110010010000000249445592210"
+                - row [ref=f1e4125]:
+                  - 'cell "001-001-000000023 Orden #43" [ref=f1e4126]':
+                    - generic [ref=f1e4127]:
+                      - text: 001-001-000000023
+                      - generic [ref=f1e4128]: "Orden #43"
+                  - cell "CONSUMIDOR FINAL 9999999999999" [ref=f1e4129]:
+                    - generic [ref=f1e4130]:
+                      - text: CONSUMIDOR FINAL
+                      - generic [ref=f1e4131]: "9999999999999"
+                  - cell "4 nov 2026, 11:53 a. m." [ref=f1e4132]
+                  - cell "US$ 700" [ref=f1e4133]
+                  - cell "ANULADA" [ref=f1e4134]
+                  - cell "AUTORIZADA 0411202601179234812300110010010000000236179300218" [ref=f1e4136]:
+                    - generic [ref=f1e4137]:
+                      - generic [ref=f1e4138]: AUTORIZADA
+                      - generic [ref=f1e4139]: "0411202601179234812300110010010000000236179300218"
+                - row [ref=f1e4140]:
+                  - 'cell "001-001-000000022 Orden #41" [ref=f1e4141]':
+                    - generic [ref=f1e4142]:
+                      - text: 001-001-000000022
+                      - generic [ref=f1e4143]: "Orden #41"
+                  - cell "CONSUMIDOR FINAL 9999999999999" [ref=f1e4144]:
+                    - generic [ref=f1e4145]:
+                      - text: CONSUMIDOR FINAL
+                      - generic [ref=f1e4146]: "9999999999999"
+                  - cell "4 nov 2026, 11:52 a. m." [ref=f1e4147]
+                  - cell "US$ 700" [ref=f1e4148]
+                  - cell "ANULADA" [ref=f1e4149]
+                  - cell "AUTORIZADA 0411202601179234812300110010010000000224365901614" [ref=f1e4151]:
+                    - generic [ref=f1e4152]:
+                      - generic [ref=f1e4153]: AUTORIZADA
+                      - generic [ref=f1e4154]: "0411202601179234812300110010010000000224365901614"
+                - row [ref=f1e4155]:
+                  - 'cell "001-001-000000021 Orden #39" [ref=f1e4156]':
+                    - generic [ref=f1e4157]:
+                      - text: 001-001-000000021
+                      - generic [ref=f1e4158]: "Orden #39"
+                  - cell "CONSUMIDOR FINAL 9999999999999" [ref=f1e4159]:
+                    - generic [ref=f1e4160]:
+                      - text: CONSUMIDOR FINAL
+                      - generic [ref=f1e4161]: "9999999999999"
+                  - cell "4 nov 2026, 11:49 a. m." [ref=f1e4162]
+                  - cell "US$ 700" [ref=f1e4163]
+                  - cell "ANULADA" [ref=f1e4164]
+                  - cell "AUTORIZADA 0411202601179234812300110010010000000211290819815" [ref=f1e4166]:
+                    - generic [ref=f1e4167]:
+                      - generic [ref=f1e4168]: AUTORIZADA
+                      - generic [ref=f1e4169]: "0411202601179234812300110010010000000211290819815"
+            - navigation "Paginación" [ref=f1e4170]:
+              - button "Página anterior" [disabled] [ref=f1e4171]
+              - button "1" [ref=f1e4174] [cursor=pointer]
+              - button "2" [ref=f1e4175] [cursor=pointer]
+              - button "3" [ref=f1e4176] [cursor=pointer]
+              - button "Página siguiente" [ref=f1e4177] [cursor=pointer]
+  - contentinfo [ref=f1e27]:
+    - generic [ref=f1e28]:
+      - generic [ref=f1e29]:
+        - link "TourGirls, administración" [ref=f1e2195] [cursor=pointer]:
+          - /url: /admin
+          - generic [ref=f1e35]: TourGirls
+        - paragraph [ref=f1e36]: Tours, entradas y experiencias en Ecuador, con cupos verificados en tiempo real.
+        - link "Escríbenos" [ref=f1e37] [cursor=pointer]:
+          - /url: /ayuda#contacto
+      - navigation "Ayuda" [ref=f1e40]:
+        - heading "Ayuda" [level=2] [ref=f1e41]
+        - list [ref=f1e42]:
+          - listitem [ref=f1e43]:
+            - link "Centro de ayuda" [ref=f1e44] [cursor=pointer]:
+              - /url: /ayuda
+          - listitem [ref=f1e45]:
+            - link "Política de cancelación" [ref=f1e46] [cursor=pointer]:
+              - /url: /ayuda#cancelacion
+          - listitem [ref=f1e47]:
+            - link "Pagos y facturación" [ref=f1e48] [cursor=pointer]:
+              - /url: /ayuda#pagos
+          - listitem [ref=f1e49]:
+            - link "Contacto" [ref=f1e50] [cursor=pointer]:
+              - /url: /ayuda#contacto
+      - navigation "Explora" [ref=f1e51]:
+        - heading "Explora" [level=2] [ref=f1e52]
+        - list [ref=f1e53]:
+          - listitem [ref=f1e54]:
+            - link "Todas las experiencias" [ref=f1e55] [cursor=pointer]:
+              - /url: /atracciones
+          - listitem [ref=f1e321]:
+            - link "Aventura" [ref=f1e322] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-aventura-100
+          - listitem [ref=f1e323]:
+            - link "Cultural" [ref=f1e324] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-cultural-100
+          - listitem [ref=f1e325]:
+            - link "Naturales" [ref=f1e326] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-naturales-100
+          - listitem [ref=f1e327]:
+            - link "Gastronomia" [ref=f1e328] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-gastronomia-100
+      - navigation "Acerca de" [ref=f1e56]:
+        - heading "Acerca de" [level=2] [ref=f1e57]
+        - list [ref=f1e58]:
+          - listitem [ref=f1e59]:
+            - link "Quiénes somos" [ref=f1e60] [cursor=pointer]:
+              - /url: /ayuda#nosotros
+          - listitem [ref=f1e61]:
+            - link "Términos de uso" [ref=f1e62] [cursor=pointer]:
+              - /url: /ayuda#terminos
+          - listitem [ref=f1e63]:
+            - link "Privacidad y cookies" [ref=f1e64] [cursor=pointer]:
+              - /url: /ayuda#privacidad
+    - generic [ref=f1e66]:
+      - paragraph [ref=f1e67]: © 2026 TourGirls · Proyecto académico de Integración de Sistemas.
+      - paragraph [ref=f1e68]: "Fotografías de portada: Wikimedia Commons (CC BY-SA y dominio público)."
+      - generic [ref=f1e69]: Español · US$

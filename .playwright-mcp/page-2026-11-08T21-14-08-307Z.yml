@@ -1,0 +1,447 @@
+- generic [ref=f1e3]:
+  - banner [ref=f1e4]:
+    - link "Saltar al contenido" [ref=f1e5] [cursor=pointer]:
+      - /url: "#contenido"
+    - generic [ref=f1e6]:
+      - link "TourGirls, administración" [ref=f1e2063] [cursor=pointer]:
+        - /url: /admin
+        - generic [ref=f1e12]: TourGirls
+      - navigation "Accesos de cuenta" [ref=f1e13]:
+        - link "Panel" [ref=f1e2064] [cursor=pointer]:
+          - /url: /admin
+        - button "Administrador Descubre EC" [ref=f1e2071] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f1e2072]: A
+        - button "Abrir menú" [ref=f1e19] [cursor=pointer]
+  - main [ref=f1e21]:
+    - generic [ref=f1e2076]:
+      - paragraph [ref=f1e2077]: Administración
+      - generic [ref=f1e2078]:
+        - navigation "Administración" [ref=f1e2079]:
+          - list [ref=f1e2080]:
+            - listitem [ref=f1e2081]:
+              - link "Dashboard" [ref=f1e2082] [cursor=pointer]:
+                - /url: /admin
+            - listitem [ref=f1e2088]:
+              - link "Usuarios" [ref=f1e2089] [cursor=pointer]:
+                - /url: /admin/usuarios
+            - listitem [ref=f1e2095]:
+              - link "Catálogo" [ref=f1e2096] [cursor=pointer]:
+                - /url: /admin/catalogo
+            - listitem [ref=f1e2099]:
+              - link "Qué incluye" [ref=f1e2100] [cursor=pointer]:
+                - /url: /admin/incluye
+            - listitem [ref=f1e2104]:
+              - link "Categorías" [ref=f1e2105] [cursor=pointer]:
+                - /url: /admin/categorias
+            - listitem [ref=f1e2111]:
+              - link "Idiomas" [ref=f1e2112] [cursor=pointer]:
+                - /url: /admin/idiomas
+            - listitem [ref=f1e2117]:
+              - link "Guías y operadores" [ref=f1e2118] [cursor=pointer]:
+                - /url: /admin/guias
+            - listitem [ref=f1e2122]:
+              - link "Disponibilidad" [active] [ref=f1e2123] [cursor=pointer]:
+                - /url: /admin/disponibilidad
+            - listitem [ref=f1e2126]:
+              - link "Reservas" [ref=f1e2127] [cursor=pointer]:
+                - /url: /admin/reservas
+            - listitem [ref=f1e2131]:
+              - link "Check-in" [ref=f1e2132] [cursor=pointer]:
+                - /url: /admin/checkin
+            - listitem [ref=f1e2138]:
+              - link "Pedidos" [ref=f1e2139] [cursor=pointer]:
+                - /url: /admin/pedidos
+            - listitem [ref=f1e2143]:
+              - link "Pagos" [ref=f1e2144] [cursor=pointer]:
+                - /url: /admin/pagos
+            - listitem [ref=f1e2147]:
+              - link "Facturas" [ref=f1e2148] [cursor=pointer]:
+                - /url: /admin/facturas
+            - listitem [ref=f1e2152]:
+              - link "Cupones" [ref=f1e2153] [cursor=pointer]:
+                - /url: /admin/cupones
+            - listitem [ref=f1e2157]:
+              - link "Reseñas" [ref=f1e2158] [cursor=pointer]:
+                - /url: /admin/resenas
+            - listitem [ref=f1e2161]:
+              - link "Mensajes" [ref=f1e2162] [cursor=pointer]:
+                - /url: /admin/mensajes
+            - listitem [ref=f1e2166]:
+              - link "Socios" [ref=f1e2167] [cursor=pointer]:
+                - /url: /admin/socios
+            - listitem [ref=f1e2173]:
+              - link "Reportes" [ref=f1e2174] [cursor=pointer]:
+                - /url: /admin/reportes
+            - listitem [ref=f1e2177]:
+              - link "Observabilidad" [ref=f1e2178] [cursor=pointer]:
+                - /url: /admin/observabilidad
+        - generic [ref=f1e2580]:
+          - heading "Disponibilidad" [level=1] [ref=f1e2581]
+          - generic [ref=f1e2583]:
+            - generic [ref=f1e2584]: Atracción
+            - combobox "Atracción" [ref=f1e2586]:
+              - option "Prueba de integración Tour Girls"
+              - option "Playa Los Frailes y Parque Machalilla"
+              - 'option "Reserva Maquipucuna: bosque nublado"'
+              - 'option "Refugio Paz de las Aves: avistamiento"'
+              - option "Estación Científica Charles Darwin"
+              - option "Parque Histórico Guayaquil"
+              - option "Parque Nacional Cotopaxi"
+              - 'option "Reserva El Chato: tortugas gigantes"'
+              - 'option "Laguna Quilotoa: mirador y descenso al cráter"'
+              - 'option "Kicker Rock (León Dormido): snorkel"'
+              - 'option "Parque Nacional Cajas: lagunas y páramo"'
+              - option "Basílica del Voto Nacional y sus torres"
+              - option "Museo Intiñan en la línea ecuatorial"
+              - option "Centro Histórico de Quito a pie"
+              - option "Cascada Pailón del Diablo"
+              - option "Iglesia de la Compañía de Jesús"
+              - option "TelefériQo Quito y mirador del Pichincha" [selected]
+              - option "Museo Templo del Sol Pintor Ortega Maila"
+              - 'option "Tortuga Bay: caminata y playa"'
+          - tablist [ref=f1e2587]:
+            - tab "Turnos" [selected] [ref=f1e2588] [cursor=pointer]
+            - tab "Horarios" [ref=f1e2589] [cursor=pointer]
+            - tab "Días bloqueados" [ref=f1e2590] [cursor=pointer]
+          - generic [ref=f1e2993]:
+            - button "Asignar guía a un rango" [ref=f1e2995] [cursor=pointer]
+            - generic [ref=f1e2998]:
+              - generic [ref=f1e2999]:
+                - generic [ref=f1e3000]: Fecha desde
+                - textbox "Fecha desde" [ref=f1e3002]
+              - generic [ref=f1e3003]:
+                - generic [ref=f1e3004]: Fecha hasta
+                - textbox "Fecha hasta" [ref=f1e3006]
+            - generic [ref=f1e3007]:
+              - paragraph [ref=f1e3009]: 364 resultados
+              - table [ref=f1e3011]:
+                - caption [ref=f1e3012]: Turnos
+                - rowgroup [ref=f1e3013]:
+                  - row [ref=f1e3014]:
+                    - columnheader "Fecha" [ref=f1e3015]
+                    - columnheader "Hora" [ref=f1e3016]
+                    - columnheader "Cupos" [ref=f1e3017]
+                    - columnheader "Guía" [ref=f1e3018]
+                    - columnheader "Estado" [ref=f1e3019]
+                    - columnheader [ref=f1e3020]
+                - rowgroup [ref=f1e3021]:
+                  - row [ref=f1e3022]:
+                    - cell "dom, 8 nov 2026 slot-20261108-0900" [ref=f1e3023]:
+                      - generic [ref=f1e3024]:
+                        - text: dom, 8 nov 2026
+                        - generic [ref=f1e3025]: slot-20261108-0900
+                    - cell "09:00" [ref=f1e3026]
+                    - cell "0 / 40 40 libres" [ref=f1e3027]:
+                      - generic [ref=f1e3028]:
+                        - text: 0 / 40
+                        - generic [ref=f1e3029]: 40 libres
+                    - cell "Sin guía" [ref=f1e3030]
+                    - cell "Abierto" [ref=f1e3031]
+                    - cell [ref=f1e3033]:
+                      - generic [ref=f1e3034]:
+                        - button "Cambiar guía del 2026-11-08" [ref=f1e3035] [cursor=pointer]
+                        - button "Cambiar cupo del 2026-11-08" [ref=f1e3039] [cursor=pointer]
+                        - button "Cerrar" [ref=f1e3045] [cursor=pointer]
+                  - row [ref=f1e3046]:
+                    - cell "dom, 8 nov 2026 slot-20261108-1030" [ref=f1e3047]:
+                      - generic [ref=f1e3048]:
+                        - text: dom, 8 nov 2026
+                        - generic [ref=f1e3049]: slot-20261108-1030
+                    - cell "10:30" [ref=f1e3050]
+                    - cell "0 / 40 40 libres" [ref=f1e3051]:
+                      - generic [ref=f1e3052]:
+                        - text: 0 / 40
+                        - generic [ref=f1e3053]: 40 libres
+                    - cell "Sin guía" [ref=f1e3054]
+                    - cell "Abierto" [ref=f1e3055]
+                    - cell [ref=f1e3057]:
+                      - generic [ref=f1e3058]:
+                        - button "Cambiar guía del 2026-11-08" [ref=f1e3059] [cursor=pointer]
+                        - button "Cambiar cupo del 2026-11-08" [ref=f1e3063] [cursor=pointer]
+                        - button "Cerrar" [ref=f1e3069] [cursor=pointer]
+                  - row [ref=f1e3070]:
+                    - cell "dom, 8 nov 2026 slot-20261108-1200" [ref=f1e3071]:
+                      - generic [ref=f1e3072]:
+                        - text: dom, 8 nov 2026
+                        - generic [ref=f1e3073]: slot-20261108-1200
+                    - cell "12:00" [ref=f1e3074]
+                    - cell "0 / 40 40 libres" [ref=f1e3075]:
+                      - generic [ref=f1e3076]:
+                        - text: 0 / 40
+                        - generic [ref=f1e3077]: 40 libres
+                    - cell "Sin guía" [ref=f1e3078]
+                    - cell "Abierto" [ref=f1e3079]
+                    - cell [ref=f1e3081]:
+                      - generic [ref=f1e3082]:
+                        - button "Cambiar guía del 2026-11-08" [ref=f1e3083] [cursor=pointer]
+                        - button "Cambiar cupo del 2026-11-08" [ref=f1e3087] [cursor=pointer]
+                        - button "Cerrar" [ref=f1e3093] [cursor=pointer]
+                  - row [ref=f1e3094]:
+                    - cell "dom, 8 nov 2026 slot-20261108-1400" [ref=f1e3095]:
+                      - generic [ref=f1e3096]:
+                        - text: dom, 8 nov 2026
+                        - generic [ref=f1e3097]: slot-20261108-1400
+                    - cell "14:00" [ref=f1e3098]
+                    - cell "0 / 40 40 libres" [ref=f1e3099]:
+                      - generic [ref=f1e3100]:
+                        - text: 0 / 40
+                        - generic [ref=f1e3101]: 40 libres
+                    - cell "Sin guía" [ref=f1e3102]
+                    - cell "Abierto" [ref=f1e3103]
+                    - cell [ref=f1e3105]:
+                      - generic [ref=f1e3106]:
+                        - button "Cambiar guía del 2026-11-08" [ref=f1e3107] [cursor=pointer]
+                        - button "Cambiar cupo del 2026-11-08" [ref=f1e3111] [cursor=pointer]
+                        - button "Cerrar" [ref=f1e3117] [cursor=pointer]
+                  - row [ref=f1e3118]:
+                    - cell "lun, 9 nov 2026 slot-20261109-0900" [ref=f1e3119]:
+                      - generic [ref=f1e3120]:
+                        - text: lun, 9 nov 2026
+                        - generic [ref=f1e3121]: slot-20261109-0900
+                    - cell "09:00" [ref=f1e3122]
+                    - cell "0 / 40 40 libres" [ref=f1e3123]:
+                      - generic [ref=f1e3124]:
+                        - text: 0 / 40
+                        - generic [ref=f1e3125]: 40 libres
+                    - cell "Sin guía" [ref=f1e3126]
+                    - cell "Abierto" [ref=f1e3127]
+                    - cell [ref=f1e3129]:
+                      - generic [ref=f1e3130]:
+                        - button "Cambiar guía del 2026-11-09" [ref=f1e3131] [cursor=pointer]
+                        - button "Cambiar cupo del 2026-11-09" [ref=f1e3135] [cursor=pointer]
+                        - button "Cerrar" [ref=f1e3141] [cursor=pointer]
+                  - row [ref=f1e3142]:
+                    - cell "lun, 9 nov 2026 slot-20261109-1030" [ref=f1e3143]:
+                      - generic [ref=f1e3144]:
+                        - text: lun, 9 nov 2026
+                        - generic [ref=f1e3145]: slot-20261109-1030
+                    - cell "10:30" [ref=f1e3146]
+                    - cell "0 / 40 40 libres" [ref=f1e3147]:
+                      - generic [ref=f1e3148]:
+                        - text: 0 / 40
+                        - generic [ref=f1e3149]: 40 libres
+                    - cell "Sin guía" [ref=f1e3150]
+                    - cell "Abierto" [ref=f1e3151]
+                    - cell [ref=f1e3153]:
+                      - generic [ref=f1e3154]:
+                        - button "Cambiar guía del 2026-11-09" [ref=f1e3155] [cursor=pointer]
+                        - button "Cambiar cupo del 2026-11-09" [ref=f1e3159] [cursor=pointer]
+                        - button "Cerrar" [ref=f1e3165] [cursor=pointer]
+                  - row [ref=f1e3166]:
+                    - cell "lun, 9 nov 2026 slot-20261109-1200" [ref=f1e3167]:
+                      - generic [ref=f1e3168]:
+                        - text: lun, 9 nov 2026
+                        - generic [ref=f1e3169]: slot-20261109-1200
+                    - cell "12:00" [ref=f1e3170]
+                    - cell "0 / 40 40 libres" [ref=f1e3171]:
+                      - generic [ref=f1e3172]:
+                        - text: 0 / 40
+                        - generic [ref=f1e3173]: 40 libres
+                    - cell "Sin guía" [ref=f1e3174]
+                    - cell "Abierto" [ref=f1e3175]
+                    - cell [ref=f1e3177]:
+                      - generic [ref=f1e3178]:
+                        - button "Cambiar guía del 2026-11-09" [ref=f1e3179] [cursor=pointer]
+                        - button "Cambiar cupo del 2026-11-09" [ref=f1e3183] [cursor=pointer]
+                        - button "Cerrar" [ref=f1e3189] [cursor=pointer]
+                  - row [ref=f1e3190]:
+                    - cell "lun, 9 nov 2026 slot-20261109-1400" [ref=f1e3191]:
+                      - generic [ref=f1e3192]:
+                        - text: lun, 9 nov 2026
+                        - generic [ref=f1e3193]: slot-20261109-1400
+                    - cell "14:00" [ref=f1e3194]
+                    - cell "0 / 40 40 libres" [ref=f1e3195]:
+                      - generic [ref=f1e3196]:
+                        - text: 0 / 40
+                        - generic [ref=f1e3197]: 40 libres
+                    - cell "Sin guía" [ref=f1e3198]
+                    - cell "Abierto" [ref=f1e3199]
+                    - cell [ref=f1e3201]:
+                      - generic [ref=f1e3202]:
+                        - button "Cambiar guía del 2026-11-09" [ref=f1e3203] [cursor=pointer]
+                        - button "Cambiar cupo del 2026-11-09" [ref=f1e3207] [cursor=pointer]
+                        - button "Cerrar" [ref=f1e3213] [cursor=pointer]
+                  - row [ref=f1e3214]:
+                    - cell "mar, 10 nov 2026 slot-20261110-0900" [ref=f1e3215]:
+                      - generic [ref=f1e3216]:
+                        - text: mar, 10 nov 2026
+                        - generic [ref=f1e3217]: slot-20261110-0900
+                    - cell "09:00" [ref=f1e3218]
+                    - cell "0 / 40 40 libres" [ref=f1e3219]:
+                      - generic [ref=f1e3220]:
+                        - text: 0 / 40
+                        - generic [ref=f1e3221]: 40 libres
+                    - cell "Sin guía" [ref=f1e3222]
+                    - cell "Abierto" [ref=f1e3223]
+                    - cell [ref=f1e3225]:
+                      - generic [ref=f1e3226]:
+                        - button "Cambiar guía del 2026-11-10" [ref=f1e3227] [cursor=pointer]
+                        - button "Cambiar cupo del 2026-11-10" [ref=f1e3231] [cursor=pointer]
+                        - button "Cerrar" [ref=f1e3237] [cursor=pointer]
+                  - row [ref=f1e3238]:
+                    - cell "mar, 10 nov 2026 slot-20261110-1030" [ref=f1e3239]:
+                      - generic [ref=f1e3240]:
+                        - text: mar, 10 nov 2026
+                        - generic [ref=f1e3241]: slot-20261110-1030
+                    - cell "10:30" [ref=f1e3242]
+                    - cell "0 / 40 40 libres" [ref=f1e3243]:
+                      - generic [ref=f1e3244]:
+                        - text: 0 / 40
+                        - generic [ref=f1e3245]: 40 libres
+                    - cell "Sin guía" [ref=f1e3246]
+                    - cell "Abierto" [ref=f1e3247]
+                    - cell [ref=f1e3249]:
+                      - generic [ref=f1e3250]:
+                        - button "Cambiar guía del 2026-11-10" [ref=f1e3251] [cursor=pointer]
+                        - button "Cambiar cupo del 2026-11-10" [ref=f1e3255] [cursor=pointer]
+                        - button "Cerrar" [ref=f1e3261] [cursor=pointer]
+                  - row [ref=f1e3262]:
+                    - cell "mar, 10 nov 2026 slot-20261110-1200" [ref=f1e3263]:
+                      - generic [ref=f1e3264]:
+                        - text: mar, 10 nov 2026
+                        - generic [ref=f1e3265]: slot-20261110-1200
+                    - cell "12:00" [ref=f1e3266]
+                    - cell "0 / 40 40 libres" [ref=f1e3267]:
+                      - generic [ref=f1e3268]:
+                        - text: 0 / 40
+                        - generic [ref=f1e3269]: 40 libres
+                    - cell "Sin guía" [ref=f1e3270]
+                    - cell "Abierto" [ref=f1e3271]
+                    - cell [ref=f1e3273]:
+                      - generic [ref=f1e3274]:
+                        - button "Cambiar guía del 2026-11-10" [ref=f1e3275] [cursor=pointer]
+                        - button "Cambiar cupo del 2026-11-10" [ref=f1e3279] [cursor=pointer]
+                        - button "Cerrar" [ref=f1e3285] [cursor=pointer]
+                  - row [ref=f1e3286]:
+                    - cell "mar, 10 nov 2026 slot-20261110-1400" [ref=f1e3287]:
+                      - generic [ref=f1e3288]:
+                        - text: mar, 10 nov 2026
+                        - generic [ref=f1e3289]: slot-20261110-1400
+                    - cell "14:00" [ref=f1e3290]
+                    - cell "0 / 40 40 libres" [ref=f1e3291]:
+                      - generic [ref=f1e3292]:
+                        - text: 0 / 40
+                        - generic [ref=f1e3293]: 40 libres
+                    - cell "Sin guía" [ref=f1e3294]
+                    - cell "Abierto" [ref=f1e3295]
+                    - cell [ref=f1e3297]:
+                      - generic [ref=f1e3298]:
+                        - button "Cambiar guía del 2026-11-10" [ref=f1e3299] [cursor=pointer]
+                        - button "Cambiar cupo del 2026-11-10" [ref=f1e3303] [cursor=pointer]
+                        - button "Cerrar" [ref=f1e3309] [cursor=pointer]
+                  - row [ref=f1e3310]:
+                    - cell "mié, 11 nov 2026 slot-20261111-0900" [ref=f1e3311]:
+                      - generic [ref=f1e3312]:
+                        - text: mié, 11 nov 2026
+                        - generic [ref=f1e3313]: slot-20261111-0900
+                    - cell "09:00" [ref=f1e3314]
+                    - cell "0 / 40 40 libres" [ref=f1e3315]:
+                      - generic [ref=f1e3316]:
+                        - text: 0 / 40
+                        - generic [ref=f1e3317]: 40 libres
+                    - cell "Sin guía" [ref=f1e3318]
+                    - cell "Abierto" [ref=f1e3319]
+                    - cell [ref=f1e3321]:
+                      - generic [ref=f1e3322]:
+                        - button "Cambiar guía del 2026-11-11" [ref=f1e3323] [cursor=pointer]
+                        - button "Cambiar cupo del 2026-11-11" [ref=f1e3327] [cursor=pointer]
+                        - button "Cerrar" [ref=f1e3333] [cursor=pointer]
+                  - row [ref=f1e3334]:
+                    - cell "mié, 11 nov 2026 slot-20261111-1030" [ref=f1e3335]:
+                      - generic [ref=f1e3336]:
+                        - text: mié, 11 nov 2026
+                        - generic [ref=f1e3337]: slot-20261111-1030
+                    - cell "10:30" [ref=f1e3338]
+                    - cell "0 / 40 40 libres" [ref=f1e3339]:
+                      - generic [ref=f1e3340]:
+                        - text: 0 / 40
+                        - generic [ref=f1e3341]: 40 libres
+                    - cell "Sin guía" [ref=f1e3342]
+                    - cell "Abierto" [ref=f1e3343]
+                    - cell [ref=f1e3345]:
+                      - generic [ref=f1e3346]:
+                        - button "Cambiar guía del 2026-11-11" [ref=f1e3347] [cursor=pointer]
+                        - button "Cambiar cupo del 2026-11-11" [ref=f1e3351] [cursor=pointer]
+                        - button "Cerrar" [ref=f1e3357] [cursor=pointer]
+                  - row [ref=f1e3358]:
+                    - cell "mié, 11 nov 2026 slot-20261111-1200" [ref=f1e3359]:
+                      - generic [ref=f1e3360]:
+                        - text: mié, 11 nov 2026
+                        - generic [ref=f1e3361]: slot-20261111-1200
+                    - cell "12:00" [ref=f1e3362]
+                    - cell "0 / 40 40 libres" [ref=f1e3363]:
+                      - generic [ref=f1e3364]:
+                        - text: 0 / 40
+                        - generic [ref=f1e3365]: 40 libres
+                    - cell "Sin guía" [ref=f1e3366]
+                    - cell "Abierto" [ref=f1e3367]
+                    - cell [ref=f1e3369]:
+                      - generic [ref=f1e3370]:
+                        - button "Cambiar guía del 2026-11-11" [ref=f1e3371] [cursor=pointer]
+                        - button "Cambiar cupo del 2026-11-11" [ref=f1e3375] [cursor=pointer]
+                        - button "Cerrar" [ref=f1e3381] [cursor=pointer]
+              - navigation "Paginación" [ref=f1e3382]:
+                - button "Página anterior" [disabled] [ref=f1e3383]
+                - button "1" [ref=f1e3386] [cursor=pointer]
+                - button "2" [ref=f1e3387] [cursor=pointer]
+                - generic [aria-hidden] [ref=f1e3388]: …
+                - button "25" [ref=f1e3389] [cursor=pointer]
+                - button "Página siguiente" [ref=f1e3390] [cursor=pointer]
+  - contentinfo [ref=f1e27]:
+    - generic [ref=f1e28]:
+      - generic [ref=f1e29]:
+        - link "TourGirls, administración" [ref=f1e2195] [cursor=pointer]:
+          - /url: /admin
+          - generic [ref=f1e35]: TourGirls
+        - paragraph [ref=f1e36]: Tours, entradas y experiencias en Ecuador, con cupos verificados en tiempo real.
+        - link "Escríbenos" [ref=f1e37] [cursor=pointer]:
+          - /url: /ayuda#contacto
+      - navigation "Ayuda" [ref=f1e40]:
+        - heading "Ayuda" [level=2] [ref=f1e41]
+        - list [ref=f1e42]:
+          - listitem [ref=f1e43]:
+            - link "Centro de ayuda" [ref=f1e44] [cursor=pointer]:
+              - /url: /ayuda
+          - listitem [ref=f1e45]:
+            - link "Política de cancelación" [ref=f1e46] [cursor=pointer]:
+              - /url: /ayuda#cancelacion
+          - listitem [ref=f1e47]:
+            - link "Pagos y facturación" [ref=f1e48] [cursor=pointer]:
+              - /url: /ayuda#pagos
+          - listitem [ref=f1e49]:
+            - link "Contacto" [ref=f1e50] [cursor=pointer]:
+              - /url: /ayuda#contacto
+      - navigation "Explora" [ref=f1e51]:
+        - heading "Explora" [level=2] [ref=f1e52]
+        - list [ref=f1e53]:
+          - listitem [ref=f1e54]:
+            - link "Todas las experiencias" [ref=f1e55] [cursor=pointer]:
+              - /url: /atracciones
+          - listitem [ref=f1e321]:
+            - link "Aventura" [ref=f1e322] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-aventura-100
+          - listitem [ref=f1e323]:
+            - link "Cultural" [ref=f1e324] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-cultural-100
+          - listitem [ref=f1e325]:
+            - link "Naturales" [ref=f1e326] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-naturales-100
+          - listitem [ref=f1e327]:
+            - link "Gastronomia" [ref=f1e328] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-gastronomia-100
+      - navigation "Acerca de" [ref=f1e56]:
+        - heading "Acerca de" [level=2] [ref=f1e57]
+        - list [ref=f1e58]:
+          - listitem [ref=f1e59]:
+            - link "Quiénes somos" [ref=f1e60] [cursor=pointer]:
+              - /url: /ayuda#nosotros
+          - listitem [ref=f1e61]:
+            - link "Términos de uso" [ref=f1e62] [cursor=pointer]:
+              - /url: /ayuda#terminos
+          - listitem [ref=f1e63]:
+            - link "Privacidad y cookies" [ref=f1e64] [cursor=pointer]:
+              - /url: /ayuda#privacidad
+    - generic [ref=f1e66]:
+      - paragraph [ref=f1e67]: © 2026 TourGirls · Proyecto académico de Integración de Sistemas.
+      - paragraph [ref=f1e68]: "Fotografías de portada: Wikimedia Commons (CC BY-SA y dominio público)."
+      - generic [ref=f1e69]: Español · US$

@@ -1,0 +1,361 @@
+- generic [ref=f1e3]:
+  - banner [ref=f1e4]:
+    - link "Saltar al contenido" [ref=f1e5] [cursor=pointer]:
+      - /url: "#contenido"
+    - generic [ref=f1e6]:
+      - link "TourGirls, administración" [ref=f1e2063] [cursor=pointer]:
+        - /url: /admin
+        - generic [ref=f1e12]: TourGirls
+      - navigation "Accesos de cuenta" [ref=f1e13]:
+        - link "Panel" [ref=f1e2064] [cursor=pointer]:
+          - /url: /admin
+        - button "Administrador Descubre EC" [ref=f1e2071] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f1e2072]: A
+        - button "Abrir menú" [ref=f1e19] [cursor=pointer]
+  - main [ref=f1e21]:
+    - generic [ref=f1e2076]:
+      - paragraph [ref=f1e2077]: Administración
+      - generic [ref=f1e2078]:
+        - navigation "Administración" [ref=f1e2079]:
+          - list [ref=f1e2080]:
+            - listitem [ref=f1e2081]:
+              - link "Dashboard" [ref=f1e2082] [cursor=pointer]:
+                - /url: /admin
+            - listitem [ref=f1e2088]:
+              - link "Usuarios" [ref=f1e2089] [cursor=pointer]:
+                - /url: /admin/usuarios
+            - listitem [ref=f1e2095]:
+              - link "Catálogo" [ref=f1e2096] [cursor=pointer]:
+                - /url: /admin/catalogo
+            - listitem [ref=f1e2099]:
+              - link "Qué incluye" [ref=f1e2100] [cursor=pointer]:
+                - /url: /admin/incluye
+            - listitem [ref=f1e2104]:
+              - link "Categorías" [ref=f1e2105] [cursor=pointer]:
+                - /url: /admin/categorias
+            - listitem [ref=f1e2111]:
+              - link "Idiomas" [ref=f1e2112] [cursor=pointer]:
+                - /url: /admin/idiomas
+            - listitem [ref=f1e2117]:
+              - link "Guías y operadores" [ref=f1e2118] [cursor=pointer]:
+                - /url: /admin/guias
+            - listitem [ref=f1e2122]:
+              - link "Disponibilidad" [ref=f1e2123] [cursor=pointer]:
+                - /url: /admin/disponibilidad
+            - listitem [ref=f1e2126]:
+              - link "Reservas" [ref=f1e2127] [cursor=pointer]:
+                - /url: /admin/reservas
+            - listitem [ref=f1e2131]:
+              - link "Check-in" [ref=f1e2132] [cursor=pointer]:
+                - /url: /admin/checkin
+            - listitem [ref=f1e2138]:
+              - link "Pedidos" [active] [ref=f1e2139] [cursor=pointer]:
+                - /url: /admin/pedidos
+            - listitem [ref=f1e2143]:
+              - link "Pagos" [ref=f1e2144] [cursor=pointer]:
+                - /url: /admin/pagos
+            - listitem [ref=f1e2147]:
+              - link "Facturas" [ref=f1e2148] [cursor=pointer]:
+                - /url: /admin/facturas
+            - listitem [ref=f1e2152]:
+              - link "Cupones" [ref=f1e2153] [cursor=pointer]:
+                - /url: /admin/cupones
+            - listitem [ref=f1e2157]:
+              - link "Reseñas" [ref=f1e2158] [cursor=pointer]:
+                - /url: /admin/resenas
+            - listitem [ref=f1e2161]:
+              - link "Mensajes" [ref=f1e2162] [cursor=pointer]:
+                - /url: /admin/mensajes
+            - listitem [ref=f1e2166]:
+              - link "Socios" [ref=f1e2167] [cursor=pointer]:
+                - /url: /admin/socios
+            - listitem [ref=f1e2173]:
+              - link "Reportes" [ref=f1e2174] [cursor=pointer]:
+                - /url: /admin/reportes
+            - listitem [ref=f1e2177]:
+              - link "Observabilidad" [ref=f1e2178] [cursor=pointer]:
+                - /url: /admin/observabilidad
+        - generic [ref=f1e3489]:
+          - heading "Pedidos" [level=1] [ref=f1e3491]
+          - generic [ref=f1e3493]:
+            - generic [ref=f1e3494]: Estado
+            - combobox "Estado" [ref=f1e3496]:
+              - option "Todos" [selected]
+              - option "Creadas"
+              - option "Pagadas"
+              - option "Canceladas"
+              - option "Reembolsadas"
+          - generic [ref=f1e3497]:
+            - paragraph [ref=f1e3498]: 56 resultados
+            - table [ref=f1e3500]:
+              - caption [ref=f1e3501]: Pedidos
+              - rowgroup [ref=f1e3502]:
+                - row [ref=f1e3503]:
+                  - columnheader "Orden" [ref=f1e3504]
+                  - columnheader "Subtotal" [ref=f1e3505]
+                  - columnheader "Descuento" [ref=f1e3506]
+                  - columnheader "IVA" [ref=f1e3507]
+                  - columnheader "Total" [ref=f1e3508]
+                  - columnheader "Estado" [ref=f1e3509]
+                  - columnheader [ref=f1e3510]
+              - rowgroup [ref=f1e3511]:
+                - row [ref=f1e3512]:
+                  - cell [ref=f1e3513]:
+                    - 'button "ORD-DILAN-C2QRQM #56" [ref=f1e3514] [cursor=pointer]':
+                      - text: ORD-DILAN-C2QRQM
+                      - generic [ref=f1e3515]: "#56"
+                  - cell "US$ 24" [ref=f1e3516]
+                  - cell "—" [ref=f1e3517]
+                  - cell "US$ 0" [ref=f1e3518]
+                  - cell [ref=f1e3519]:
+                    - strong [ref=f1e3520]: US$ 24
+                  - cell "Pagada" [ref=f1e3521]
+                  - cell [ref=f1e3523]:
+                    - button "Ver" [ref=f1e3524] [cursor=pointer]
+                - row [ref=f1e3525]:
+                  - cell [ref=f1e3526]:
+                    - 'button "ORD-DILAN-KDPF9C #55" [ref=f1e3527] [cursor=pointer]':
+                      - text: ORD-DILAN-KDPF9C
+                      - generic [ref=f1e3528]: "#55"
+                  - cell "US$ 15" [ref=f1e3529]
+                  - cell "—" [ref=f1e3530]
+                  - cell "US$ 0" [ref=f1e3531]
+                  - cell [ref=f1e3532]:
+                    - strong [ref=f1e3533]: US$ 15
+                  - cell "Pagada" [ref=f1e3534]
+                  - cell [ref=f1e3536]:
+                    - button "Ver" [ref=f1e3537] [cursor=pointer]
+                - row [ref=f1e3538]:
+                  - cell [ref=f1e3539]:
+                    - 'button "ORD-DILAN-YSMPEQ #54" [ref=f1e3540] [cursor=pointer]':
+                      - text: ORD-DILAN-YSMPEQ
+                      - generic [ref=f1e3541]: "#54"
+                  - cell "US$ 20" [ref=f1e3542]
+                  - cell "—" [ref=f1e3543]
+                  - cell "US$ 0" [ref=f1e3544]
+                  - cell [ref=f1e3545]:
+                    - strong [ref=f1e3546]: US$ 20
+                  - cell "Pagada" [ref=f1e3547]
+                  - cell [ref=f1e3549]:
+                    - button "Ver" [ref=f1e3550] [cursor=pointer]
+                - row [ref=f1e3551]:
+                  - cell [ref=f1e3552]:
+                    - 'button "ORD-DILAN-ALWS4W #53" [ref=f1e3553] [cursor=pointer]':
+                      - text: ORD-DILAN-ALWS4W
+                      - generic [ref=f1e3554]: "#53"
+                  - cell "US$ 150" [ref=f1e3555]
+                  - cell "—" [ref=f1e3556]
+                  - cell "US$ 0" [ref=f1e3557]
+                  - cell [ref=f1e3558]:
+                    - strong [ref=f1e3559]: US$ 150
+                  - cell "Pagada" [ref=f1e3560]
+                  - cell [ref=f1e3562]:
+                    - button "Ver" [ref=f1e3563] [cursor=pointer]
+                - row [ref=f1e3564]:
+                  - cell [ref=f1e3565]:
+                    - 'button "ORD-DILAN-L64DG6 #52" [ref=f1e3566] [cursor=pointer]':
+                      - text: ORD-DILAN-L64DG6
+                      - generic [ref=f1e3567]: "#52"
+                  - cell "US$ 150" [ref=f1e3568]
+                  - cell "—" [ref=f1e3569]
+                  - cell "US$ 0" [ref=f1e3570]
+                  - cell [ref=f1e3571]:
+                    - strong [ref=f1e3572]: US$ 150
+                  - cell "Pagada" [ref=f1e3573]
+                  - cell [ref=f1e3575]:
+                    - button "Ver" [ref=f1e3576] [cursor=pointer]
+                - row [ref=f1e3577]:
+                  - cell [ref=f1e3578]:
+                    - 'button "ORD-DILAN-WFB2RE #51" [ref=f1e3579] [cursor=pointer]':
+                      - text: ORD-DILAN-WFB2RE
+                      - generic [ref=f1e3580]: "#51"
+                  - cell "US$ 150" [ref=f1e3581]
+                  - cell "—" [ref=f1e3582]
+                  - cell "US$ 0" [ref=f1e3583]
+                  - cell [ref=f1e3584]:
+                    - strong [ref=f1e3585]: US$ 150
+                  - cell "Pagada" [ref=f1e3586]
+                  - cell [ref=f1e3588]:
+                    - button "Ver" [ref=f1e3589] [cursor=pointer]
+                - row [ref=f1e3590]:
+                  - cell [ref=f1e3591]:
+                    - 'button "ORD-DILAN-7PWKH6 #50" [ref=f1e3592] [cursor=pointer]':
+                      - text: ORD-DILAN-7PWKH6
+                      - generic [ref=f1e3593]: "#50"
+                  - cell "US$ 150" [ref=f1e3594]
+                  - cell "—" [ref=f1e3595]
+                  - cell "US$ 0" [ref=f1e3596]
+                  - cell [ref=f1e3597]:
+                    - strong [ref=f1e3598]: US$ 150
+                  - cell "Pagada" [ref=f1e3599]
+                  - cell [ref=f1e3601]:
+                    - button "Ver" [ref=f1e3602] [cursor=pointer]
+                - row [ref=f1e3603]:
+                  - cell [ref=f1e3604]:
+                    - 'button "ORD-DILAN-7UYUMZ #49" [ref=f1e3605] [cursor=pointer]':
+                      - text: ORD-DILAN-7UYUMZ
+                      - generic [ref=f1e3606]: "#49"
+                  - cell "US$ 30" [ref=f1e3607]
+                  - cell "—" [ref=f1e3608]
+                  - cell "US$ 0" [ref=f1e3609]
+                  - cell [ref=f1e3610]:
+                    - strong [ref=f1e3611]: US$ 30
+                  - cell "Pagada" [ref=f1e3612]
+                  - cell [ref=f1e3614]:
+                    - button "Ver" [ref=f1e3615] [cursor=pointer]
+                - row [ref=f1e3616]:
+                  - cell [ref=f1e3617]:
+                    - 'button "ORD-DILAN-FXGVN9 #48" [ref=f1e3618] [cursor=pointer]':
+                      - text: ORD-DILAN-FXGVN9
+                      - generic [ref=f1e3619]: "#48"
+                  - cell "US$ 300" [ref=f1e3620]
+                  - cell "—" [ref=f1e3621]
+                  - cell "US$ 0" [ref=f1e3622]
+                  - cell [ref=f1e3623]:
+                    - strong [ref=f1e3624]: US$ 300
+                  - cell "Pagada" [ref=f1e3625]
+                  - cell [ref=f1e3627]:
+                    - button "Ver" [ref=f1e3628] [cursor=pointer]
+                - row [ref=f1e3629]:
+                  - cell [ref=f1e3630]:
+                    - 'button "ORD-DILAN-6TA967 #47" [ref=f1e3631] [cursor=pointer]':
+                      - text: ORD-DILAN-6TA967
+                      - generic [ref=f1e3632]: "#47"
+                  - cell "US$ 300" [ref=f1e3633]
+                  - cell "—" [ref=f1e3634]
+                  - cell "US$ 0" [ref=f1e3635]
+                  - cell [ref=f1e3636]:
+                    - strong [ref=f1e3637]: US$ 300
+                  - cell "Pagada" [ref=f1e3638]
+                  - cell [ref=f1e3640]:
+                    - button "Ver" [ref=f1e3641] [cursor=pointer]
+                - row [ref=f1e3642]:
+                  - cell [ref=f1e3643]:
+                    - 'button "ORD-DILAN-ECXDPZ #46" [ref=f1e3644] [cursor=pointer]':
+                      - text: ORD-DILAN-ECXDPZ
+                      - generic [ref=f1e3645]: "#46"
+                  - cell "US$ 300" [ref=f1e3646]
+                  - cell "—" [ref=f1e3647]
+                  - cell "US$ 0" [ref=f1e3648]
+                  - cell [ref=f1e3649]:
+                    - strong [ref=f1e3650]: US$ 300
+                  - cell "Pagada" [ref=f1e3651]
+                  - cell [ref=f1e3653]:
+                    - button "Ver" [ref=f1e3654] [cursor=pointer]
+                - row [ref=f1e3655]:
+                  - cell [ref=f1e3656]:
+                    - 'button "ORD-DILAN-FG5TQ3 #45" [ref=f1e3657] [cursor=pointer]':
+                      - text: ORD-DILAN-FG5TQ3
+                      - generic [ref=f1e3658]: "#45"
+                  - cell "US$ 30" [ref=f1e3659]
+                  - cell "—" [ref=f1e3660]
+                  - cell "US$ 0" [ref=f1e3661]
+                  - cell [ref=f1e3662]:
+                    - strong [ref=f1e3663]: US$ 30
+                  - cell "Pagada" [ref=f1e3664]
+                  - cell [ref=f1e3666]:
+                    - button "Ver" [ref=f1e3667] [cursor=pointer]
+                - row [ref=f1e3668]:
+                  - cell [ref=f1e3669]:
+                    - 'button "ORD-DILAN-SKG8TK #44" [ref=f1e3670] [cursor=pointer]':
+                      - text: ORD-DILAN-SKG8TK
+                      - generic [ref=f1e3671]: "#44"
+                  - cell "US$ 70" [ref=f1e3672]
+                  - cell "—" [ref=f1e3673]
+                  - cell "US$ 0" [ref=f1e3674]
+                  - cell [ref=f1e3675]:
+                    - strong [ref=f1e3676]: US$ 70
+                  - cell "Cancelada" [ref=f1e3677]
+                  - cell [ref=f1e3679]:
+                    - button "Ver" [ref=f1e3680] [cursor=pointer]
+                - row [ref=f1e3681]:
+                  - cell [ref=f1e3682]:
+                    - 'button "ORD-DILAN-WCQ5QS #43" [ref=f1e3683] [cursor=pointer]':
+                      - text: ORD-DILAN-WCQ5QS
+                      - generic [ref=f1e3684]: "#43"
+                  - cell "US$ 700" [ref=f1e3685]
+                  - cell "—" [ref=f1e3686]
+                  - cell "US$ 0" [ref=f1e3687]
+                  - cell [ref=f1e3688]:
+                    - strong [ref=f1e3689]: US$ 700
+                  - cell "Reembolsada" [ref=f1e3690]
+                  - cell [ref=f1e3692]:
+                    - button "Ver" [ref=f1e3693] [cursor=pointer]
+                - row [ref=f1e3694]:
+                  - cell [ref=f1e3695]:
+                    - 'button "ORD-DILAN-M23EU3 #42" [ref=f1e3696] [cursor=pointer]':
+                      - text: ORD-DILAN-M23EU3
+                      - generic [ref=f1e3697]: "#42"
+                  - cell "US$ 70" [ref=f1e3698]
+                  - cell "—" [ref=f1e3699]
+                  - cell "US$ 0" [ref=f1e3700]
+                  - cell [ref=f1e3701]:
+                    - strong [ref=f1e3702]: US$ 70
+                  - cell "Cancelada" [ref=f1e3703]
+                  - cell [ref=f1e3705]:
+                    - button "Ver" [ref=f1e3706] [cursor=pointer]
+            - navigation "Paginación" [ref=f1e3707]:
+              - button "Página anterior" [disabled] [ref=f1e3708]
+              - button "1" [ref=f1e3711] [cursor=pointer]
+              - button "2" [ref=f1e3712] [cursor=pointer]
+              - generic [aria-hidden] [ref=f1e3713]: …
+              - button "4" [ref=f1e3714] [cursor=pointer]
+              - button "Página siguiente" [ref=f1e3715] [cursor=pointer]
+  - contentinfo [ref=f1e27]:
+    - generic [ref=f1e28]:
+      - generic [ref=f1e29]:
+        - link "TourGirls, administración" [ref=f1e2195] [cursor=pointer]:
+          - /url: /admin
+          - generic [ref=f1e35]: TourGirls
+        - paragraph [ref=f1e36]: Tours, entradas y experiencias en Ecuador, con cupos verificados en tiempo real.
+        - link "Escríbenos" [ref=f1e37] [cursor=pointer]:
+          - /url: /ayuda#contacto
+      - navigation "Ayuda" [ref=f1e40]:
+        - heading "Ayuda" [level=2] [ref=f1e41]
+        - list [ref=f1e42]:
+          - listitem [ref=f1e43]:
+            - link "Centro de ayuda" [ref=f1e44] [cursor=pointer]:
+              - /url: /ayuda
+          - listitem [ref=f1e45]:
+            - link "Política de cancelación" [ref=f1e46] [cursor=pointer]:
+              - /url: /ayuda#cancelacion
+          - listitem [ref=f1e47]:
+            - link "Pagos y facturación" [ref=f1e48] [cursor=pointer]:
+              - /url: /ayuda#pagos
+          - listitem [ref=f1e49]:
+            - link "Contacto" [ref=f1e50] [cursor=pointer]:
+              - /url: /ayuda#contacto
+      - navigation "Explora" [ref=f1e51]:
+        - heading "Explora" [level=2] [ref=f1e52]
+        - list [ref=f1e53]:
+          - listitem [ref=f1e54]:
+            - link "Todas las experiencias" [ref=f1e55] [cursor=pointer]:
+              - /url: /atracciones
+          - listitem [ref=f1e321]:
+            - link "Aventura" [ref=f1e322] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-aventura-100
+          - listitem [ref=f1e323]:
+            - link "Cultural" [ref=f1e324] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-cultural-100
+          - listitem [ref=f1e325]:
+            - link "Naturales" [ref=f1e326] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-naturales-100
+          - listitem [ref=f1e327]:
+            - link "Gastronomia" [ref=f1e328] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-gastronomia-100
+      - navigation "Acerca de" [ref=f1e56]:
+        - heading "Acerca de" [level=2] [ref=f1e57]
+        - list [ref=f1e58]:
+          - listitem [ref=f1e59]:
+            - link "Quiénes somos" [ref=f1e60] [cursor=pointer]:
+              - /url: /ayuda#nosotros
+          - listitem [ref=f1e61]:
+            - link "Términos de uso" [ref=f1e62] [cursor=pointer]:
+              - /url: /ayuda#terminos
+          - listitem [ref=f1e63]:
+            - link "Privacidad y cookies" [ref=f1e64] [cursor=pointer]:
+              - /url: /ayuda#privacidad
+    - generic [ref=f1e66]:
+      - paragraph [ref=f1e67]: © 2026 TourGirls · Proyecto académico de Integración de Sistemas.
+      - paragraph [ref=f1e68]: "Fotografías de portada: Wikimedia Commons (CC BY-SA y dominio público)."
+      - generic [ref=f1e69]: Español · US$

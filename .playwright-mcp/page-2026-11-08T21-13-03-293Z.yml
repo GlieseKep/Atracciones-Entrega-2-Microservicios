@@ -1,0 +1,166 @@
+- generic [ref=f1e3]:
+  - banner [ref=f1e4]:
+    - link "Saltar al contenido" [ref=f1e5] [cursor=pointer]:
+      - /url: "#contenido"
+    - generic [ref=f1e6]:
+      - link "TourGirls, inicio" [ref=f1e7] [cursor=pointer]:
+        - /url: /
+        - generic [ref=f1e12]: TourGirls
+      - navigation "Accesos de cuenta" [ref=f1e13]:
+        - link "Mis reservas" [ref=f1e657] [cursor=pointer]:
+          - /url: /perfil?tab=reservas
+        - button "Michael Molina" [ref=f1e662] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f1e663]: M
+        - button "Abrir menú" [ref=f1e19] [cursor=pointer]
+  - main [ref=f1e21]:
+    - generic [ref=f1e1883]:
+      - navigation "Ruta de navegación" [ref=f1e1884]:
+        - list [ref=f1e1885]:
+          - listitem [ref=f1e1886]:
+            - link "Inicio" [ref=f1e1887] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=f1e1890]:
+            - link "Mis reservas" [ref=f1e1891] [cursor=pointer]:
+              - /url: /perfil?tab=reservas
+          - listitem [ref=f1e1894]: DEC-9DYP82
+      - status [ref=f1e1895]:
+        - paragraph [ref=f1e1899]: Tu compra está confirmada. Presenta el código QR y tu documento en el punto de encuentro.
+      - generic [ref=f1e1900]:
+        - generic [ref=f1e1901]:
+          - generic [ref=f1e1902]:
+            - link [aria-hidden] [ref=f1e1903] [cursor=pointer]:
+              - /url: /atracciones/sDNGLgZWJqft
+            - generic [ref=f1e1904]:
+              - generic [ref=f1e1905]:
+                - generic [ref=f1e1906]:
+                  - paragraph [ref=f1e1907]: Reserva DEC-9DYP82
+                  - heading [level=1] [ref=f1e1908]:
+                    - link "TelefériQo Quito y mirador del Pichincha" [ref=f1e1909] [cursor=pointer]:
+                      - /url: /atracciones/sDNGLgZWJqft
+                  - paragraph [ref=f1e1910]: Quito, Ecuador
+                - generic [ref=f1e1911]: Confirmada
+              - list [ref=f1e1912]:
+                - listitem [ref=f1e1913]: domingo, 15 de noviembre de 2026
+                - listitem [ref=f1e1916]: 10:30 a.m.
+                - listitem [ref=f1e1920]: 2 adultos, 1 niño
+                - listitem [ref=f1e1926]: Total US$ 24
+                - listitem [ref=f1e1929]: "Guía: Por asignar"
+                - listitem [ref=f1e1933]: Estación base del TelefériQo, Av. Occidental
+              - generic [ref=f1e1937]:
+                - link "Ver la experiencia" [ref=f1e1938] [cursor=pointer]:
+                  - /url: /atracciones/sDNGLgZWJqft
+                - button "Cancelar reserva" [ref=f1e1941] [cursor=pointer]
+          - region [ref=f1e1942]:
+            - heading "Titular" [level=2] [ref=f1e1943]
+            - generic [ref=f1e1944]:
+              - generic [ref=f1e1945]:
+                - term [ref=f1e1946]: Nombre
+                - definition [ref=f1e1947]: Michael Molina
+              - generic [ref=f1e1948]:
+                - term [ref=f1e1949]: Documento
+                - definition [ref=f1e1950]: CEDULA 1710034065
+              - generic [ref=f1e1951]:
+                - term [ref=f1e1952]: Correo
+                - definition [ref=f1e1953]: prueba@ejemplo.com
+              - generic [ref=f1e1954]:
+                - term [ref=f1e1955]: Teléfono
+                - definition [ref=f1e1956]: "0987432008"
+          - region [ref=f1e1957]:
+            - generic [ref=f1e1958]:
+              - generic [ref=f1e1959]:
+                - heading "Orden ORD-DILAN-C2QRQM" [level=2] [ref=f1e1960]
+                - paragraph [ref=f1e1964]: 8 nov 2026, 4:11 p. m. · Tarjeta de crédito
+              - generic [ref=f1e1965]: Pagada
+            - list [ref=f1e1966]:
+              - listitem [ref=f1e1967]:
+                - generic [ref=f1e1968]:
+                  - text: Adulto × 2
+                  - generic [ref=f1e1969]: (US$ 9 c/u)
+                - generic [ref=f1e1970]: US$ 18
+              - listitem [ref=f1e1971]:
+                - generic [ref=f1e1972]:
+                  - text: Niño × 1
+                  - generic [ref=f1e1973]: (US$ 6 c/u)
+                - generic [ref=f1e1974]: US$ 6
+            - generic [ref=f1e1975]:
+              - generic [ref=f1e1976]:
+                - term [ref=f1e1977]: Subtotal
+                - definition [ref=f1e1978]: US$ 24
+              - generic [ref=f1e1979]:
+                - term [ref=f1e1980]: IVA
+                - definition [ref=f1e1981]: US$ 0
+              - generic [ref=f1e1982]:
+                - term [ref=f1e1983]: Total
+                - definition [ref=f1e1984]: US$ 24
+        - complementary [ref=f1e1985]:
+          - region [ref=f1e1986]:
+            - heading "Voucher" [level=2] [ref=f1e1987]
+            - paragraph [ref=f1e1994]: DEC-9DYP82
+            - paragraph [ref=f1e1995]: eyJyZXNfaWQiOiI3MTQ3NDYxYy1mNTVlLTQxZjAtYTAxYi1iNDgxOWQ3MjE3ZWYiLCJwbnIiOiJERUMtOURZUDgyIiwiZG9jIjoiMTcxMDAzNDA2NSJ9.A6imXSaJgpGw1RA9COzkXAyE8BrogsEJOOd5cCnVulc
+            - paragraph [ref=f1e1996]: El guía escanea este código en el check-in. También lo recibiste por correo.
+          - paragraph [ref=f1e1997]:
+            - text: ¿Necesitas ayuda? Consulta la
+            - link "política de cancelación" [ref=f1e1998] [cursor=pointer]:
+              - /url: /ayuda#cancelacion
+            - text: o
+            - link "escríbenos" [ref=f1e1999] [cursor=pointer]:
+              - /url: /ayuda#contacto
+            - text: .
+  - contentinfo [ref=f1e27]:
+    - generic [ref=f1e28]:
+      - generic [ref=f1e29]:
+        - link "TourGirls, inicio" [ref=f1e30] [cursor=pointer]:
+          - /url: /
+          - generic [ref=f1e35]: TourGirls
+        - paragraph [ref=f1e36]: Tours, entradas y experiencias en Ecuador, con cupos verificados en tiempo real.
+        - link "Escríbenos" [ref=f1e37] [cursor=pointer]:
+          - /url: /ayuda#contacto
+      - navigation "Ayuda" [ref=f1e40]:
+        - heading "Ayuda" [level=2] [ref=f1e41]
+        - list [ref=f1e42]:
+          - listitem [ref=f1e43]:
+            - link "Centro de ayuda" [ref=f1e44] [cursor=pointer]:
+              - /url: /ayuda
+          - listitem [ref=f1e45]:
+            - link "Política de cancelación" [ref=f1e46] [cursor=pointer]:
+              - /url: /ayuda#cancelacion
+          - listitem [ref=f1e47]:
+            - link "Pagos y facturación" [ref=f1e48] [cursor=pointer]:
+              - /url: /ayuda#pagos
+          - listitem [ref=f1e49]:
+            - link "Contacto" [ref=f1e50] [cursor=pointer]:
+              - /url: /ayuda#contacto
+      - navigation "Explora" [ref=f1e51]:
+        - heading "Explora" [level=2] [ref=f1e52]
+        - list [ref=f1e53]:
+          - listitem [ref=f1e54]:
+            - link "Todas las experiencias" [ref=f1e55] [cursor=pointer]:
+              - /url: /atracciones
+          - listitem [ref=f1e321]:
+            - link "Aventura" [ref=f1e322] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-aventura-100
+          - listitem [ref=f1e323]:
+            - link "Cultural" [ref=f1e324] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-cultural-100
+          - listitem [ref=f1e325]:
+            - link "Naturales" [ref=f1e326] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-naturales-100
+          - listitem [ref=f1e327]:
+            - link "Gastronomia" [ref=f1e328] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-gastronomia-100
+      - navigation "Acerca de" [ref=f1e56]:
+        - heading "Acerca de" [level=2] [ref=f1e57]
+        - list [ref=f1e58]:
+          - listitem [ref=f1e59]:
+            - link "Quiénes somos" [ref=f1e60] [cursor=pointer]:
+              - /url: /ayuda#nosotros
+          - listitem [ref=f1e61]:
+            - link "Términos de uso" [ref=f1e62] [cursor=pointer]:
+              - /url: /ayuda#terminos
+          - listitem [ref=f1e63]:
+            - link "Privacidad y cookies" [ref=f1e64] [cursor=pointer]:
+              - /url: /ayuda#privacidad
+    - generic [ref=f1e66]:
+      - paragraph [ref=f1e67]: © 2026 TourGirls · Proyecto académico de Integración de Sistemas.
+      - paragraph [ref=f1e68]: "Fotografías de portada: Wikimedia Commons (CC BY-SA y dominio público)."
+      - generic [ref=f1e69]: Español · US$

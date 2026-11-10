@@ -1,0 +1,91 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - link "Saltar al contenido" [ref=e5] [cursor=pointer]:
+      - /url: "#contenido"
+    - generic [ref=e6]:
+      - link "TourGirls, inicio" [ref=e7] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e12]: TourGirls
+      - navigation "Accesos de cuenta" [ref=e13]:
+        - button "Iniciar sesión" [ref=e18] [cursor=pointer]
+        - button "Crear cuenta" [ref=e22] [cursor=pointer]
+        - button "Abrir menú" [ref=e230] [cursor=pointer]
+  - main [ref=e35]:
+    - generic [ref=e233]:
+      - heading "Iniciar sesión" [level=1] [ref=e234]
+      - paragraph [ref=e235]: Accede para comprar experiencias y ver tus reservas.
+      - generic [ref=e236]:
+        - generic [ref=e237]:
+          - generic [ref=e238]:
+            - generic [ref=e239]: Correo electrónico
+            - textbox "Correo electrónico" [active] [ref=e241]
+          - generic [ref=e242]:
+            - generic [ref=e243]: Contraseña
+            - textbox "Contraseña" [ref=e245]
+          - paragraph [ref=e246]:
+            - link "¿Olvidaste tu contraseña?" [ref=e247] [cursor=pointer]:
+              - /url: /recuperar
+          - button "Iniciar sesión" [ref=e248] [cursor=pointer]
+        - paragraph [ref=e249]:
+          - text: ¿No tienes cuenta?
+          - link "Crear una cuenta" [ref=e250] [cursor=pointer]:
+            - /url: /registro
+      - paragraph [ref=e251]: Tu contraseña se guarda cifrada y tu sesión solo se mantiene en esta pestaña.
+  - contentinfo [ref=e184]:
+    - generic [ref=e185]:
+      - generic [ref=e186]:
+        - link "TourGirls, inicio" [ref=e187] [cursor=pointer]:
+          - /url: /
+          - generic [ref=e192]: TourGirls
+        - paragraph [ref=e193]: Tours, entradas y experiencias en Ecuador, con cupos verificados en tiempo real.
+        - link "Escríbenos" [ref=e194] [cursor=pointer]:
+          - /url: /ayuda#contacto
+      - navigation "Ayuda" [ref=e197]:
+        - heading "Ayuda" [level=2] [ref=e198]
+        - list [ref=e199]:
+          - listitem [ref=e200]:
+            - link "Centro de ayuda" [ref=e201] [cursor=pointer]:
+              - /url: /ayuda
+          - listitem [ref=e202]:
+            - link "Política de cancelación" [ref=e203] [cursor=pointer]:
+              - /url: /ayuda#cancelacion
+          - listitem [ref=e204]:
+            - link "Pagos y facturación" [ref=e205] [cursor=pointer]:
+              - /url: /ayuda#pagos
+          - listitem [ref=e206]:
+            - link "Contacto" [ref=e207] [cursor=pointer]:
+              - /url: /ayuda#contacto
+      - navigation "Explora" [ref=e208]:
+        - heading "Explora" [level=2] [ref=e209]
+        - list [ref=e210]:
+          - listitem [ref=e211]:
+            - link "Todas las experiencias" [ref=e212] [cursor=pointer]:
+              - /url: /atracciones
+          - listitem [ref=e255]:
+            - link "Aventura" [ref=e256] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-aventura-100
+          - listitem [ref=e257]:
+            - link "Cultural" [ref=e258] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-cultural-100
+          - listitem [ref=e259]:
+            - link "Naturales" [ref=e260] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-naturales-100
+          - listitem [ref=e261]:
+            - link "Gastronomia" [ref=e262] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-gastronomia-100
+      - navigation "Acerca de" [ref=e213]:
+        - heading "Acerca de" [level=2] [ref=e214]
+        - list [ref=e215]:
+          - listitem [ref=e216]:
+            - link "Quiénes somos" [ref=e217] [cursor=pointer]:
+              - /url: /ayuda#nosotros
+          - listitem [ref=e218]:
+            - link "Términos de uso" [ref=e219] [cursor=pointer]:
+              - /url: /ayuda#terminos
+          - listitem [ref=e220]:
+            - link "Privacidad y cookies" [ref=e221] [cursor=pointer]:
+              - /url: /ayuda#privacidad
+    - generic [ref=e223]:
+      - paragraph [ref=e224]: © 2026 TourGirls · Proyecto académico de Integración de Sistemas.
+      - paragraph [ref=e225]: "Fotografías de portada: Wikimedia Commons (CC BY-SA y dominio público)."
+      - generic [ref=e226]: Español · US$

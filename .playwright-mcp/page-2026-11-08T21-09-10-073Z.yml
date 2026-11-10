@@ -1,0 +1,149 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - link "Saltar al contenido" [ref=e5] [cursor=pointer]:
+      - /url: "#contenido"
+    - generic [ref=e6]:
+      - link "TourGirls, inicio" [ref=e7] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e12]: TourGirls
+      - navigation "Accesos de cuenta" [ref=e13]:
+        - generic [ref=e14]: ES · US$
+        - button "Iniciar sesión" [ref=e18] [cursor=pointer]
+        - button "Crear cuenta" [ref=e22] [cursor=pointer]
+    - navigation "Principal" [ref=e23]:
+      - list [ref=e24]:
+        - listitem [ref=e25]:
+          - link "Inicio" [ref=e26] [cursor=pointer]:
+            - /url: /
+        - listitem [ref=e27]:
+          - link "Atracciones" [ref=e28] [cursor=pointer]:
+            - /url: /atracciones
+        - listitem [ref=e29]:
+          - link "Destinos" [ref=e30] [cursor=pointer]:
+            - /url: /#destinos
+        - listitem [ref=e31]:
+          - link "Mejor valoradas" [ref=e32] [cursor=pointer]:
+            - /url: /#experiencias
+        - listitem [ref=e33]:
+          - link "Ayuda" [ref=e34] [cursor=pointer]:
+            - /url: /ayuda
+  - main [ref=e35]:
+    - navigation "Ruta de navegación" [ref=e37]:
+      - list [ref=e38]:
+        - listitem [ref=e39]:
+          - link "Inicio" [ref=e40] [cursor=pointer]:
+            - /url: /
+        - listitem [ref=e43]: Sudamérica
+        - listitem [ref=e46]: Ecuador
+    - generic [ref=e48]:
+      - img "Vista panorámica de Quito con la Basílica del Voto Nacional y los Andes al fondo" [ref=e49]
+      - generic [ref=e51]:
+        - paragraph [ref=e52]: Ecuador
+        - heading "Cosas que hacer en Ecuador" [level=1] [ref=e53]
+        - paragraph [ref=e54]: "Volcanes, playas, bosques nublados y ciudades coloniales: compra experiencias con cupos garantizados."
+        - search [ref=e56]:
+          - generic [ref=e61]:
+            - generic [ref=e62]: ¿Adónde vas?
+            - combobox "¿Adónde vas?" [ref=e63]
+          - generic [ref=e67]:
+            - generic [ref=e68]: ¿Cuándo?
+            - textbox "¿Cuándo?" [ref=e69]
+          - button "Buscar" [ref=e70] [cursor=pointer]
+    - region [ref=e74]:
+      - generic [ref=e75]:
+        - heading "Las experiencias más populares" [level=2] [ref=e77]
+        - link "Ver todas las experiencias" [ref=e78] [cursor=pointer]:
+          - /url: /atracciones
+      - list [ref=e81]:
+        - listitem [ref=e82]
+        - listitem [ref=e90]
+        - listitem [ref=e98]
+        - listitem [ref=e106]
+    - region [ref=e114]:
+      - generic [ref=e115]:
+        - heading "Por qué comprar con nosotros" [level=2] [ref=e116]
+        - list [ref=e117]:
+          - listitem [ref=e118]:
+            - heading "Cupos en tiempo real" [level=3] [ref=e122]
+            - paragraph [ref=e123]: Consultamos la disponibilidad de cada horario antes de cobrar.
+          - listitem [ref=e124]:
+            - heading "Operadores locales" [level=3] [ref=e129]
+            - paragraph [ref=e130]: Experiencias de operadores y guías de cada región de Ecuador.
+          - listitem [ref=e131]:
+            - heading "Compra en un solo paso" [level=3] [ref=e135]
+            - paragraph [ref=e136]: "Orden, cupos y pago se confirman juntos: si algo falla, no se cobra."
+          - listitem [ref=e137]:
+            - heading "Opiniones de viajeros" [level=3] [ref=e141]
+            - paragraph [ref=e142]: Las valoraciones vienen de personas con cuenta en el portal.
+    - region [ref=e143]:
+      - generic [ref=e144]:
+        - generic [ref=e145]:
+          - heading "Compra en segundos con tu cuenta" [level=2] [ref=e146]
+          - paragraph [ref=e147]: Crea tu cuenta gratis para comprar, ver tus vouchers y gestionar tus reservas.
+        - generic [ref=e148]:
+          - button "Crear cuenta" [ref=e149] [cursor=pointer]
+          - button "Iniciar sesión" [ref=e153] [cursor=pointer]
+    - region [ref=e157]:
+      - generic [ref=e158]:
+        - generic [ref=e159]:
+          - heading "Preguntas frecuentes" [level=2] [ref=e160]
+          - paragraph [ref=e161]: Todo lo que necesitas saber antes de comprar.
+          - link "Centro de ayuda" [ref=e162] [cursor=pointer]:
+            - /url: /ayuda
+        - generic [ref=e163]:
+          - group [ref=e164]:
+            - generic "¿Necesito una cuenta para comprar?" [ref=e165] [cursor=pointer]
+          - group [ref=e168]:
+            - generic "¿Cómo funciona la compra?" [ref=e169] [cursor=pointer]
+          - group [ref=e172]:
+            - generic "¿Qué datos del titular me piden?" [ref=e173] [cursor=pointer]
+          - group [ref=e176]:
+            - generic "¿Puedo cancelar mi reserva?" [ref=e177] [cursor=pointer]
+          - group [ref=e180]:
+            - generic "¿Recibo factura?" [ref=e181] [cursor=pointer]
+  - contentinfo [ref=e184]:
+    - generic [ref=e185]:
+      - generic [ref=e186]:
+        - link "TourGirls, inicio" [ref=e187] [cursor=pointer]:
+          - /url: /
+          - generic [ref=e192]: TourGirls
+        - paragraph [ref=e193]: Tours, entradas y experiencias en Ecuador, con cupos verificados en tiempo real.
+        - link "Escríbenos" [ref=e194] [cursor=pointer]:
+          - /url: /ayuda#contacto
+      - navigation "Ayuda" [ref=e197]:
+        - heading "Ayuda" [level=2] [ref=e198]
+        - list [ref=e199]:
+          - listitem [ref=e200]:
+            - link "Centro de ayuda" [ref=e201] [cursor=pointer]:
+              - /url: /ayuda
+          - listitem [ref=e202]:
+            - link "Política de cancelación" [ref=e203] [cursor=pointer]:
+              - /url: /ayuda#cancelacion
+          - listitem [ref=e204]:
+            - link "Pagos y facturación" [ref=e205] [cursor=pointer]:
+              - /url: /ayuda#pagos
+          - listitem [ref=e206]:
+            - link "Contacto" [ref=e207] [cursor=pointer]:
+              - /url: /ayuda#contacto
+      - navigation "Explora" [ref=e208]:
+        - heading "Explora" [level=2] [ref=e209]
+        - list [ref=e210]:
+          - listitem [ref=e211]:
+            - link "Todas las experiencias" [ref=e212] [cursor=pointer]:
+              - /url: /atracciones
+      - navigation "Acerca de" [ref=e213]:
+        - heading "Acerca de" [level=2] [ref=e214]
+        - list [ref=e215]:
+          - listitem [ref=e216]:
+            - link "Quiénes somos" [ref=e217] [cursor=pointer]:
+              - /url: /ayuda#nosotros
+          - listitem [ref=e218]:
+            - link "Términos de uso" [ref=e219] [cursor=pointer]:
+              - /url: /ayuda#terminos
+          - listitem [ref=e220]:
+            - link "Privacidad y cookies" [ref=e221] [cursor=pointer]:
+              - /url: /ayuda#privacidad
+    - generic [ref=e223]:
+      - paragraph [ref=e224]: © 2026 TourGirls · Proyecto académico de Integración de Sistemas.
+      - paragraph [ref=e225]: "Fotografías de portada: Wikimedia Commons (CC BY-SA y dominio público)."
+      - generic [ref=e226]: Español · US$

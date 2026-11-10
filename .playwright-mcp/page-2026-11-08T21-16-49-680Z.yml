@@ -1,0 +1,160 @@
+- generic [ref=f1e3]:
+  - banner [ref=f1e4]:
+    - link "Saltar al contenido" [ref=f1e5] [cursor=pointer]:
+      - /url: "#contenido"
+    - generic [ref=f1e6]:
+      - link "TourGirls, administración" [ref=f1e4992] [cursor=pointer]:
+        - /url: /admin
+        - generic [ref=f1e12]: TourGirls
+      - navigation "Accesos de cuenta" [ref=f1e13]:
+        - link "Panel" [ref=f1e4993] [cursor=pointer]:
+          - /url: /admin
+        - button "Usuario Pruebas" [ref=f1e5000] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f1e5001]: U
+        - button "Abrir menú" [ref=f1e19] [cursor=pointer]
+  - main [ref=f1e21]:
+    - generic [ref=f1e5005]:
+      - paragraph [ref=f1e5006]: Administración
+      - generic [ref=f1e5007]:
+        - navigation "Administración" [ref=f1e5008]:
+          - list [ref=f1e5009]:
+            - listitem [ref=f1e5010]:
+              - link "Dashboard" [ref=f1e5011] [cursor=pointer]:
+                - /url: /admin
+            - listitem [ref=f1e5017]:
+              - link "Usuarios" [ref=f1e5018] [cursor=pointer]:
+                - /url: /admin/usuarios
+            - listitem [ref=f1e5024]:
+              - link "Catálogo" [ref=f1e5025] [cursor=pointer]:
+                - /url: /admin/catalogo
+            - listitem [ref=f1e5028]:
+              - link "Qué incluye" [ref=f1e5029] [cursor=pointer]:
+                - /url: /admin/incluye
+            - listitem [ref=f1e5033]:
+              - link "Categorías" [ref=f1e5034] [cursor=pointer]:
+                - /url: /admin/categorias
+            - listitem [ref=f1e5040]:
+              - link "Idiomas" [ref=f1e5041] [cursor=pointer]:
+                - /url: /admin/idiomas
+            - listitem [ref=f1e5046]:
+              - link "Guías y operadores" [ref=f1e5047] [cursor=pointer]:
+                - /url: /admin/guias
+            - listitem [ref=f1e5051]:
+              - link "Disponibilidad" [ref=f1e5052] [cursor=pointer]:
+                - /url: /admin/disponibilidad
+            - listitem [ref=f1e5055]:
+              - link "Reservas" [ref=f1e5056] [cursor=pointer]:
+                - /url: /admin/reservas
+            - listitem [ref=f1e5060]:
+              - link "Check-in" [ref=f1e5061] [cursor=pointer]:
+                - /url: /admin/checkin
+            - listitem [ref=f1e5067]:
+              - link "Pedidos" [ref=f1e5068] [cursor=pointer]:
+                - /url: /admin/pedidos
+            - listitem [ref=f1e5072]:
+              - link "Pagos" [ref=f1e5073] [cursor=pointer]:
+                - /url: /admin/pagos
+            - listitem [ref=f1e5076]:
+              - link "Facturas" [ref=f1e5077] [cursor=pointer]:
+                - /url: /admin/facturas
+            - listitem [ref=f1e5081]:
+              - link "Cupones" [ref=f1e5082] [cursor=pointer]:
+                - /url: /admin/cupones
+            - listitem [ref=f1e5086]:
+              - link "Reseñas" [ref=f1e5087] [cursor=pointer]:
+                - /url: /admin/resenas
+            - listitem [ref=f1e5090]:
+              - link "Mensajes" [ref=f1e5091] [cursor=pointer]:
+                - /url: /admin/mensajes
+            - listitem [ref=f1e5095]:
+              - link "Socios" [ref=f1e5096] [cursor=pointer]:
+                - /url: /admin/socios
+            - listitem [ref=f1e5102]:
+              - link "Reportes" [ref=f1e5103] [cursor=pointer]:
+                - /url: /admin/reportes
+            - listitem [ref=f1e5106]:
+              - link "Observabilidad" [ref=f1e5107] [cursor=pointer]:
+                - /url: /admin/observabilidad
+        - generic [ref=f1e5111]:
+          - generic [ref=f1e5112]:
+            - heading "Usuarios" [level=1] [ref=f1e5113]
+            - button "Nuevo usuario" [ref=f1e5114] [cursor=pointer]
+          - generic [ref=f1e5116]:
+            - generic [ref=f1e5117]:
+              - generic [ref=f1e5118]: Buscar
+              - searchbox "Buscar" [ref=f1e5120]
+            - generic [ref=f1e5121]:
+              - generic [ref=f1e5122]: Estado
+              - combobox "Estado" [ref=f1e5124]:
+                - option "Todos" [selected]
+                - option "Activos"
+                - option "Desactivados"
+            - generic [ref=f1e5125]:
+              - generic [ref=f1e5126]: Rol
+              - combobox "Rol" [ref=f1e5128]:
+                - option "Todos" [selected]
+                - option "Administrador"
+                - option "Operador"
+                - option "Guía"
+                - option "Cliente"
+  - contentinfo [ref=f1e27]:
+    - generic [ref=f1e28]:
+      - generic [ref=f1e29]:
+        - link "TourGirls, administración" [ref=f1e5131] [cursor=pointer]:
+          - /url: /admin
+          - generic [ref=f1e35]: TourGirls
+        - paragraph [ref=f1e36]: Tours, entradas y experiencias en Ecuador, con cupos verificados en tiempo real.
+        - link "Escríbenos" [ref=f1e37] [cursor=pointer]:
+          - /url: /ayuda#contacto
+      - navigation "Ayuda" [ref=f1e40]:
+        - heading "Ayuda" [level=2] [ref=f1e41]
+        - list [ref=f1e42]:
+          - listitem [ref=f1e43]:
+            - link "Centro de ayuda" [ref=f1e44] [cursor=pointer]:
+              - /url: /ayuda
+          - listitem [ref=f1e45]:
+            - link "Política de cancelación" [ref=f1e46] [cursor=pointer]:
+              - /url: /ayuda#cancelacion
+          - listitem [ref=f1e47]:
+            - link "Pagos y facturación" [ref=f1e48] [cursor=pointer]:
+              - /url: /ayuda#pagos
+          - listitem [ref=f1e49]:
+            - link "Contacto" [ref=f1e50] [cursor=pointer]:
+              - /url: /ayuda#contacto
+      - navigation "Explora" [ref=f1e51]:
+        - heading "Explora" [level=2] [ref=f1e52]
+        - list [ref=f1e53]:
+          - listitem [ref=f1e54]:
+            - link "Todas las experiencias" [ref=f1e55] [cursor=pointer]:
+              - /url: /atracciones
+          - listitem [ref=f1e321]:
+            - link "Aventura" [ref=f1e322] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-aventura-100
+          - listitem [ref=f1e323]:
+            - link "Cultural" [ref=f1e324] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-cultural-100
+          - listitem [ref=f1e325]:
+            - link "Naturales" [ref=f1e326] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-naturales-100
+          - listitem [ref=f1e327]:
+            - link "Gastronomia" [ref=f1e328] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-gastronomia-100
+      - navigation "Acerca de" [ref=f1e56]:
+        - heading "Acerca de" [level=2] [ref=f1e57]
+        - list [ref=f1e58]:
+          - listitem [ref=f1e59]:
+            - link "Quiénes somos" [ref=f1e60] [cursor=pointer]:
+              - /url: /ayuda#nosotros
+          - listitem [ref=f1e61]:
+            - link "Términos de uso" [ref=f1e62] [cursor=pointer]:
+              - /url: /ayuda#terminos
+          - listitem [ref=f1e63]:
+            - link "Privacidad y cookies" [ref=f1e64] [cursor=pointer]:
+              - /url: /ayuda#privacidad
+    - generic [ref=f1e66]:
+      - paragraph [ref=f1e67]: © 2026 TourGirls · Proyecto académico de Integración de Sistemas.
+      - paragraph [ref=f1e68]: "Fotografías de portada: Wikimedia Commons (CC BY-SA y dominio público)."
+      - generic [ref=f1e69]: Español · US$
+  - status [ref=f1e5132]:
+    - paragraph [ref=f1e5136]: ¡Hola de nuevo, Usuario!
+    - button "Cerrar notificación" [ref=f1e5137] [cursor=pointer]

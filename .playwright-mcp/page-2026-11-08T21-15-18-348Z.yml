@@ -1,0 +1,164 @@
+- generic [ref=f1e3]:
+  - banner [ref=f1e4]:
+    - link "Saltar al contenido" [ref=f1e5] [cursor=pointer]:
+      - /url: "#contenido"
+    - generic [ref=f1e6]:
+      - link "TourGirls, inicio" [ref=f1e4191] [cursor=pointer]:
+        - /url: /
+        - generic [ref=f1e12]: TourGirls
+      - navigation "Accesos de cuenta" [ref=f1e13]:
+        - link "Mis reservas" [ref=f1e4268] [cursor=pointer]:
+          - /url: /perfil?tab=reservas
+        - button "Usuario Pruebas" [ref=f1e4273] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f1e4274]: U
+        - button "Abrir menú" [ref=f1e19] [cursor=pointer]
+  - main [ref=f1e21]:
+    - navigation "Ruta de navegación" [ref=f1e4279]:
+      - list [ref=f1e4280]:
+        - listitem [ref=f1e4281]:
+          - link "Inicio" [ref=f1e4282] [cursor=pointer]:
+            - /url: /
+        - listitem [ref=f1e4285]: Sudamérica
+        - listitem [ref=f1e4288]: Ecuador
+    - generic [ref=f1e4290]:
+      - img "Vista panorámica de Quito con la Basílica del Voto Nacional y los Andes al fondo" [ref=f1e4291]
+      - generic [ref=f1e4293]:
+        - paragraph [ref=f1e4294]: Ecuador
+        - heading "Cosas que hacer en Ecuador" [level=1] [ref=f1e4295]
+        - paragraph [ref=f1e4296]: "Volcanes, playas, bosques nublados y ciudades coloniales: compra experiencias con cupos garantizados."
+        - search [ref=f1e4298]:
+          - generic [ref=f1e4303]:
+            - generic [ref=f1e4304]: ¿Adónde vas?
+            - combobox "¿Adónde vas?" [ref=f1e4305]
+          - generic [ref=f1e4309]:
+            - generic [ref=f1e4310]: ¿Cuándo?
+            - textbox "¿Cuándo?" [ref=f1e4311]
+          - button "Buscar" [ref=f1e4312] [cursor=pointer]
+    - region "Explorar por categoría" [ref=f1e4316]:
+      - list [ref=f1e4317]:
+        - listitem [ref=f1e4318]:
+          - link "Aventura" [ref=f1e4319] [cursor=pointer]:
+            - /url: /atracciones?categoria=cat-aventura-100
+        - listitem [ref=f1e4320]:
+          - link "Cultural" [ref=f1e4321] [cursor=pointer]:
+            - /url: /atracciones?categoria=cat-cultural-100
+        - listitem [ref=f1e4322]:
+          - link "Naturales" [ref=f1e4323] [cursor=pointer]:
+            - /url: /atracciones?categoria=cat-naturales-100
+        - listitem [ref=f1e4324]:
+          - link "Gastronomia" [ref=f1e4325] [cursor=pointer]:
+            - /url: /atracciones?categoria=cat-gastronomia-100
+        - listitem [ref=f1e4326]:
+          - link "Playas" [ref=f1e4327] [cursor=pointer]:
+            - /url: /atracciones?categoria=cat-playas-100
+        - listitem [ref=f1e4328]:
+          - link "Montana" [ref=f1e4329] [cursor=pointer]:
+            - /url: /atracciones?categoria=cat-montana-100
+        - listitem [ref=f1e4330]:
+          - link "Cancelación gratuita" [ref=f1e4331] [cursor=pointer]:
+            - /url: /atracciones?cancelacion=gratis
+    - region [ref=f1e4332]:
+      - generic [ref=f1e4333]:
+        - heading "Las experiencias más populares" [level=2] [ref=f1e4335]
+        - link "Ver todas las experiencias" [ref=f1e4336] [cursor=pointer]:
+          - /url: /atracciones
+      - list [ref=f1e4339]:
+        - listitem [ref=f1e4340]
+        - listitem [ref=f1e4348]
+        - listitem [ref=f1e4356]
+        - listitem [ref=f1e4364]
+    - region [ref=f1e4372]:
+      - generic [ref=f1e4373]:
+        - heading "Por qué comprar con nosotros" [level=2] [ref=f1e4374]
+        - list [ref=f1e4375]:
+          - listitem [ref=f1e4376]:
+            - heading "Cupos en tiempo real" [level=3] [ref=f1e4380]
+            - paragraph [ref=f1e4381]: Consultamos la disponibilidad de cada horario antes de cobrar.
+          - listitem [ref=f1e4382]:
+            - heading "Operadores locales" [level=3] [ref=f1e4387]
+            - paragraph [ref=f1e4388]: Experiencias de operadores y guías de cada región de Ecuador.
+          - listitem [ref=f1e4389]:
+            - heading "Compra en un solo paso" [level=3] [ref=f1e4393]
+            - paragraph [ref=f1e4394]: "Orden, cupos y pago se confirman juntos: si algo falla, no se cobra."
+          - listitem [ref=f1e4395]:
+            - heading "Opiniones de viajeros" [level=3] [ref=f1e4399]
+            - paragraph [ref=f1e4400]: Las valoraciones vienen de personas con cuenta en el portal.
+    - region [ref=f1e4401]:
+      - generic [ref=f1e4402]:
+        - generic [ref=f1e4403]:
+          - heading "Preguntas frecuentes" [level=2] [ref=f1e4404]
+          - paragraph [ref=f1e4405]: Todo lo que necesitas saber antes de comprar.
+          - link "Centro de ayuda" [ref=f1e4406] [cursor=pointer]:
+            - /url: /ayuda
+        - generic [ref=f1e4407]:
+          - group [ref=f1e4408]:
+            - generic "¿Necesito una cuenta para comprar?" [ref=f1e4409] [cursor=pointer]
+          - group [ref=f1e4412]:
+            - generic "¿Cómo funciona la compra?" [ref=f1e4413] [cursor=pointer]
+          - group [ref=f1e4416]:
+            - generic "¿Qué datos del titular me piden?" [ref=f1e4417] [cursor=pointer]
+          - group [ref=f1e4420]:
+            - generic "¿Puedo cancelar mi reserva?" [ref=f1e4421] [cursor=pointer]
+          - group [ref=f1e4424]:
+            - generic "¿Recibo factura?" [ref=f1e4425] [cursor=pointer]
+  - contentinfo [ref=f1e27]:
+    - generic [ref=f1e28]:
+      - generic [ref=f1e29]:
+        - link "TourGirls, inicio" [ref=f1e4220] [cursor=pointer]:
+          - /url: /
+          - generic [ref=f1e35]: TourGirls
+        - paragraph [ref=f1e36]: Tours, entradas y experiencias en Ecuador, con cupos verificados en tiempo real.
+        - link "Escríbenos" [ref=f1e37] [cursor=pointer]:
+          - /url: /ayuda#contacto
+      - navigation "Ayuda" [ref=f1e40]:
+        - heading "Ayuda" [level=2] [ref=f1e41]
+        - list [ref=f1e42]:
+          - listitem [ref=f1e43]:
+            - link "Centro de ayuda" [ref=f1e44] [cursor=pointer]:
+              - /url: /ayuda
+          - listitem [ref=f1e45]:
+            - link "Política de cancelación" [ref=f1e46] [cursor=pointer]:
+              - /url: /ayuda#cancelacion
+          - listitem [ref=f1e47]:
+            - link "Pagos y facturación" [ref=f1e48] [cursor=pointer]:
+              - /url: /ayuda#pagos
+          - listitem [ref=f1e49]:
+            - link "Contacto" [ref=f1e50] [cursor=pointer]:
+              - /url: /ayuda#contacto
+      - navigation "Explora" [ref=f1e51]:
+        - heading "Explora" [level=2] [ref=f1e52]
+        - list [ref=f1e53]:
+          - listitem [ref=f1e54]:
+            - link "Todas las experiencias" [ref=f1e55] [cursor=pointer]:
+              - /url: /atracciones
+          - listitem [ref=f1e321]:
+            - link "Aventura" [ref=f1e322] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-aventura-100
+          - listitem [ref=f1e323]:
+            - link "Cultural" [ref=f1e324] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-cultural-100
+          - listitem [ref=f1e325]:
+            - link "Naturales" [ref=f1e326] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-naturales-100
+          - listitem [ref=f1e327]:
+            - link "Gastronomia" [ref=f1e328] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-gastronomia-100
+      - navigation "Acerca de" [ref=f1e56]:
+        - heading "Acerca de" [level=2] [ref=f1e57]
+        - list [ref=f1e58]:
+          - listitem [ref=f1e59]:
+            - link "Quiénes somos" [ref=f1e60] [cursor=pointer]:
+              - /url: /ayuda#nosotros
+          - listitem [ref=f1e61]:
+            - link "Términos de uso" [ref=f1e62] [cursor=pointer]:
+              - /url: /ayuda#terminos
+          - listitem [ref=f1e63]:
+            - link "Privacidad y cookies" [ref=f1e64] [cursor=pointer]:
+              - /url: /ayuda#privacidad
+    - generic [ref=f1e66]:
+      - paragraph [ref=f1e67]: © 2026 TourGirls · Proyecto académico de Integración de Sistemas.
+      - paragraph [ref=f1e68]: "Fotografías de portada: Wikimedia Commons (CC BY-SA y dominio público)."
+      - generic [ref=f1e69]: Español · US$
+  - status [ref=f1e4428]:
+    - paragraph [ref=f1e4432]: ¡Cuenta creada! Te enviamos un correo para verificarla.
+    - button "Cerrar notificación" [ref=f1e4433] [cursor=pointer]

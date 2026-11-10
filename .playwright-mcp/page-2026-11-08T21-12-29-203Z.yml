@@ -1,0 +1,310 @@
+- generic [ref=f1e3]:
+  - banner [ref=f1e4]:
+    - link "Saltar al contenido" [ref=f1e5] [cursor=pointer]:
+      - /url: "#contenido"
+    - generic [ref=f1e6]:
+      - link "TourGirls, inicio" [ref=f1e7] [cursor=pointer]:
+        - /url: /
+        - generic [ref=f1e12]: TourGirls
+      - navigation "Accesos de cuenta" [ref=f1e13]:
+        - link "Mis reservas" [ref=f1e657] [cursor=pointer]:
+          - /url: /perfil?tab=reservas
+        - button "Michael Molina" [ref=f1e662] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f1e663]: M
+        - button "Abrir menú" [ref=f1e19] [cursor=pointer]
+  - main [ref=f1e21]:
+    - generic [ref=f1e1384]:
+      - generic [ref=f1e1385]:
+        - navigation "Ruta de navegación" [ref=f1e1386]:
+          - list [ref=f1e1387]:
+            - listitem [ref=f1e1388]:
+              - link "Inicio" [ref=f1e1389] [cursor=pointer]:
+                - /url: /
+            - listitem [ref=f1e1392]:
+              - link "Ecuador" [ref=f1e1393] [cursor=pointer]:
+                - /url: /atracciones
+            - listitem [ref=f1e1396]:
+              - link "Quito" [ref=f1e1397] [cursor=pointer]:
+                - /url: /atracciones?ciudad=Quito
+            - listitem [ref=f1e1400]: TelefériQo Quito y mirador del Pichincha
+        - generic [ref=f1e1401]:
+          - generic [ref=f1e1402]:
+            - heading "TelefériQo Quito y mirador del Pichincha" [level=1] [ref=f1e1403]
+            - generic [ref=f1e1404]: Quito, Ecuador
+          - button "Compartir" [ref=f1e1409] [cursor=pointer]
+        - button [ref=f1e1418] [cursor=pointer]:
+          - img "TelefériQo Quito y mirador del Pichincha, foto 1" [ref=f1e1419]
+        - generic [ref=f1e1420]:
+          - generic [ref=f1e1421]:
+            - generic [ref=f1e1422]:
+              - generic [ref=f1e1423]:
+                - heading "Descripción general" [level=2] [ref=f1e1424]
+                - paragraph [ref=f1e1425]: Ascenso en cabina desde los 3.000 hasta los 3.945 m en las faldas del volcán Pichincha. Desde la cima hay vistas de Quito y, con cielo despejado, de los volcanes Cotopaxi, Antisana y Cayambe. Se recomienda ropa abrigada por el viento y el frío de altura.
+                - list [ref=f1e1426]:
+                  - listitem [ref=f1e1427]: 2 horas
+                  - listitem [ref=f1e1431]: Guía en Espanol, Ingles
+              - generic [ref=f1e1436]:
+                - heading "Punto de encuentro" [level=2] [ref=f1e1437]
+                - generic [ref=f1e1438]:
+                  - paragraph [ref=f1e1439]:
+                    - generic [ref=f1e1443]:
+                      - text: Estación base del TelefériQo, Av. Occidental
+                      - generic [ref=f1e1444]: Quito, Ecuador
+                  - iframe [ref=f1e1445]:
+                    - generic [ref=f4e2]:
+                      - generic:
+                        - region "Mapa" [ref=f4e3]
+                        - button "Marcadores de mapas" [ref=f4e4]
+                      - generic:
+                        - generic [ref=f4e8]:
+                          - button "Acercar" [ref=f4e9] [cursor=pointer]
+                          - button "Alejar" [ref=f4e11] [cursor=pointer]
+                        - group [ref=f4e13]:
+                          - generic [ref=f4e14]:
+                            - link "Reportar un problema" [ref=f4e18] [cursor=pointer]:
+                              - /url: /fixthemap?lat=-0.19200&lon=-78.51900&zoom=14
+                            - text: "| ©"
+                            - link "Colaboradores de OpenStreetMap" [ref=f4e19] [cursor=pointer]:
+                              - /url: /copyright
+                            - text: ♥️
+                            - link "Hacer una donación" [ref=f4e20] [cursor=pointer]:
+                              - /url: https://supporting.openstreetmap.org
+                            - text: .
+                            - link "Términos del sitio web y de la API" [ref=f4e21] [cursor=pointer]:
+                              - /url: https://wiki.osmfoundation.org/wiki/Terms_of_Use
+                  - link "Abrir en el mapa" [ref=f1e1446] [cursor=pointer]:
+                    - /url: https://maps.google.com/?q=-0.192000,-78.519000
+              - generic [ref=f1e1451]:
+                - heading "Accesibilidad" [level=2] [ref=f1e1452]
+                - list [ref=f1e1453]:
+                  - listitem [ref=f1e1454]: No apto para silla de ruedas
+                  - listitem [ref=f1e1458]: No apto para coches de bebé
+                  - listitem [ref=f1e1462]: No admite animales de asistencia
+              - generic [ref=f1e1466]:
+                - heading "Operador" [level=2] [ref=f1e1467]
+                - paragraph [ref=f1e1468]:
+                  - generic [ref=f1e1473]: TourGirls Ecuador
+              - generic [ref=f1e1474]:
+                - heading "Política de cancelación" [level=2] [ref=f1e1475]
+                - paragraph [ref=f1e1476]:
+                  - generic [ref=f1e1481]:
+                    - text: Cancela gratis hasta 24 horas antes del inicio para recibir el reembolso completo.
+                    - generic [ref=f1e1482]: Cancelación gratuita hasta 24 horas antes de la salida.
+            - region [ref=f1e1483]:
+              - generic [ref=f1e1484]:
+                - heading "Opiniones" [level=2] [ref=f1e1485]
+                - button "Escribir una opinión" [ref=f1e1486] [cursor=pointer]
+              - paragraph [ref=f1e1563]: Todavía no hay opiniones. ¡Sé la primera persona en contar su experiencia!
+          - generic [ref=f1e1493]:
+            - paragraph [ref=f1e1494]: Desde
+            - paragraph [ref=f1e1495]: US$ 9 por adulto
+            - paragraph [ref=f1e1496]: Cancelación gratuita hasta 24 h antes
+            - generic [ref=f1e1499]:
+              - button "dom, 15 nov 2026" [ref=f1e1744] [cursor=pointer]
+              - list [ref=f1e1509]:
+                - listitem [ref=f1e1510]:
+                  - generic [ref=f1e1511]:
+                    - generic [ref=f1e1513]:
+                      - text: Adultos
+                      - generic [ref=f1e1514]: 13 a 64 años · US$ 9
+                    - group "Adultos 13 a 64 años · US$ 9" [ref=f1e1515]:
+                      - button "Quitar uno" [disabled] [ref=f1e1516]
+                      - status [ref=f1e1518]: "1"
+                      - button "Añadir uno" [ref=f1e1519] [cursor=pointer]
+                - listitem [ref=f1e1521]:
+                  - generic [ref=f1e1522]:
+                    - generic [ref=f1e1524]:
+                      - text: Niños
+                      - generic [ref=f1e1525]: 5 a 12 años · US$ 6
+                    - group "Niños 5 a 12 años · US$ 6" [ref=f1e1526]:
+                      - button "Quitar uno" [disabled] [ref=f1e1527]
+                      - status [ref=f1e1529]: "0"
+                      - button "Añadir uno" [ref=f1e1530] [cursor=pointer]
+                - listitem [ref=f1e1532]:
+                  - generic [ref=f1e1533]:
+                    - generic [ref=f1e1535]:
+                      - text: Adultos mayores
+                      - generic [ref=f1e1536]: 65 años o más · US$ 7
+                    - group "Adultos mayores 65 años o más · US$ 7" [ref=f1e1537]:
+                      - button "Quitar uno" [disabled] [ref=f1e1538]
+                      - status [ref=f1e1540]: "0"
+                      - button "Añadir uno" [ref=f1e1541] [cursor=pointer]
+                - listitem [ref=f1e1543]:
+                  - generic [ref=f1e1544]:
+                    - generic [ref=f1e1546]:
+                      - text: Infantes
+                      - generic [ref=f1e1547]: 0 a 4 años, ocupan cupo · Gratis
+                    - group "Infantes 0 a 4 años, ocupan cupo · Gratis" [ref=f1e1548]:
+                      - button "Quitar uno" [disabled] [ref=f1e1549]
+                      - status [ref=f1e1551]: "0"
+                      - button "Añadir uno" [ref=f1e1552] [cursor=pointer]
+            - generic [ref=f1e1745]:
+              - paragraph [ref=f1e1746]: Elige un horario
+              - group "Horario" [ref=f1e1747]:
+                - generic [ref=f1e1749]:
+                  - generic [ref=f1e1750] [cursor=pointer]:
+                    - radio "09:00 a.m. 40 cupos" [ref=f1e1751]
+                    - generic [ref=f1e1752]: 09:00 a.m.
+                    - generic [ref=f1e1756]: 40 cupos
+                  - generic [ref=f1e1757] [cursor=pointer]:
+                    - radio "10:30 a.m. 37 cupos" [ref=f1e1758]
+                    - generic [ref=f1e1759]: 10:30 a.m.
+                    - generic [ref=f1e1763]: 37 cupos
+                  - generic [ref=f1e1764] [cursor=pointer]:
+                    - radio "12:00 p.m. 40 cupos" [ref=f1e1765]
+                    - generic [ref=f1e1766]: 12:00 p.m.
+                    - generic [ref=f1e1770]: 40 cupos
+                  - generic [ref=f1e1771] [cursor=pointer]:
+                    - radio "02:00 p.m. 40 cupos" [ref=f1e1772]
+                    - generic [ref=f1e1773]: 02:00 p.m.
+                    - generic [ref=f1e1777]: 40 cupos
+                - paragraph [ref=f1e1778]: Hora de Ecuador continental.
+            - button "Continuar con la compra" [disabled] [ref=f1e1554]
+            - paragraph [ref=f1e1555]: Cupos verificados en tiempo real. Si el horario se agota al pagar, no se cobra nada.
+      - region [ref=f1e1619]:
+        - generic [ref=f1e1620]:
+          - heading "Más cosas que hacer en Quito" [level=2] [ref=f1e1622]
+          - link "Ver todas" [ref=f1e1623] [cursor=pointer]:
+            - /url: /atracciones?ciudad=Quito
+        - region "Experiencias relacionadas" [ref=f1e1626]:
+          - generic [ref=f1e1627]:
+            - article [ref=f1e1629]:
+              - img "Museo Templo del Sol Pintor Ortega Maila" [ref=f1e1631]
+              - generic [ref=f1e1632]:
+                - paragraph [ref=f1e1633]: Quito
+                - heading [level=3] [ref=f1e1634]:
+                  - link "Museo Templo del Sol Pintor Ortega Maila" [ref=f1e1635] [cursor=pointer]:
+                    - /url: /atracciones/iSGk40dHC4sl
+                - list [ref=f1e1636]:
+                  - listitem [ref=f1e1637]: 1.5 horas
+                  - listitem [ref=f1e1641]: Cancelación gratuita
+                - paragraph [ref=f1e1644]: desde US$ 8 por adulto
+            - article [ref=f1e1646]:
+              - img "Iglesia de la Compañía de Jesús" [ref=f1e1648]
+              - generic [ref=f1e1649]:
+                - paragraph [ref=f1e1650]: Quito
+                - heading [level=3] [ref=f1e1651]:
+                  - link "Iglesia de la Compañía de Jesús" [ref=f1e1652] [cursor=pointer]:
+                    - /url: /atracciones/7ABJSt432g2m
+                - list [ref=f1e1653]:
+                  - listitem [ref=f1e1654]: 1 hora
+                  - listitem [ref=f1e1658]: Cancelación gratuita
+                - paragraph [ref=f1e1661]: desde US$ 6 por adulto
+            - article [ref=f1e1663]:
+              - img "Centro Histórico de Quito a pie" [ref=f1e1665]
+              - generic [ref=f1e1666]:
+                - paragraph [ref=f1e1667]: Quito
+                - heading [level=3] [ref=f1e1668]:
+                  - link "Centro Histórico de Quito a pie" [ref=f1e1669] [cursor=pointer]:
+                    - /url: /atracciones/h7MUuOp6lEKp
+                - list [ref=f1e1670]:
+                  - listitem [ref=f1e1671]: 3 horas
+                  - listitem [ref=f1e1675]: Cancelación gratuita
+                - paragraph [ref=f1e1678]: desde US$ 20 por adulto
+            - article [ref=f1e1680]:
+              - img "Museo Intiñan en la línea ecuatorial" [ref=f1e1682]
+              - generic [ref=f1e1683]:
+                - paragraph [ref=f1e1684]: Quito
+                - heading [level=3] [ref=f1e1685]:
+                  - link "Museo Intiñan en la línea ecuatorial" [ref=f1e1686] [cursor=pointer]:
+                    - /url: /atracciones/VRqJDNwJo8lN
+                - list [ref=f1e1687]:
+                  - listitem [ref=f1e1688]: 1.5 horas
+                  - listitem [ref=f1e1692]: Cancelación gratuita
+                - paragraph [ref=f1e1695]: desde US$ 7 por adulto
+            - article [ref=f1e1697]:
+              - img "Basílica del Voto Nacional y sus torres" [ref=f1e1699]
+              - generic [ref=f1e1700]:
+                - paragraph [ref=f1e1701]: Quito
+                - heading [level=3] [ref=f1e1702]:
+                  - link "Basílica del Voto Nacional y sus torres" [ref=f1e1703] [cursor=pointer]:
+                    - /url: /atracciones/90Sv7ZKF72s3
+                - list [ref=f1e1704]:
+                  - listitem [ref=f1e1705]: 1.5 horas
+                  - listitem [ref=f1e1709]: Cancelación gratuita
+                - paragraph [ref=f1e1712]: desde US$ 5 por adulto
+            - article [ref=f1e1714]:
+              - 'img "Reserva Maquipucuna: bosque nublado" [ref=f1e1716]'
+              - generic [ref=f1e1717]:
+                - paragraph [ref=f1e1718]: Quito
+                - heading [level=3] [ref=f1e1719]:
+                  - 'link "Reserva Maquipucuna: bosque nublado" [ref=f1e1720] [cursor=pointer]':
+                    - /url: /atracciones/nNZGdnCgNCOC
+                - list [ref=f1e1721]:
+                  - listitem [ref=f1e1722]: 6 horas
+                  - listitem [ref=f1e1726]: Cancelación gratuita
+                - paragraph [ref=f1e1729]: desde US$ 50 por adulto
+            - article [ref=f1e1731]:
+              - img "Prueba de integración Tour Girls" [ref=f1e1733]
+              - generic [ref=f1e1734]:
+                - paragraph [ref=f1e1735]: Quito
+                - heading [level=3] [ref=f1e1736]:
+                  - link "Prueba de integración Tour Girls" [ref=f1e1737] [cursor=pointer]:
+                    - /url: /atracciones/rLohsmEh6809
+                - list [ref=f1e1738]:
+                  - listitem [ref=f1e1739]: 2 horas
+                - paragraph [ref=f1e1743]: desde US$ 30 por adulto
+      - generic [ref=f1e1559]:
+        - paragraph [ref=f1e1560]:
+          - generic [ref=f1e1561]: Desde
+          - text: US$ 9
+        - link "Ver disponibilidad" [ref=f1e1562] [cursor=pointer]:
+          - /url: "#reservar"
+  - contentinfo [ref=f1e27]:
+    - generic [ref=f1e28]:
+      - generic [ref=f1e29]:
+        - link "TourGirls, inicio" [ref=f1e30] [cursor=pointer]:
+          - /url: /
+          - generic [ref=f1e35]: TourGirls
+        - paragraph [ref=f1e36]: Tours, entradas y experiencias en Ecuador, con cupos verificados en tiempo real.
+        - link "Escríbenos" [ref=f1e37] [cursor=pointer]:
+          - /url: /ayuda#contacto
+      - navigation "Ayuda" [ref=f1e40]:
+        - heading "Ayuda" [level=2] [ref=f1e41]
+        - list [ref=f1e42]:
+          - listitem [ref=f1e43]:
+            - link "Centro de ayuda" [ref=f1e44] [cursor=pointer]:
+              - /url: /ayuda
+          - listitem [ref=f1e45]:
+            - link "Política de cancelación" [ref=f1e46] [cursor=pointer]:
+              - /url: /ayuda#cancelacion
+          - listitem [ref=f1e47]:
+            - link "Pagos y facturación" [ref=f1e48] [cursor=pointer]:
+              - /url: /ayuda#pagos
+          - listitem [ref=f1e49]:
+            - link "Contacto" [ref=f1e50] [cursor=pointer]:
+              - /url: /ayuda#contacto
+      - navigation "Explora" [ref=f1e51]:
+        - heading "Explora" [level=2] [ref=f1e52]
+        - list [ref=f1e53]:
+          - listitem [ref=f1e54]:
+            - link "Todas las experiencias" [ref=f1e55] [cursor=pointer]:
+              - /url: /atracciones
+          - listitem [ref=f1e321]:
+            - link "Aventura" [ref=f1e322] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-aventura-100
+          - listitem [ref=f1e323]:
+            - link "Cultural" [ref=f1e324] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-cultural-100
+          - listitem [ref=f1e325]:
+            - link "Naturales" [ref=f1e326] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-naturales-100
+          - listitem [ref=f1e327]:
+            - link "Gastronomia" [ref=f1e328] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-gastronomia-100
+      - navigation "Acerca de" [ref=f1e56]:
+        - heading "Acerca de" [level=2] [ref=f1e57]
+        - list [ref=f1e58]:
+          - listitem [ref=f1e59]:
+            - link "Quiénes somos" [ref=f1e60] [cursor=pointer]:
+              - /url: /ayuda#nosotros
+          - listitem [ref=f1e61]:
+            - link "Términos de uso" [ref=f1e62] [cursor=pointer]:
+              - /url: /ayuda#terminos
+          - listitem [ref=f1e63]:
+            - link "Privacidad y cookies" [ref=f1e64] [cursor=pointer]:
+              - /url: /ayuda#privacidad
+    - generic [ref=f1e66]:
+      - paragraph [ref=f1e67]: © 2026 TourGirls · Proyecto académico de Integración de Sistemas.
+      - paragraph [ref=f1e68]: "Fotografías de portada: Wikimedia Commons (CC BY-SA y dominio público)."
+      - generic [ref=f1e69]: Español · US$

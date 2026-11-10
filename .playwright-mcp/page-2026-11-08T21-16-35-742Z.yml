@@ -1,0 +1,318 @@
+- generic [active]:
+  - generic:
+    - generic:
+      - banner:
+        - link:
+          - /url: "#contenido"
+          - text: Saltar al contenido
+        - generic:
+          - link:
+            - /url: /admin
+            - generic: TourGirls
+          - navigation:
+            - link:
+              - /url: /admin
+              - text: Panel
+            - generic:
+              - button:
+                - generic [aria-hidden]: A
+                - generic: Administrador Descubre EC
+            - button
+      - main:
+        - generic:
+          - paragraph: Administración
+          - generic:
+            - navigation:
+              - list:
+                - listitem:
+                  - link:
+                    - /url: /admin
+                    - text: Dashboard
+                - listitem:
+                  - link:
+                    - /url: /admin/usuarios
+                    - text: Usuarios
+                - listitem:
+                  - link:
+                    - /url: /admin/catalogo
+                    - text: Catálogo
+                - listitem:
+                  - link:
+                    - /url: /admin/incluye
+                    - text: Qué incluye
+                - listitem:
+                  - link:
+                    - /url: /admin/categorias
+                    - text: Categorías
+                - listitem:
+                  - link:
+                    - /url: /admin/idiomas
+                    - text: Idiomas
+                - listitem:
+                  - link:
+                    - /url: /admin/guias
+                    - text: Guías y operadores
+                - listitem:
+                  - link:
+                    - /url: /admin/disponibilidad
+                    - text: Disponibilidad
+                - listitem:
+                  - link:
+                    - /url: /admin/reservas
+                    - text: Reservas
+                - listitem:
+                  - link:
+                    - /url: /admin/checkin
+                    - text: Check-in
+                - listitem:
+                  - link:
+                    - /url: /admin/pedidos
+                    - text: Pedidos
+                - listitem:
+                  - link:
+                    - /url: /admin/pagos
+                    - text: Pagos
+                - listitem:
+                  - link:
+                    - /url: /admin/facturas
+                    - text: Facturas
+                - listitem:
+                  - link:
+                    - /url: /admin/cupones
+                    - text: Cupones
+                - listitem:
+                  - link:
+                    - /url: /admin/resenas
+                    - text: Reseñas
+                - listitem:
+                  - link:
+                    - /url: /admin/mensajes
+                    - text: Mensajes
+                - listitem:
+                  - link:
+                    - /url: /admin/socios
+                    - text: Socios
+                - listitem:
+                  - link:
+                    - /url: /admin/reportes
+                    - text: Reportes
+                - listitem:
+                  - link:
+                    - /url: /admin/observabilidad
+                    - text: Observabilidad
+            - generic:
+              - generic:
+                - generic:
+                  - heading [level=1]: Usuarios
+                  - button: Nuevo usuario
+                - generic:
+                  - generic:
+                    - generic: Buscar
+                    - generic:
+                      - searchbox
+                  - generic:
+                    - generic: Estado
+                    - generic:
+                      - combobox
+                  - generic:
+                    - generic: Rol
+                    - generic:
+                      - combobox
+                - generic:
+                  - paragraph: 3 resultados
+                  - generic:
+                    - table:
+                      - caption: Usuarios
+                      - rowgroup:
+                        - row:
+                          - columnheader: Usuario
+                          - columnheader: Roles
+                          - columnheader: Estado
+                          - columnheader: Correo verificado
+                          - columnheader: Último acceso
+                          - columnheader
+                      - rowgroup:
+                        - row:
+                          - cell:
+                            - button:
+                              - text: Usuario Pruebas
+                              - generic: admin.pruebas@ejemplo.com
+                          - cell:
+                            - generic:
+                              - generic: Administrador
+                              - generic: Cliente
+                          - cell:
+                            - generic: Activo
+                          - cell: "No"
+                          - cell: 8 nov 2026, 4:15 p. m.
+                          - cell:
+                            - button: Gestionar
+                        - row:
+                          - cell:
+                            - button:
+                              - text: Michael Molina
+                              - generic: prueba@ejemplo.com
+                          - cell:
+                            - generic: Cliente
+                          - cell:
+                            - generic: Activo
+                          - cell: "No"
+                          - cell: 8 nov 2026, 4:10 p. m.
+                          - cell:
+                            - button: Gestionar
+                        - row:
+                          - cell:
+                            - button:
+                              - text: Administrador Descubre EC
+                              - generic: mdmolinas@ejemplo.com
+                          - cell:
+                            - generic: Administrador
+                          - cell:
+                            - generic: Activo
+                          - cell: Sí
+                          - cell: 8 nov 2026, 4:15 p. m.
+                          - cell:
+                            - button: Gestionar
+              - dialog [ref=f1e4865]:
+                - generic [ref=f1e4866]:
+                  - generic [ref=f1e4867]:
+                    - heading "Usuario Pruebas" [level=2] [ref=f1e4868]
+                    - button "Cerrar" [ref=f1e4869] [cursor=pointer]
+                  - generic [ref=f1e4874]:
+                    - generic [ref=f1e4875]:
+                      - generic [ref=f1e4876]:
+                        - term [ref=f1e4877]: Correo
+                        - definition [ref=f1e4878]: admin.pruebas@ejemplo.com
+                      - generic [ref=f1e4879]:
+                        - term [ref=f1e4880]: Documento
+                        - definition [ref=f1e4881]: —
+                      - generic [ref=f1e4882]:
+                        - term [ref=f1e4883]: Teléfono
+                        - definition [ref=f1e4884]: "0991234567"
+                      - generic [ref=f1e4885]:
+                        - term [ref=f1e4886]: Correo verificado
+                        - definition [ref=f1e4887]: "No"
+                      - generic [ref=f1e4888]:
+                        - term [ref=f1e4889]: Creado
+                        - definition [ref=f1e4890]: 8 nov 2026, 4:15 p. m.
+                      - generic [ref=f1e4891]:
+                        - term [ref=f1e4892]: Último acceso
+                        - definition [ref=f1e4893]: 8 nov 2026, 4:15 p. m.
+                    - generic [ref=f1e4894]:
+                      - button "Editar datos" [ref=f1e4895] [cursor=pointer]
+                      - button "Enviar correo para restablecer la contraseña" [ref=f1e4896] [cursor=pointer]
+                    - generic [ref=f1e4897]:
+                      - heading "Roles" [level=3] [ref=f1e4898]
+                      - paragraph [ref=f1e4899]: Los cambios rigen desde el próximo token del usuario (unos 30 s).
+                      - list [ref=f1e4900]:
+                        - listitem [ref=f1e4901]:
+                          - generic [ref=f1e4902]:
+                            - text: Administrador
+                            - generic [ref=f1e4903]: Acceso completo al panel
+                          - button "Quitar" [ref=f1e4941] [cursor=pointer]
+                        - listitem [ref=f1e4905]:
+                          - generic [ref=f1e4906]:
+                            - text: Operador
+                            - generic [ref=f1e4907]: Gestiona las atracciones de su operador y hace check-in
+                          - button "Dar" [ref=f1e4908] [cursor=pointer]
+                        - listitem [ref=f1e4909]:
+                          - generic [ref=f1e4910]:
+                            - text: Guía
+                            - generic [ref=f1e4911]: Hace el check-in en el punto de encuentro
+                          - button "Dar" [ref=f1e4912] [cursor=pointer]
+                        - listitem [ref=f1e4913]:
+                          - generic [ref=f1e4914]:
+                            - text: Cliente
+                            - generic [ref=f1e4915]: Compra en el portal
+                          - button "Quitar" [ref=f1e4916] [cursor=pointer]
+                    - generic [ref=f1e4917]:
+                      - generic [ref=f1e4918]:
+                        - text: Cuenta
+                        - strong [ref=f1e4919]: activa
+                        - generic [ref=f1e4920]: Desactivar cierra todas sus sesiones.
+                      - button "Desactivar" [ref=f1e4921] [cursor=pointer]
+                    - generic [ref=f1e4922]:
+                      - heading "Historial" [level=3] [ref=f1e4923]
+                      - list [ref=f1e4942]:
+                        - listitem [ref=f1e4943]:
+                          - generic [ref=f1e4944]:
+                            - text: Rol asignado
+                            - strong [ref=f1e4945]: Administrador
+                            - generic [ref=f1e4946]: Por el usuario 1
+                          - generic [ref=f1e4947]: 8 nov 2026, 4:16 p. m.
+      - contentinfo:
+        - generic:
+          - generic:
+            - link:
+              - /url: /admin
+              - generic: TourGirls
+            - paragraph: Tours, entradas y experiencias en Ecuador, con cupos verificados en tiempo real.
+            - link:
+              - /url: /ayuda#contacto
+              - text: Escríbenos
+          - navigation:
+            - heading [level=2]: Ayuda
+            - list:
+              - listitem:
+                - link:
+                  - /url: /ayuda
+                  - text: Centro de ayuda
+              - listitem:
+                - link:
+                  - /url: /ayuda#cancelacion
+                  - text: Política de cancelación
+              - listitem:
+                - link:
+                  - /url: /ayuda#pagos
+                  - text: Pagos y facturación
+              - listitem:
+                - link:
+                  - /url: /ayuda#contacto
+                  - text: Contacto
+          - navigation:
+            - heading [level=2]: Explora
+            - list:
+              - listitem:
+                - link:
+                  - /url: /atracciones
+                  - text: Todas las experiencias
+              - listitem:
+                - link:
+                  - /url: /atracciones?categoria=cat-aventura-100
+                  - text: Aventura
+              - listitem:
+                - link:
+                  - /url: /atracciones?categoria=cat-cultural-100
+                  - text: Cultural
+              - listitem:
+                - link:
+                  - /url: /atracciones?categoria=cat-naturales-100
+                  - text: Naturales
+              - listitem:
+                - link:
+                  - /url: /atracciones?categoria=cat-gastronomia-100
+                  - text: Gastronomia
+          - navigation:
+            - heading [level=2]: Acerca de
+            - list:
+              - listitem:
+                - link:
+                  - /url: /ayuda#nosotros
+                  - text: Quiénes somos
+              - listitem:
+                - link:
+                  - /url: /ayuda#terminos
+                  - text: Términos de uso
+              - listitem:
+                - link:
+                  - /url: /ayuda#privacidad
+                  - text: Privacidad y cookies
+        - generic:
+          - generic:
+            - paragraph: © 2026 TourGirls · Proyecto académico de Integración de Sistemas.
+            - paragraph: "Fotografías de portada: Wikimedia Commons (CC BY-SA y dominio público)."
+            - generic: Español · US$
+      - generic:
+        - status:
+          - paragraph: Ahora es administrador.
+          - button

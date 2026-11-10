@@ -1,0 +1,164 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - link "Saltar al contenido" [ref=e5] [cursor=pointer]:
+      - /url: "#contenido"
+    - generic [ref=e6]:
+      - link "TourGirls, inicio" [ref=e7] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e12]: TourGirls
+      - navigation "Accesos de cuenta" [ref=e13]:
+        - link "Mis reservas" [ref=e263] [cursor=pointer]:
+          - /url: /perfil?tab=reservas
+        - button "Michael Molina" [ref=e268] [cursor=pointer]:
+          - generic [aria-hidden] [ref=e269]: M
+        - button "Abrir menú" [ref=e230] [cursor=pointer]
+  - main [ref=e35]:
+    - navigation "Ruta de navegación" [ref=e274]:
+      - list [ref=e275]:
+        - listitem [ref=e276]:
+          - link "Inicio" [ref=e277] [cursor=pointer]:
+            - /url: /
+        - listitem [ref=e280]: Sudamérica
+        - listitem [ref=e283]: Ecuador
+    - generic [ref=e285]:
+      - img "Vista panorámica de Quito con la Basílica del Voto Nacional y los Andes al fondo" [ref=e286]
+      - generic [ref=e288]:
+        - paragraph [ref=e289]: Ecuador
+        - heading "Cosas que hacer en Ecuador" [level=1] [ref=e290]
+        - paragraph [ref=e291]: "Volcanes, playas, bosques nublados y ciudades coloniales: compra experiencias con cupos garantizados."
+        - search [ref=e293]:
+          - generic [ref=e298]:
+            - generic [ref=e299]: ¿Adónde vas?
+            - combobox "¿Adónde vas?" [ref=e300]
+          - generic [ref=e304]:
+            - generic [ref=e305]: ¿Cuándo?
+            - textbox "¿Cuándo?" [ref=e306]
+          - button "Buscar" [ref=e307] [cursor=pointer]
+    - region "Explorar por categoría" [ref=e311]:
+      - list [ref=e312]:
+        - listitem [ref=e313]:
+          - link "Aventura" [ref=e314] [cursor=pointer]:
+            - /url: /atracciones?categoria=cat-aventura-100
+        - listitem [ref=e315]:
+          - link "Cultural" [ref=e316] [cursor=pointer]:
+            - /url: /atracciones?categoria=cat-cultural-100
+        - listitem [ref=e317]:
+          - link "Naturales" [ref=e318] [cursor=pointer]:
+            - /url: /atracciones?categoria=cat-naturales-100
+        - listitem [ref=e319]:
+          - link "Gastronomia" [ref=e320] [cursor=pointer]:
+            - /url: /atracciones?categoria=cat-gastronomia-100
+        - listitem [ref=e321]:
+          - link "Playas" [ref=e322] [cursor=pointer]:
+            - /url: /atracciones?categoria=cat-playas-100
+        - listitem [ref=e323]:
+          - link "Montana" [ref=e324] [cursor=pointer]:
+            - /url: /atracciones?categoria=cat-montana-100
+        - listitem [ref=e325]:
+          - link "Cancelación gratuita" [ref=e326] [cursor=pointer]:
+            - /url: /atracciones?cancelacion=gratis
+    - region [ref=e327]:
+      - generic [ref=e328]:
+        - heading "Las experiencias más populares" [level=2] [ref=e330]
+        - link "Ver todas las experiencias" [ref=e331] [cursor=pointer]:
+          - /url: /atracciones
+      - list [ref=e334]:
+        - listitem [ref=e335]
+        - listitem [ref=e343]
+        - listitem [ref=e351]
+        - listitem [ref=e359]
+    - region [ref=e367]:
+      - generic [ref=e368]:
+        - heading "Por qué comprar con nosotros" [level=2] [ref=e369]
+        - list [ref=e370]:
+          - listitem [ref=e371]:
+            - heading "Cupos en tiempo real" [level=3] [ref=e375]
+            - paragraph [ref=e376]: Consultamos la disponibilidad de cada horario antes de cobrar.
+          - listitem [ref=e377]:
+            - heading "Operadores locales" [level=3] [ref=e382]
+            - paragraph [ref=e383]: Experiencias de operadores y guías de cada región de Ecuador.
+          - listitem [ref=e384]:
+            - heading "Compra en un solo paso" [level=3] [ref=e388]
+            - paragraph [ref=e389]: "Orden, cupos y pago se confirman juntos: si algo falla, no se cobra."
+          - listitem [ref=e390]:
+            - heading "Opiniones de viajeros" [level=3] [ref=e394]
+            - paragraph [ref=e395]: Las valoraciones vienen de personas con cuenta en el portal.
+    - region [ref=e396]:
+      - generic [ref=e397]:
+        - generic [ref=e398]:
+          - heading "Preguntas frecuentes" [level=2] [ref=e399]
+          - paragraph [ref=e400]: Todo lo que necesitas saber antes de comprar.
+          - link "Centro de ayuda" [ref=e401] [cursor=pointer]:
+            - /url: /ayuda
+        - generic [ref=e402]:
+          - group [ref=e403]:
+            - generic "¿Necesito una cuenta para comprar?" [ref=e404] [cursor=pointer]
+          - group [ref=e407]:
+            - generic "¿Cómo funciona la compra?" [ref=e408] [cursor=pointer]
+          - group [ref=e411]:
+            - generic "¿Qué datos del titular me piden?" [ref=e412] [cursor=pointer]
+          - group [ref=e415]:
+            - generic "¿Puedo cancelar mi reserva?" [ref=e416] [cursor=pointer]
+          - group [ref=e419]:
+            - generic "¿Recibo factura?" [ref=e420] [cursor=pointer]
+  - contentinfo [ref=e184]:
+    - generic [ref=e185]:
+      - generic [ref=e186]:
+        - link "TourGirls, inicio" [ref=e187] [cursor=pointer]:
+          - /url: /
+          - generic [ref=e192]: TourGirls
+        - paragraph [ref=e193]: Tours, entradas y experiencias en Ecuador, con cupos verificados en tiempo real.
+        - link "Escríbenos" [ref=e194] [cursor=pointer]:
+          - /url: /ayuda#contacto
+      - navigation "Ayuda" [ref=e197]:
+        - heading "Ayuda" [level=2] [ref=e198]
+        - list [ref=e199]:
+          - listitem [ref=e200]:
+            - link "Centro de ayuda" [ref=e201] [cursor=pointer]:
+              - /url: /ayuda
+          - listitem [ref=e202]:
+            - link "Política de cancelación" [ref=e203] [cursor=pointer]:
+              - /url: /ayuda#cancelacion
+          - listitem [ref=e204]:
+            - link "Pagos y facturación" [ref=e205] [cursor=pointer]:
+              - /url: /ayuda#pagos
+          - listitem [ref=e206]:
+            - link "Contacto" [ref=e207] [cursor=pointer]:
+              - /url: /ayuda#contacto
+      - navigation "Explora" [ref=e208]:
+        - heading "Explora" [level=2] [ref=e209]
+        - list [ref=e210]:
+          - listitem [ref=e211]:
+            - link "Todas las experiencias" [ref=e212] [cursor=pointer]:
+              - /url: /atracciones
+          - listitem [ref=e255]:
+            - link "Aventura" [ref=e256] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-aventura-100
+          - listitem [ref=e257]:
+            - link "Cultural" [ref=e258] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-cultural-100
+          - listitem [ref=e259]:
+            - link "Naturales" [ref=e260] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-naturales-100
+          - listitem [ref=e261]:
+            - link "Gastronomia" [ref=e262] [cursor=pointer]:
+              - /url: /atracciones?categoria=cat-gastronomia-100
+      - navigation "Acerca de" [ref=e213]:
+        - heading "Acerca de" [level=2] [ref=e214]
+        - list [ref=e215]:
+          - listitem [ref=e216]:
+            - link "Quiénes somos" [ref=e217] [cursor=pointer]:
+              - /url: /ayuda#nosotros
+          - listitem [ref=e218]:
+            - link "Términos de uso" [ref=e219] [cursor=pointer]:
+              - /url: /ayuda#terminos
+          - listitem [ref=e220]:
+            - link "Privacidad y cookies" [ref=e221] [cursor=pointer]:
+              - /url: /ayuda#privacidad
+    - generic [ref=e223]:
+      - paragraph [ref=e224]: © 2026 TourGirls · Proyecto académico de Integración de Sistemas.
+      - paragraph [ref=e225]: "Fotografías de portada: Wikimedia Commons (CC BY-SA y dominio público)."
+      - generic [ref=e226]: Español · US$
+  - status [ref=e423]:
+    - paragraph [ref=e427]: ¡Hola de nuevo, Michael!
+    - button "Cerrar notificación" [ref=e428] [cursor=pointer]
