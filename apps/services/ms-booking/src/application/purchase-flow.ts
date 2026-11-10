@@ -96,8 +96,9 @@ export class PurchaseFlow {
     let assigned = logistics;
     try {
       // El guía es el del turno (Plan/PLAN_GUIA_POR_HORARIO.md). Sin guía en el turno, o si ya no está activo, queda el
-      // que asignó Catalog (el primer guía activo del operador).
-      if (seats.gui_id) assigned = (await this.remote.logisticsOrNull(attraction.id, seats.gui_id)) ?? logistics;
+      // que asignó Catalog (el primer guía activo del operador). `-1`: el turno va sin guía a propósito.
+      if (seats.gui_id === -1) assigned = { ...logistics, guia: null };
+      else if (seats.gui_id) assigned =(await this.remote.logisticsOrNull(attraction.id, seats.gui_id)) ?? logistics;
       row = await this.save(input, order, seats, assigned, client);
       this.logger.info('RESERVA_CREADA', { reservation_code: row.res_codigo, external_order_id: row.ord_numero, canal: row.res_canal, status: row.est_codigo });
     } catch (error) {

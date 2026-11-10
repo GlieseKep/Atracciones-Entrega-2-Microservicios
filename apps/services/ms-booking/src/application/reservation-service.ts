@@ -37,7 +37,7 @@ export class ReservationService {
   /** Fecha y hora salen de Inventory, y guía y punto de encuentro, de Catalog. */
   async present(row: ReservationRow): Promise<ReservaResponse> {
     const slot = await this.remote.slot(Number(row.dis_id));
-    const logistics = await this.remote.logisticsOrNull(slot.atraccion_id, row.gui_id === null ? null : Number(row.gui_id));
+    const logistics = await this.remote.reservationLogistics(slot.atraccion_id, row.gui_id);
     return toResponse(row, slot, logistics, this.basePath);
   }
 

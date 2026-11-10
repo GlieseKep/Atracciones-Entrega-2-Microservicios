@@ -69,6 +69,13 @@ export class Remote {
     }
   }
 
+  /** Logística de una reserva ya hecha: sin `gui_id` guardado, la reserva no tiene guía (no se toma el primero activo). */
+  async reservationLogistics(id: string, guiId: string | null): Promise<Logistics | null> {
+    if (guiId !== null) return this.logisticsOrNull(id, Number(guiId));
+    const logistics = await this.logisticsOrNull(id, null);
+    return logistics && { ...logistics, guia: null };
+  }
+
   /** Permiso de un `OPERADOR`: Catalog responde `403` si la atracción es de otro operador. */
   async assertOperatorOf(atraccionId: string): Promise<void> {
     await this.esb.call('catalog', 'adminGetAttraction', { id: atraccionId });
@@ -94,7 +101,7 @@ export class Remote {
     return this.esb.call('order', 'listOrders', { page, limit });
   }
 
-  /** `gui_id`: guía del turno en Inventory (`null` o 0 = sin guía). */
+  /** `gui_id`: guía del turno en Inventory (`null` o 0 = automático; -1 = sin guía). */
   reserveSeats(atraccionId: string, slotId: string, cantidad: number, clave: string): Promise<{ dis_id: number; cupos_disponibles: number; gui_id?: number | null }> {
     return this.esb.call('inventory', 'reserveSeats', { atraccion_id: atraccionId, slot_id: slotId, cantidad, clave_idempotencia: clave });
   }

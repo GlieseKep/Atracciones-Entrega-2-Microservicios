@@ -100,7 +100,7 @@ export class CheckinService {
       guia_codigo: input.guiaCodigo,
       asistentes_reales: input.asistentes ?? row.res_numero_tickets,
     });
-    const logistics = await this.remote.logisticsOrNull(slot.atraccion_id, row.gui_id === null ? null : Number(row.gui_id));
+    const logistics = await this.remote.reservationLogistics(slot.atraccion_id, row.gui_id);
     return {
       reserva_id: row.res_uuid,
       reservation_code: row.res_codigo,

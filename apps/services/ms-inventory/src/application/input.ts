@@ -45,11 +45,18 @@ export function parseReason(value: unknown): string {
   return text;
 }
 
-/** Guía de Catalog: ausente o `0` es `null` (sin guía, o el del horario según la operación). */
+/** Turno u horario que se queda sin guía a propósito: la compra no asigna ninguno. */
+export const NO_GUIDE = -1;
+
+/**
+ * Guía de Catalog: ausente o `0` es `null` (automático: el del horario o el primero activo del operador, según la
+ * operación); `-1` es sin guía.
+ */
 export function parseGuideId(value: unknown): number | null {
   if (value === undefined || value === null || value === '' || Number(value) === 0) return null;
   const id = Number(value);
-  if (!Number.isSafeInteger(id) || id < 1) throw invalid('gui_id', 'Debe ser un entero positivo, o 0 para ninguno.');
+  if (id === NO_GUIDE) return NO_GUIDE;
+  if (!Number.isSafeInteger(id) || id < 1) throw invalid('gui_id', 'Debe ser un entero positivo, 0 para automático o -1 para sin guía.');
   return id;
 }
 

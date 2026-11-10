@@ -27,8 +27,12 @@ const WEEKDAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
 const shortTime = (hora: string) => hora.slice(0, 5);
 
+/** `gui_id` para "sin guía": la compra no asigna ninguno. `0`/`null` es automático (el del horario o el primero activo). */
+const NO_GUIDE = -1;
+
 function guideText(guiId: number | null, guides: Guide[]) {
-  if (guiId === null || guiId === 0) return <span className="text-ink-muted">Sin guía</span>;
+  if (guiId === NO_GUIDE) return <span className="text-ink-muted">Sin guía</span>;
+  if (guiId === null || guiId === 0) return <span className="text-ink-muted">Automático</span>;
   const guide = guides.find((g) => g.gui_id === guiId);
   if (!guide) return <span className="text-ink-muted">Guía {guiId}</span>;
   return guide.activo ? guide.nombre : <span className="text-danger">{guide.nombre} (inactivo)</span>;
@@ -211,6 +215,7 @@ function CapacityDialog({ slot, onClose, onSaved }: { slot: Slot; onClose: () =>
 
 const activeGuideOptions = (guides: Guide[], none: string) => [
   { value: '0', label: none },
+  { value: String(NO_GUIDE), label: 'Sin guía' },
   ...guides.filter((g) => g.activo).map((g) => ({ value: String(g.gui_id), label: `${g.nombre} (${g.codigo})` })),
 ];
 
@@ -491,7 +496,7 @@ function ScheduleDialog({
           label="Guía por defecto (opcional)"
           value={guide}
           onChange={(e) => setGuide(e.target.value)}
-          options={activeGuideOptions(guides, 'Sin guía (el primero activo del operador)')}
+          options={activeGuideOptions(guides, 'Automático (el primero activo del operador)')}
         />
         {schedule && <p className="text-xs text-ink-muted">Un guía nuevo pasa a los turnos futuros que tenían el anterior; los días cambiados a mano se respetan.</p>}
         {error !== null && <Alert tone="error">{errorMessage(error)}</Alert>}

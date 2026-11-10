@@ -28,7 +28,7 @@ export class ScheduleService {
    * está inactivo o es de otro operador que el de la atracción (publicada o no).
    */
   private async assertGuide(codigo: string, guiId: number | null): Promise<void> {
-    if (guiId !== null) await this.esb.call('catalog', 'getAttractionGuide', { id: codigo, guiId });
+    if (guiId !== null && guiId > 0) await this.esb.call('catalog', 'getAttractionGuide', { id: codigo, guiId });
   }
 
   /**
