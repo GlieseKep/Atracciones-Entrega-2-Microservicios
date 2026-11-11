@@ -63,7 +63,7 @@ export const usersApi = {
     gql.query<MetadataPage<User>>('identityListUsers', clean(p), { signal }).then(fromMetadata),
   get: (id: number, signal?: Signal) => gql.query<User>('identityGetUser', { id }, { signal }),
   roles: (signal?: Signal) => gql.query<RoleInfo[]>('identityListRoles', {}, { signal }),
-  update: (id: number, patch: { nombre: string; apellido: string; telefono: string | null }) => gql.mutation<User>('identityUpdateUser', { id, ...patch }),
+  update: (id: number, patch: { nombre: string; apellido: string; documento?: string; telefono: string | null }) => gql.mutation<User>('identityUpdateUser', { id, ...patch }),
   setActive: (id: number, activo: boolean) => gql.mutation<User>('identitySetUserActive', { id, activo }),
   assignRole: (id: number, rol: RoleName) => gql.mutation<User>('identityAssignRole', { id, rol }),
   removeRole: (id: number, rol: RoleName) => gql.mutation<User>('identityRemoveRole', { id, rol }),
@@ -71,7 +71,7 @@ export const usersApi = {
    * Alta desde el panel (opción A de la auditoría §4.3): registro público con contraseña temporal. Registrar no abre
    * sesión, así que no toca la del administrador. Los roles se asignan después con `assignRole`.
    */
-  create: (body: { correo: string; password: string; nombre: string; apellido: string; telefono?: string | null }) =>
+  create: (body: { correo: string; password: string; nombre: string; apellido: string; documento: string; telefono?: string | null }) =>
     authPost<User>('/auth/registro', body),
 };
 

@@ -147,12 +147,13 @@ export function RegisterPage() {
         password: values.password,
         nombre: values.nombre.trim(),
         apellido: values.apellido.trim(),
+        documento: values.documento,
         telefono: values.telefono?.trim() || null,
       });
       notify('¡Cuenta creada! Te enviamos un correo para verificarla.', 'success');
       navigate(destination(returnTo), { replace: true });
     } catch (error) {
-      showErrors(error, setError, ['nombre', 'apellido', 'correo', 'telefono', 'password']);
+      showErrors(error, setError, ['nombre', 'apellido', 'documento', 'correo', 'telefono', 'password']);
     }
   });
 
@@ -163,6 +164,14 @@ export function RegisterPage() {
           <Input label="Nombre" autoComplete="given-name" autoFocus error={errors.nombre?.message} {...field('nombre')} />
           <Input label="Apellido" autoComplete="family-name" error={errors.apellido?.message} {...field('apellido')} />
         </div>
+        <Input
+          label="Cédula o pasaporte"
+          autoComplete="off"
+          maxLength={20}
+          help="Se usa como titular de tus compras. Después solo un administrador puede cambiarla."
+          error={errors.documento?.message}
+          {...field('documento')}
+        />
         <Input label="Correo electrónico" type="email" autoComplete="email" error={errors.correo?.message} {...field('correo')} />
         <Input label="Teléfono (opcional)" type="tel" autoComplete="tel" error={errors.telefono?.message} {...field('telefono')} />
         <Input

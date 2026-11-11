@@ -112,10 +112,10 @@ export function createMsIdentityService(config: MsIdentityConfig, dataSource: Da
   const sessions = new SessionRepository(dataSource);
   const apiClientRepository = new ApiClientRepository(dataSource);
   const verification = new VerificationService(dataSource, userRepository, sessions, new TokenRepository(dataSource), deps.mailer ?? new LogMailer(logger), config, logger);
-  const auth = new AuthService(dataSource, userRepository, sessions, verification, config);
+  const clients = new ClientService(apiClientRepository, deps.esb ?? new EsbClient(config.esbUrl), logger);
+  const auth = new AuthService(dataSource, userRepository, sessions, verification, clients, config);
   const users = new UserService(dataSource, userRepository, sessions);
   const apiClients = new ApiClientService(dataSource, apiClientRepository);
-  const clients = new ClientService(apiClientRepository, deps.esb ?? new EsbClient(config.esbUrl), logger);
   const credentials = new CredentialValidator(userRepository, sessions, apiClientRepository, config.jwtSecret, config.internalTokenSecret);
 
   /** Bearer del usuario o, detrás del Gateway y el ESB, el principal interno ya validado. */
@@ -208,7 +208,7 @@ export function createMsIdentityService(config: MsIdentityConfig, dataSource: Da
 
   api.patch('/usuarios/me', async (req, res) => {
     const { principal } = await authenticate(req);
-    res.json(await users.updateProfile(principal.id, parseProfilePatch(req.body)));
+    res.json(await users.updateProfile(principal.id, parseProfilePatch(req.body, { puedeCambiarDocumento: false })));
   });
 
   api.put('/usuarios/me/password', async (req, res) => {
@@ -232,7 +232,7 @@ export function createMsIdentityService(config: MsIdentityConfig, dataSource: Da
 
   api.patch('/usuarios/:id', async (req, res) => {
     await requireAdmin(req);
-    res.json(await users.updateProfile(parseId(req.params.id), parseProfilePatch(req.body)));
+    res.json(await users.updateProfile(parseId(req.params.id), parseProfilePatch(req.body, { puedeCambiarDocumento: true })));
   });
 
   api.put('/usuarios/:id/activo', async (req, res) => {

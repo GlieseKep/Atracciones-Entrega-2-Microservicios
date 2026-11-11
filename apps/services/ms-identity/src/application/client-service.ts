@@ -1,6 +1,7 @@
 import { AppError, errorFields, type EsbClient, type Logger } from '@atracciones/platform';
 import type { ClienteDto, ClienteFiltros, ClienteRequest } from '../contract';
 import type { ApiClientRepository } from '../persistence/api-client-repository';
+import type { Db } from '../persistence/user-repository';
 
 export interface ClienteResultado {
   cliente: ClienteDto;
@@ -28,22 +29,41 @@ export class ClientService {
 
   /** Devuelve el turista existente o lo registra. En los dos casos asegura sus datos de facturación principales. */
   async ensure(cliente: ClienteRequest): Promise<ClienteResultado> {
-    const filtros = { email: cliente.email, identificacion: cliente.identificacion };
-    let result: ClienteResultado;
-    const existing = await this.lookup(filtros);
-    if (existing) {
-      result = { cliente: existing, creado: false };
-    } else {
-      const created = await this.clients.createTourist(cliente);
-      // Otro proceso lo registró a la vez: se devuelve ese.
-      result = created ? { cliente: created, creado: true } : { cliente: await this.find(filtros), creado: false };
-    }
+    const result = await this.ensureTourist(cliente);
     await this.ensureBilling(result.cliente, cliente);
     return result;
   }
 
-  private async lookup(filtros: ClienteFiltros): Promise<ClienteDto | null> {
-    const rows = await this.clients.findTourists(filtros);
+  /**
+   * Solo la fila del turista en `cliente_api`, sin Billing: el registro de usuario la llama dentro de su transacción
+   * (`db`), así una cuenta nueva nunca queda sin cliente. 409 si el correo es de un turista y la identificación de otro.
+   */
+  async ensureTourist(cliente: ClienteRequest, db?: Db): Promise<ClienteResultado> {
+    const filtros = { email: cliente.email, identificacion: cliente.identificacion };
+    const existing = await this.lookup(filtros, db);
+    if (existing) return { cliente: existing, creado: false };
+    const created = await this.clients.createTourist(cliente, db);
+    if (created) return { cliente: created, creado: true };
+    // Otro proceso lo registró a la vez: se devuelve ese.
+    const other = await this.lookup(filtros, db);
+    if (!other) throw AppError.notFound('No existe un cliente con esos datos.', 'CLIENT_NOT_FOUND');
+    return { cliente: other, creado: false };
+  }
+
+  /**
+   * Facturación del cliente creado al registrarse un usuario. Va después de confirmar la cuenta: si Billing falla, la
+   * cuenta y el cliente ya existen y solo se registra el error (el siguiente `POST /clientes` la completa).
+   */
+  async ensureBillingAfterSignup(cliente: ClienteDto, datos: ClienteRequest): Promise<void> {
+    try {
+      await this.ensureBilling(cliente, datos);
+    } catch {
+      // `ensureBilling` ya dejó el error en el log.
+    }
+  }
+
+  private async lookup(filtros: ClienteFiltros, db?: Db): Promise<ClienteDto | null> {
+    const rows = await this.clients.findTourists(filtros, db);
     if (rows.length > 1) {
       throw AppError.conflict('CLIENT_DATA_CONFLICT', 'El correo y la identificación pertenecen a clientes distintos.');
     }

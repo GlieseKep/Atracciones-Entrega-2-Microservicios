@@ -5,7 +5,6 @@ import type { UsuarioFiltros } from '../persistence/user-repository';
 type Body = Record<string, unknown>;
 
 const EMAIL = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
-const DOCUMENT = /^([0-9]{10}|[A-Z]{1,2}[0-9]{6,9})$/;
 const PHONE = /^\+?[0-9]{7,15}$/;
 
 /** Acumula los errores de un cuerpo para responderlos juntos en `invalid_params`. */
@@ -77,7 +76,7 @@ export function parseRegistro(body: unknown): RegistroRequest {
     password: f.password('password'),
     nombre: f.requiredText('nombre', 120),
     apellido: f.requiredText('apellido', 120),
-    documento: f.optionalText('documento', 20, DOCUMENT) ?? null,
+    documento: identificacion(f.body.documento, 'documento', f.errors),
     telefono: f.optionalText('telefono', 20, PHONE) ?? null,
     fecha_nacimiento: f.date('fecha_nacimiento') ?? null,
   };
@@ -122,12 +121,21 @@ export function parsePasswordChange(body: unknown): { actual: string; nuevo: str
   return { actual: parseSecret(body, 'password_actual'), nuevo };
 }
 
-export function parseProfilePatch(body: unknown): PerfilUpdateRequest {
+/**
+ * El documento solo lo cambia un administrador (`PATCH /usuarios/:id`) y no se puede dejar vacío. En `PATCH /usuarios/me`
+ * enviarlo es un error: la persona no puede cambiar su propia cédula.
+ */
+export function parseProfilePatch(body: unknown, { puedeCambiarDocumento }: { puedeCambiarDocumento: boolean }): PerfilUpdateRequest {
   const f = fields(body);
+  let documento: string | undefined;
+  if (f.body.documento !== undefined) {
+    if (puedeCambiarDocumento) documento = identificacion(f.body.documento, 'documento', f.errors);
+    else f.fail('documento', 'La cédula o pasaporte solo lo puede cambiar un administrador.');
+  }
   const patch: PerfilUpdateRequest = {
     ...(f.body.nombre !== undefined ? { nombre: f.requiredText('nombre', 120) } : {}),
     ...(f.body.apellido !== undefined ? { apellido: f.requiredText('apellido', 120) } : {}),
-    documento: f.optionalText('documento', 20, DOCUMENT),
+    documento,
     telefono: f.optionalText('telefono', 20, PHONE),
     fecha_nacimiento: f.date('fecha_nacimiento'),
     avatar: f.optionalText('avatar', 255),

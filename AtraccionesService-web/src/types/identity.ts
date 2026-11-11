@@ -34,16 +34,16 @@ export interface RegisterRequest {
   password: string;
   nombre: string;
   apellido: string;
-  documento?: string | null;
+  /** Cédula o pasaporte: obligatorio. Después solo lo cambia un administrador. */
+  documento: string;
   telefono?: string | null;
   fecha_nacimiento?: IsoDate | null;
 }
 
-/** Solo se envían los campos que cambian. */
+/** Solo se envían los campos que cambian. El documento no está: la persona no puede cambiarlo. */
 export interface ProfileUpdate {
   nombre?: string;
   apellido?: string;
-  documento?: string | null;
   telefono?: string | null;
   fecha_nacimiento?: IsoDate | null;
 }

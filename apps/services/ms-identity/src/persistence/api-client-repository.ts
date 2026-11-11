@@ -96,8 +96,8 @@ export class ApiClientRepository {
   }
 
   /** Turistas con ese correo o esa identificación (0, 1 o 2 filas distintas). */
-  async findTourists(filtros: ClienteFiltros): Promise<ClienteDto[]> {
-    const rows: TuristaRow[] = await this.db.query(
+  async findTourists(filtros: ClienteFiltros, db: DataSource | EntityManager = this.db): Promise<ClienteDto[]> {
+    const rows: TuristaRow[] = await db.query(
       `SELECT ${TURISTA_COLUMNS} FROM cliente_api
         WHERE cla_tipo = 'TURISTA'
           AND (lower(cla_correo) = lower($1) OR cla_identificacion = $2)
@@ -109,20 +109,19 @@ export class ApiClientRepository {
 
   /**
    * Inserta el turista sin clave. `cla_id` lo genera la identidad en el mismo `INSERT ... RETURNING`. Devuelve `null` si
-   * otro proceso registró el mismo correo o identificación al mismo tiempo (índices únicos de turistas).
+   * otro proceso registró el mismo correo o identificación al mismo tiempo (índices únicos de turistas). Usa
+   * `ON CONFLICT DO NOTHING` en vez de atrapar el `23505`, para no abortar la transacción del registro de usuario.
    */
-  async createTourist(cliente: ClienteRequest): Promise<ClienteDto | null> {
-    try {
-      const [row] = await this.db.query(
+  async createTourist(cliente: ClienteRequest, db: DataSource | EntityManager = this.db): Promise<ClienteDto | null> {
+    const rows: TuristaRow[] = returnedRows(
+      await db.query(
         `INSERT INTO cliente_api (cla_tipo, cla_codigo, cla_nombre, cla_correo, cla_identificacion, cla_telefono)
-         VALUES ('TURISTA', $1, $2, $3, $4, $5) RETURNING ${TURISTA_COLUMNS}`,
+         VALUES ('TURISTA', $1, $2, $3, $4, $5)
+         ON CONFLICT DO NOTHING
+         RETURNING ${TURISTA_COLUMNS}`,
         [`TUR-${cliente.identificacion}`, cliente.nombre, cliente.email, cliente.identificacion, cliente.telefono],
-      );
-      return toCliente(row);
-    } catch (error) {
-      const e = error as { driverError?: { code?: string } };
-      if (e.driverError?.code === '23505') return null;
-      throw error;
-    }
+      ),
+    );
+    return rows[0] ? toCliente(rows[0]) : null;
   }
 }

@@ -847,6 +847,7 @@ components:
         - password
         - nombre
         - apellido
+        - documento
       properties:
         correo:
           type: string
@@ -866,7 +867,7 @@ components:
         documento:
           type: string
           maxLength: 20
-          nullable: true
+          description: Cédula ecuatoriana válida o pasaporte (6 a 9 letras o dígitos). Después solo lo cambia un administrador.
         telefono:
           type: string
           pattern: '^\+?[0-9]{7,15}$'
@@ -887,7 +888,7 @@ components:
         documento:
           type: string
           maxLength: 20
-          nullable: true
+          description: Solo en `PATCH /usuarios/{id}` (ADMIN); no puede quedar vacío. En `PATCH /usuarios/me` enviarlo responde 400.
         telefono:
           type: string
           pattern: '^\+?[0-9]{7,15}$'

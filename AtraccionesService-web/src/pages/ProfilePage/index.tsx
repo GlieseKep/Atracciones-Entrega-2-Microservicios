@@ -112,7 +112,6 @@ function PersonalDataForm({ user, onSaved }: { user: User; onSaved: (user: User)
     values: {
       nombre: user.nombre,
       apellido: user.apellido,
-      documento: user.documento ?? '',
       telefono: user.telefono ?? '',
       fecha_nacimiento: user.fecha_nacimiento ?? '',
     },
@@ -124,7 +123,6 @@ function PersonalDataForm({ user, onSaved }: { user: User; onSaved: (user: User)
       const updated = await updateMe({
         nombre: v.nombre,
         apellido: v.apellido,
-        documento: v.documento || null,
         telefono: v.telefono || null,
         fecha_nacimiento: v.fecha_nacimiento || null,
       });
@@ -144,7 +142,13 @@ function PersonalDataForm({ user, onSaved }: { user: User; onSaved: (user: User)
       <div className="grid gap-4 sm:grid-cols-2">
         <Input label="Nombre" autoComplete="given-name" error={err('nombre')} {...register('nombre')} />
         <Input label="Apellido" autoComplete="family-name" error={err('apellido')} {...register('apellido')} />
-        <Input label="Cédula o pasaporte (opcional)" error={err('documento')} {...register('documento')} />
+        <Input
+          label="Cédula o pasaporte"
+          value={user.documento ?? 'Sin registrar'}
+          disabled
+          readOnly
+          help="Solo un administrador puede cambiarla. Escríbenos desde Ayuda si hay un error."
+        />
         <Input label="Teléfono (opcional)" type="tel" autoComplete="tel" error={err('telefono')} {...register('telefono')} />
         <Input label="Fecha de nacimiento (opcional)" type="date" error={err('fecha_nacimiento')} {...register('fecha_nacimiento')} />
         <Input label="Correo" value={user.correo} disabled readOnly help="El correo no se puede cambiar." />

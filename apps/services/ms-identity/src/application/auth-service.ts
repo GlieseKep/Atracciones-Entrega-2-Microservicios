@@ -1,10 +1,11 @@
 import { AppError } from '@atracciones/platform';
 import type { DataSource } from 'typeorm';
-import type { RegistroRequest, SesionResponse, UsuarioDto } from '../contract';
+import type { ClienteRequest, RegistroRequest, SesionResponse, UsuarioDto } from '../contract';
 import type { SessionRepository } from '../persistence/session-repository';
 import type { Db, UserRepository } from '../persistence/user-repository';
 import { hashPassword, verifyPassword } from './passwords';
 import { randomToken, sha256, signAccessToken } from './tokens';
+import type { ClientService } from './client-service';
 import type { VerificationService } from './verification-service';
 
 export interface AuthConfig {
@@ -29,18 +30,32 @@ export class AuthService {
     private readonly users: UserRepository,
     private readonly sessions: SessionRepository,
     private readonly verification: VerificationService,
+    private readonly clients: ClientService,
     private readonly config: AuthConfig,
   ) {}
 
-  /** Usuario, rol `CLIENTE` y token `EMAIL` en una sola transacción; el correo se envía al terminar. */
+  /**
+   * Usuario, rol `CLIENTE`, cliente (turista en `cliente_api`, o el que ya existía con ese correo o documento) y token
+   * `EMAIL` en una sola transacción. Al terminar se registran los datos de facturación del cliente y se envía el correo.
+   */
   async register(input: RegistroRequest): Promise<UsuarioDto> {
     const passwordHash = await hashPassword(input.password);
-    const { user, token } = await this.dataSource.transaction(async (m) => {
+    const datosCliente: ClienteRequest | null = input.documento
+      ? {
+          nombre: `${input.nombre} ${input.apellido}`.replace(/\s+/g, ' ').trim().slice(0, 150),
+          email: input.correo,
+          identificacion: input.documento,
+          telefono: input.telefono,
+        }
+      : null;
+    const { user, token, cliente } = await this.dataSource.transaction(async (m) => {
       const id = await this.users.create(m, input, passwordHash);
       await this.users.assignRole(id, 'CLIENTE', null, m);
+      const cliente = datosCliente ? (await this.clients.ensureTourist(datosCliente, m)).cliente : null;
       const created = await this.users.findById(id, m);
-      return { user: created as UsuarioDto, token: await this.verification.createEmailToken(id, m) };
+      return { user: created as UsuarioDto, token: await this.verification.createEmailToken(id, m), cliente };
     });
+    if (cliente && datosCliente) await this.clients.ensureBillingAfterSignup(cliente, datosCliente);
     await this.verification.sendVerification(user.correo, token);
     return user;
   }

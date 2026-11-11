@@ -17,7 +17,7 @@ import { useUiStore } from '@/stores/uiStore';
 import type { RoleName, User } from '@/types/identity';
 import { errorMessage, fieldError } from '@/utils/api';
 import { formatDateTime } from '@/utils/dates';
-import { passwordSchema } from '@/utils/validation';
+import { passwordSchema, personDocumentSchema } from '@/utils/validation';
 import { AdminTable, Sub, type Column } from './AdminTable';
 import { auditLabel } from './auditLabels';
 
@@ -301,15 +301,27 @@ function EditUserDialog({ user, onClose, onSaved }: { user: User; onClose: () =>
   const notify = useUiStore((s) => s.notify);
   const [nombre, setNombre] = useState(user.nombre);
   const [apellido, setApellido] = useState(user.apellido);
+  const [documento, setDocumento] = useState(user.documento ?? '');
   const [telefono, setTelefono] = useState(user.telefono ?? '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
+  const [docError, setDocError] = useState<string | undefined>();
 
   const save = async () => {
+    // Cuentas anteriores pueden no tener documento: si sigue vacío no se envía; si se escribe, debe ser válido.
+    const keepEmpty = !user.documento && documento.trim() === '';
+    const doc = keepEmpty ? null : personDocumentSchema.safeParse(documento);
+    if (doc && !doc.success) return setDocError(doc.error.issues[0]?.message);
+    setDocError(undefined);
     setBusy(true);
     setError(null);
     try {
-      const updated = await usersApi.update(user.id, { nombre: nombre.trim(), apellido: apellido.trim(), telefono: telefono.trim() || null });
+      const updated = await usersApi.update(user.id, {
+        nombre: nombre.trim(),
+        apellido: apellido.trim(),
+        ...(doc?.success && doc.data !== user.documento ? { documento: doc.data } : {}),
+        telefono: telefono.trim() || null,
+      });
       notify('Datos actualizados.', 'success');
       onSaved(updated);
     } catch (e) {
@@ -330,7 +342,7 @@ function EditUserDialog({ user, onClose, onSaved }: { user: User; onClose: () =>
           <Button variant="tertiary" onClick={onClose}>
             Cancelar
           </Button>
-          <Button loading={busy} disabled={!nombre.trim() || !apellido.trim()} onClick={save}>
+          <Button loading={busy} disabled={!nombre.trim() || !apellido.trim() || (Boolean(user.documento) && !documento.trim())} onClick={save}>
             Guardar
           </Button>
         </>
@@ -339,6 +351,14 @@ function EditUserDialog({ user, onClose, onSaved }: { user: User; onClose: () =>
       <div className="space-y-4">
         <Input label="Nombre" maxLength={120} value={nombre} onChange={(e) => setNombre(e.target.value)} error={fieldError(error, 'nombre')} />
         <Input label="Apellido" maxLength={120} value={apellido} onChange={(e) => setApellido(e.target.value)} error={fieldError(error, 'apellido')} />
+        <Input
+          label="Cédula o pasaporte"
+          maxLength={20}
+          value={documento}
+          onChange={(e) => setDocumento(e.target.value)}
+          help="Solo un administrador puede cambiarla."
+          error={docError ?? fieldError(error, 'documento')}
+        />
         <Input label="Teléfono (opcional)" maxLength={20} value={telefono} onChange={(e) => setTelefono(e.target.value)} error={fieldError(error, 'telefono')} />
         {error !== null && <Alert tone="error">{errorMessage(error)}</Alert>}
       </div>
@@ -358,6 +378,7 @@ function Info({ label, value }: { label: string; value: string }) {
 const createSchema = z.object({
   nombre: z.string().trim().min(1, 'Indica el nombre.').max(120),
   apellido: z.string().trim().min(1, 'Indica el apellido.').max(120),
+  documento: personDocumentSchema,
   correo: z.string().trim().email('Introduce un correo válido.').max(160),
   telefono: z.string().trim().regex(/^\+?[0-9]{7,15}$/, 'De 7 a 15 dígitos, con + opcional.').optional().or(z.literal('')),
   password: passwordSchema,
@@ -381,7 +402,7 @@ function CreateUserDialog({ onClose, onCreated }: { onClose: () => void; onCreat
   const submit = handleSubmit(async (v) => {
     setError(null);
     try {
-      const user = await usersApi.create({ correo: v.correo.toLowerCase(), password: v.password, nombre: v.nombre, apellido: v.apellido, telefono: v.telefono || null });
+      const user = await usersApi.create({ correo: v.correo.toLowerCase(), password: v.password, nombre: v.nombre, apellido: v.apellido, documento: v.documento, telefono: v.telefono || null });
       for (const rol of roles) await usersApi.assignRole(user.id, rol);
       notify('Usuario creado. Comunícale la contraseña temporal por un canal seguro.', 'success');
       onCreated(user.id);
@@ -411,6 +432,7 @@ function CreateUserDialog({ onClose, onCreated }: { onClose: () => void; onCreat
       <form onSubmit={submit} noValidate className="grid gap-4 sm:grid-cols-2">
         <Input label="Nombre" error={err('nombre')} {...register('nombre')} />
         <Input label="Apellido" error={err('apellido')} {...register('apellido')} />
+        <Input label="Cédula o pasaporte" maxLength={20} error={err('documento')} {...register('documento')} />
         <Input label="Correo" type="email" error={err('correo')} {...register('correo')} />
         <Input label="Teléfono (opcional)" type="tel" error={err('telefono')} {...register('telefono')} />
         <Input

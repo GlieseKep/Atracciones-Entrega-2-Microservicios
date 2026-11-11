@@ -30,6 +30,14 @@ export function isValidRuc(value: string): boolean {
 const email = z.string().trim().max(160, 'Máximo 160 caracteres.').regex(EMAIL, 'Introduce un correo válido.');
 const optionalText = (schema: z.ZodString) => schema.optional().or(z.literal(''));
 
+/** Documento de la cuenta (ms-identity): cédula ecuatoriana válida o pasaporte de 6 a 9 letras o dígitos. Es obligatorio. */
+export const personDocumentSchema = z
+  .string()
+  .trim()
+  .toUpperCase()
+  .min(1, 'Indica tu cédula o pasaporte.')
+  .refine((v) => (/^\d{10}$/.test(v) ? isValidCedula(v) : /^[A-Z0-9]{6,9}$/.test(v)), 'Cédula no válida o pasaporte de 6 a 9 letras o dígitos.');
+
 export const passwordSchema = z
   .string()
   .min(8, 'Mínimo 8 caracteres.')
@@ -45,6 +53,7 @@ export const registerSchema = z
   .object({
     nombre: z.string().trim().min(1, 'Indica tu nombre.').max(120, 'Máximo 120 caracteres.'),
     apellido: z.string().trim().min(1, 'Indica tu apellido.').max(120, 'Máximo 120 caracteres.'),
+    documento: personDocumentSchema,
     correo: email,
     telefono: optionalText(z.string().trim().regex(PHONE, 'De 7 a 15 dígitos, con + opcional.')),
     password: passwordSchema,
@@ -68,7 +77,6 @@ export type ChangePasswordValues = z.infer<typeof changePasswordSchema>;
 export const profileSchema = z.object({
   nombre: z.string().trim().min(1, 'Indica tu nombre.').max(120),
   apellido: z.string().trim().min(1, 'Indica tu apellido.').max(120),
-  documento: optionalText(z.string().trim().toUpperCase().regex(/^([0-9]{10}|[A-Z]{1,2}[0-9]{6,9})$/, 'Cédula de 10 dígitos o pasaporte.')),
   telefono: optionalText(z.string().trim().regex(PHONE, 'De 7 a 15 dígitos, con + opcional.')),
   fecha_nacimiento: optionalText(z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Fecha no válida.')),
 });
