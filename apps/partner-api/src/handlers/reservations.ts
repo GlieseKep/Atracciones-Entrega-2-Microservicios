@@ -48,7 +48,10 @@ export function reservationHandlers(esb: EsbClient, logger: Logger) {
       res.json(await esb.call<ReservationResponse>('booking', 'getReservation', { id: String(req.params.id) }));
     },
 
-    /** POST /reservas/{id}/cancel: compensación de la saga de Booking, o cancelación del cliente o de un `ADMIN`. */
+    /**
+     * POST /reservas/{id}/cancel: compensación de la saga de Booking (sus reservas `SOCIO`), o cancelación del cliente o de
+     * un `ADMIN` (solo reservas `WEB`, sin reembolso). Las reglas las aplica Booking.
+     */
     async cancel(req: Request, res: Response) {
       const principal = (req as ContractRequest).principal!;
       const body = (req.body ?? {}) as { reason?: string; solicitante?: string };
@@ -60,7 +63,7 @@ export function reservationHandlers(esb: EsbClient, logger: Logger) {
       }, { idempotencyKey: key }));
     },
 
-    /** POST /reservas/{id}/checkin: identidad, voucher y fecha los valida Booking (idempotente por cabecera). */
+    /** POST /reservas/{id}/checkin: identidad, voucher y fecha (solo el día del turno) los valida Booking (idempotente por cabecera). */
     async checkIn(req: Request, res: Response) {
       const body = (req.body ?? {}) as Record<string, unknown>;
       const text = (value: unknown) => (typeof value === 'string' ? value : '');

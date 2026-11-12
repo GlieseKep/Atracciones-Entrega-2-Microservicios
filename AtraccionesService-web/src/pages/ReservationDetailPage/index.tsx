@@ -36,7 +36,9 @@ import { describeTickets, formatMoney, lineAttractionName } from '@/utils/format
 import { paths } from '@/utils/routes';
 import { cancelReasonSchema, type CancelReasonValues } from '@/utils/validation';
 
+/** Solo reservas de la página web y antes del check-in. Sin reembolso: se liberan los cupos. */
 const CANCELLABLE = ['PENDING', 'CONFIRMED'];
+const canCancel = (r: Reservation) => r.canal !== 'SOCIO' && CANCELLABLE.includes(r.status);
 
 const METHOD_LABEL: Record<string, string> = {
   CREDIT_CARD: 'Tarjeta de crédito',
@@ -165,19 +167,14 @@ export default function ReservationDetailPage() {
                   </li>
                 )}
               </ul>
-              {r.reembolso_id && (
-                <Alert tone="success" className="mt-5">
-                  Reembolso {r.reembolso_id}: {formatMoney(r.monto_reembolsado ?? 0, r.currency)}.
-                </Alert>
-              )}
-              {(attractionId || CANCELLABLE.includes(r.status)) && (
+              {(attractionId || canCancel(r)) && (
                 <div className="mt-6 flex flex-wrap gap-3 border-t border-line pt-5">
                   {attractionId && (
                     <ButtonLink to={paths.attraction(attractionId)} variant="secondary">
                       Ver la experiencia <ArrowRight size={16} aria-hidden="true" />
                     </ButtonLink>
                   )}
-                  {CANCELLABLE.includes(r.status) && (
+                  {canCancel(r) && (
                     <Button variant="danger" onClick={() => setCancelOpen(true)}>
                       Cancelar reserva
                     </Button>
@@ -367,7 +364,7 @@ function CancelDialog({
   const submit = handleSubmit(async ({ reason }) => {
     try {
       const updated = await run(reason.trim());
-      notify('Reserva cancelada. El reembolso se procesa en el mismo método de pago.', 'success');
+      notify('Reserva cancelada. Los cupos quedaron liberados.', 'success');
       onCancelled(updated);
     } catch {
       /* se muestra abajo */
@@ -393,7 +390,7 @@ function CancelDialog({
     >
       <form onSubmit={submit} noValidate className="space-y-4">
         <p className="text-ink-soft">
-          Esta acción no se puede deshacer. Los cupos se liberan y, si pagaste, se emite el reembolso.
+          Esta acción no se puede deshacer. Los cupos se liberan y no se emite reembolso del pago.
         </p>
         <TextArea label="Motivo de la cancelación" error={errors.reason?.message} {...register('reason')} />
         {!!error && <Alert tone="error">{errorMessage(error)}</Alert>}

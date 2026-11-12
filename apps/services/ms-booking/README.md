@@ -14,7 +14,14 @@ Una compra de Booking Prototipo responde `CONFIRMED`. Una del portal responde `P
 
 ## Cancelación
 
-Reembolso, cupos y estado, en ese orden. `CLIENTE` respeta el plazo de Catalog; `SAGA_ORCHESTRATOR` y `ADMIN`, no. Sin pago aprobado, se cancela la orden.
+Solo antes del check-in (`PENDING` o `CONFIRMED`).
+
+- **Reservas de la web** (`res_canal = 'WEB'`): las cancelan el cliente o un `ADMIN`, sin reembolso y sin plazo de Catalog. Se cancela la orden si sigue sin pagar (una pagada queda pagada) y los cupos vuelven al turno en Inventory.
+- **Reservas de Booking** (`res_canal = 'SOCIO'`): solo las cancela la compensación de la saga (`SAGA_ORCHESTRATOR`), como siempre: reembolso, cupos y estado; sin pago aprobado, se cancela la orden. Desde la web responden `409 RESERVATION_NOT_CANCELLABLE`.
+
+## Check-in
+
+Solo el día del turno (fecha de negocio, `America/Guayaquil`), a cualquier hora de ese día. Otro día responde `409 CHECKIN_OUT_OF_DATE`.
 
 ## Estados automáticos
 

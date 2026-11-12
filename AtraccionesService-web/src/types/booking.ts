@@ -74,6 +74,8 @@ export interface Reservation {
   /** Turista de `cliente_api` (solo compras de Booking). */
   client_id?: string;
   notificacion_booking?: BookingNotificationStatus;
+  /** `WEB` (página web, cancelable antes del check-in) o `SOCIO` (Booking: no se cancela desde la web). */
+  canal?: 'WEB' | 'SOCIO';
 }
 
 /** Aviso del check-in a Booking Central. */

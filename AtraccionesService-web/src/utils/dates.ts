@@ -25,6 +25,13 @@ export const isValidLocalTime = (value: string) => /^([01]\d|2[0-3]):[0-5]\d$/.t
 
 export const today = (): IsoDate => toIsoDate(new Date());
 
+/** Fecha de negocio (Ecuador), la que usa Booking para el check-in; no depende de la zona horaria del navegador. */
+export const todayInEcuador = (): IsoDate =>
+  new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Guayaquil', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+
+/** El check-in solo se hace el día del turno. */
+export const isCheckinDay = (value: IsoDate) => value === todayInEcuador();
+
 export function addDays(value: IsoDate, days: number): IsoDate {
   const date = parseIsoDate(value);
   date.setDate(date.getDate() + days);

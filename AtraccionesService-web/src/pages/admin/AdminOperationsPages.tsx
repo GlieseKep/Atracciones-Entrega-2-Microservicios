@@ -13,7 +13,7 @@ import { useUiStore } from '@/stores/uiStore';
 import type { Payment, PaymentState } from '@/types/admin';
 import type { BookingNotificationStatus, CheckinResult, PaymentMethodCode, Reservation, ReservationStatus } from '@/types/booking';
 import { errorMessage } from '@/utils/api';
-import { formatDate, formatDateTime } from '@/utils/dates';
+import { formatDate, formatDateTime, isCheckinDay } from '@/utils/dates';
 import { describeTickets, formatMoney } from '@/utils/formatters';
 import { paths } from '@/utils/routes';
 import { AdminTable, Sub, type Column } from './AdminTable';
@@ -40,7 +40,10 @@ const METHOD_LABEL: Record<PaymentMethodCode, string> = { CREDIT_CARD: 'Tarjeta 
 /** El aviso a Booking sale en segundo plano: unos segundos después ya se sabe si se envió. */
 const NOTICE_REFRESH_MS = 4000;
 
-/** Reservas de Booking (todas, rol ADMIN). Cancelar como ADMIN reembolsa y libera los cupos sin plazo de cancelación. */
+/**
+ * Reservas de Booking (todas, rol ADMIN). Solo las de la página web se cancelan aquí (sin reembolso, antes del check-in);
+ * el check-in solo se confirma el día del turno.
+ */
 export function AdminReservationsPage() {
   const notify = useUiStore((s) => s.notify);
   const [reload, setReload] = useState(0);
@@ -110,12 +113,12 @@ export function AdminReservationsPage() {
       align: 'right',
       cell: (r) => (
         <span className="inline-flex flex-wrap justify-end gap-2">
-          {r.status === 'CONFIRMED' && (
+          {r.status === 'CONFIRMED' && isCheckinDay(r.date) && (
             <Button size="sm" onClick={() => setCheckingIn(r)}>
               Confirmar Asistencia
             </Button>
           )}
-          {(r.status === 'PENDING' || r.status === 'CONFIRMED') && (
+          {r.canal !== 'SOCIO' && (r.status === 'PENDING' || r.status === 'CONFIRMED') && (
             <Button size="sm" variant="danger" onClick={() => setCancelling(r)}>
               Cancelar
             </Button>
@@ -168,7 +171,7 @@ function CancelReservationDialog({ reservation, onClose, onDone }: { reservation
   const submit = async () => {
     try {
       const updated = await run(reason.trim());
-      notify(updated.reembolso_id ? `Reserva cancelada. Reembolso ${updated.reembolso_id}.` : 'Reserva cancelada.', 'success');
+      notify(`Reserva ${updated.reservation_code} cancelada. Los cupos quedaron liberados.`, 'success');
       onDone();
     } catch {
       /* se muestra abajo */
@@ -194,7 +197,7 @@ function CancelReservationDialog({ reservation, onClose, onDone }: { reservation
     >
       <div className="space-y-4">
         <p className="text-ink-soft">
-          Como administrador no aplica el plazo de cancelación gratuita. Booking reembolsa el pago, libera los cupos y cancela la orden.
+          No hay reembolso. Booking libera los cupos del turno y cancela la orden si aún no está pagada.
         </p>
         <TextArea label="Motivo" maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} />
         {!!error && <Alert tone="error">{errorMessage(error)}</Alert>}

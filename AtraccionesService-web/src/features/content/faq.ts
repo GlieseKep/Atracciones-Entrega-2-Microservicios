@@ -14,7 +14,7 @@ export const FAQ = [
   },
   {
     q: '¿Puedo cancelar mi reserva?',
-    a: 'Las experiencias con cancelación gratuita se cancelan desde el detalle de la reserva en “Mi cuenta”, hasta el plazo indicado en la ficha (por ejemplo, 24 horas antes). El pago se reembolsa y los cupos se liberan. Pasado el plazo, o si la experiencia no admite cancelación gratuita, escríbenos desde el centro de ayuda.',
+    a: 'Las reservas hechas en nuestra página se cancelan desde el detalle de la reserva en “Mi cuenta”, en cualquier momento antes del check-in. No hay reembolso del pago; los cupos se liberan para otros viajeros. Las reservas hechas por medio de Booking se gestionan con Booking.',
   },
   {
     q: '¿Recibo factura?',

@@ -17,7 +17,7 @@ const SECTIONS = [
   {
     id: 'cancelacion',
     title: 'Política de cancelación',
-    text: 'Cada experiencia indica en su ficha si admite cancelación gratuita y hasta cuántas horas antes. Dentro de ese plazo puedes cancelar desde el detalle de la reserva: los cupos se liberan y el pago se reembolsa en el mismo método. Fuera del plazo, escríbenos con el formulario de contacto.',
+    text: 'Las reservas hechas en nuestra página se pueden cancelar desde el detalle de la reserva hasta antes del check-in. Al cancelar, los cupos se liberan y no se emite reembolso del pago. Las reservas hechas por medio de Booking no se cancelan desde aquí: gestiónalas con Booking.',
   },
   {
     id: 'pagos',

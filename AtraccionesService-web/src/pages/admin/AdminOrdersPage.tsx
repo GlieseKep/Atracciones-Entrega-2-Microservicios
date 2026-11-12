@@ -1,15 +1,11 @@
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { getOrder, getOrderInvoice } from '@/api/orders';
 import { operationsApi } from '@/api/admin';
 import { Button } from '@/components/common/Button';
-import { Alert, ErrorState } from '@/components/common/Feedback';
-import { Input, TextArea } from '@/components/common/Input';
+import { ErrorState } from '@/components/common/Feedback';
 import { Modal } from '@/components/common/Modal';
 import { OrderStatusBadge } from '@/components/profile/StatusBadge';
 import { useAsync } from '@/hooks/useAsync';
-import { useIdempotentMutation } from '@/hooks/useReservations';
-import { useUiStore } from '@/stores/uiStore';
-import type { Refund } from '@/types/admin';
 import type { OrderState, OrderSummary } from '@/types/order';
 import { errorMessage, isApiError } from '@/utils/api';
 import { formatDateTime } from '@/utils/dates';
@@ -26,11 +22,10 @@ const ORDER_STATES: { value: OrderState; label: string }[] = [
 const TICKET_LABEL: Record<string, string> = { ADULT: 'Adulto', CHILD: 'Niño', SENIOR: 'Adulto mayor', INFANT: 'Infante', STUDENT: 'Estudiante' };
 
 /**
- * Órdenes de ms-order (las crea Booking en cada compra). Para cancelar una compra se usa Reservas (Booking cancela orden,
- * cupos y pago juntos); aquí solo se hace el reembolso parcial, que no libera cupos.
+ * Órdenes de ms-order (las crea Booking en cada compra). Solo consulta: no hay reembolsos, y para cancelar una compra web
+ * se usa Reservas (Booking libera los cupos y cancela la orden si no está pagada).
  */
 export default function AdminOrdersPage() {
-  const [reload, setReload] = useState(0);
   const [selected, setSelected] = useState<OrderSummary | null>(null);
 
   const columns: Column<OrderSummary>[] = [
@@ -67,23 +62,15 @@ export default function AdminOrdersPage() {
         columns={columns}
         rowKey={(o) => String(o.ord_id)}
         statuses={ORDER_STATES}
-        reloadKey={reload}
       />
-      {selected && (
-        <OrderDialog
-          order={selected}
-          onClose={() => setSelected(null)}
-          onChanged={() => setReload((n) => n + 1)}
-        />
-      )}
+      {selected && <OrderDialog order={selected} onClose={() => setSelected(null)} />}
     </>
   );
 }
 
-function OrderDialog({ order, onClose, onChanged }: { order: OrderSummary; onClose: () => void; onChanged: () => void }) {
+function OrderDialog({ order, onClose }: { order: OrderSummary; onClose: () => void }) {
   const detail = useAsync((signal) => getOrder(order.ord_numero, signal), [order.ord_numero]);
   const invoice = useAsync((signal) => getOrderInvoice(order.ord_id, signal), [order.ord_id]);
-  const [refunding, setRefunding] = useState(false);
   const d = detail.data;
 
   return (
@@ -139,29 +126,7 @@ function OrderDialog({ order, onClose, onChanged }: { order: OrderSummary; onClo
               </p>
             )}
           </section>
-
-          {d.orden.estado === 'PAGADA' && (
-            <div className="flex justify-end">
-              <Button variant="secondary" onClick={() => setRefunding(true)}>
-                Reembolso parcial
-              </Button>
-            </div>
-          )}
         </div>
-      )}
-
-      {refunding && d && (
-        <RefundDialog
-          ordId={order.ord_id}
-          max={d.orden.total}
-          currency={d.orden.moneda}
-          onClose={() => setRefunding(false)}
-          onDone={() => {
-            setRefunding(false);
-            detail.retry();
-            onChanged();
-          }}
-        />
       )}
     </Modal>
   );
@@ -173,59 +138,5 @@ function Row({ label, value, strong }: { label: string; value: string; strong?: 
       <dt className="text-ink-soft">{label}</dt>
       <dd>{value}</dd>
     </div>
-  );
-}
-
-function RefundDialog({ ordId, max, currency, onClose, onDone }: { ordId: number; max: number; currency: string; onClose: () => void; onDone: () => void }) {
-  const notify = useUiStore((s) => s.notify);
-  const [monto, setMonto] = useState('');
-  const [motivo, setMotivo] = useState('');
-  const amount = monto === '' ? undefined : Number(monto);
-  const valid = amount === undefined || (Number.isFinite(amount) && amount > 0 && amount <= max);
-  const { run, pending, error } = useIdempotentMutation<{ ord_id: number; monto?: number; motivo?: string }, Refund>(
-    useCallback((body, key) => operationsApi.refund(body, key), []),
-  );
-
-  const submit = async () => {
-    try {
-      const refund = await run({ ord_id: ordId, ...(amount !== undefined ? { monto: amount } : {}), ...(motivo.trim() ? { motivo: motivo.trim() } : {}) });
-      notify(`Reembolso ${refund.reembolso_id}: ${formatMoney(refund.monto_reembolsado, currency)}.`, 'success');
-      onDone();
-    } catch {
-      /* se muestra abajo */
-    }
-  };
-
-  return (
-    <Modal
-      open
-      size="sm"
-      onClose={onClose}
-      title="Reembolso parcial"
-      footer={
-        <>
-          <Button variant="tertiary" onClick={onClose}>
-            Volver
-          </Button>
-          <Button variant="danger" loading={pending} disabled={!valid} onClick={submit}>
-            Reembolsar
-          </Button>
-        </>
-      }
-    >
-      <div className="space-y-4">
-        <Alert>No cancela la reserva ni libera cupos. Para anular la compra completa, cancela la reserva en Reservas.</Alert>
-        <Input
-          label={`Monto (máximo ${formatMoney(max, currency)})`}
-          inputMode="decimal"
-          placeholder="Vacío = todo el saldo"
-          value={monto}
-          onChange={(e) => setMonto(e.target.value.replace(',', '.'))}
-          error={valid ? undefined : 'Monto no válido.'}
-        />
-        <TextArea label="Motivo (opcional)" maxLength={300} value={motivo} onChange={(e) => setMotivo(e.target.value)} />
-        {!!error && <Alert tone="error">{errorMessage(error)}</Alert>}
-      </div>
-    </Modal>
   );
 }

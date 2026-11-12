@@ -23,7 +23,6 @@ import type {
   Payment,
   PaymentState,
   PriceTable,
-  Refund,
   RoleInfo,
   Schedule,
   Slot,
@@ -191,14 +190,14 @@ export const inventoryApi = {
   unblockDate: (atraccionId: string, fecha: string) => gql.mutation<void>('inventoryUnblockDate', { atraccion_id: atraccionId, fecha }),
 };
 
-// Booking, Order, Payment, Refund, Invoicing ---------------------------------------
+// Booking, Order, Payment, Invoicing ---------------------------------------
 
 export const operationsApi = {
   reservations: (p: PageParams & { estado?: ReservationStatus | ''; q?: string }, signal?: Signal) =>
     gql
       .query<ReservationPage>('bookingListReservations', clean({ ...p, todas: true }), { signal })
       .then((r) => ({ total: r.total_results, items: r.items ?? [] }) as AdminPage<Reservation>),
-  /** Como `ADMIN` no aplica el plazo de cancelación gratuita; Booking reembolsa y libera los cupos. */
+  /** Solo reservas de la página web, antes del check-in. Sin reembolso: Booking libera los cupos y cancela la orden si no está pagada. */
   cancelReservation: (id: string, reason: string, idempotencyKey: string) =>
     gql.mutation<Reservation>('bookingCancelReservation', { id, reason, solicitante: 'ADMIN' }, { idempotencyKey }),
   orders: (p: PageParams & { estado?: OrderState | '' }, signal?: Signal) =>
@@ -207,9 +206,6 @@ export const operationsApi = {
       .then((r) => ({ total: r.total_results, items: r.items ?? [] }) as AdminPage<OrderSummary>),
   payments: (p: PageParams & { estado?: PaymentState | ''; metodo?: PaymentMethodCode | '' }, signal?: Signal) =>
     gql.query<MetadataPage<Payment>>('paymentListPayments', clean(p), { signal }).then(fromMetadata),
-  /** Reembolso parcial sin cancelar la reserva (no libera cupos). Sin `monto`, todo el saldo. */
-  refund: (body: { ord_id: number; monto?: number; motivo?: string }, idempotencyKey: string) =>
-    gql.mutation<Refund>('refundCreateRefund', body, { idempotencyKey }),
   invoices: (p: PageParams & { estado?: string; estado_sri?: string }, signal?: Signal) =>
     gql.query<MetadataPage<Invoice>>('invoicingListInvoices', clean(p), { signal }).then(fromMetadata),
 };

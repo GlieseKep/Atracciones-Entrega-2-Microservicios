@@ -67,5 +67,6 @@ export function toResponse(row: ReservationRow, slot: Slot, logistics: Logistics
     notificacion_booking: notificationStatus(row),
     attraction_id: slot.atraccion_id,
     attraction_name: logistics?.nombre ?? '',
+    canal: row.res_canal,
   };
 }

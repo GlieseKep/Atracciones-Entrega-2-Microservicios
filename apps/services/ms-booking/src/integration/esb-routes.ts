@@ -13,7 +13,7 @@ const route = (method: string, timeoutMs = 4000): BookingRestRoute => ({
 
 export const MS_BOOKING_ROUTES = {
   'booking.health': route('Health', 1000),
-  // La compra y la cancelación recorren Catalog, Order, Inventory, Payment y Refund.
+  // La compra recorre Catalog, Order, Inventory y Payment. La cancelación, Order e Inventory (y Refund solo en reservas de Booking).
   'booking.createReservation': route('CreateReservation', 20000),
   'booking.cancelReservation': route('CancelReservation', 15000),
   'booking.getReservation': route('GetReservation'),

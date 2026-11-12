@@ -83,6 +83,8 @@ export interface ReservaResponse {
   /** Extensión: código público de la atracción (`atr_codigo`) y su nombre, para enlazar la reserva con su ficha. */
   attraction_id: string;
   attraction_name: string;
+  /** Extensión: `WEB` (página web, cancelable desde la web antes del check-in) o `SOCIO` (Booking, solo la cancela su saga). */
+  canal: 'WEB' | 'SOCIO';
 }
 
 export interface CheckinResponse {
