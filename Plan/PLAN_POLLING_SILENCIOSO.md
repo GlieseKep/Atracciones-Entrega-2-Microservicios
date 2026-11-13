@@ -105,6 +105,22 @@ vuelve a consultar.
 - **Filtro de estado**: ver la decisión 7.
 - **Alcance en el panel**: ver la decisión 8.
 
+### 7. Disponibilidad del panel: pestaña Turnos (ampliación)
+
+**Situación actual.** En Disponibilidad (`src/pages/admin/AdminAvailabilityPage.tsx`), la pestaña Turnos (`SlotsTab`)
+lista los turnos con `AdminTable`: cupos reservados / total, libres, guía y Abierto/Cerrado. Solo recarga al cambiar de
+página o fechas, o después de una acción del propio admin. Una compra o cancelación (web o Booking) no cambia los cupos
+en pantalla hasta salir y volver a entrar.
+
+**Cambios.**
+
+- `SlotsTab` pasa `pollMs = 3500` (decidido: el mismo intervalo que los turnos de la página pública) y `rowEqual` por `cupo_reservado`, `cupo_total`, `cerrada` y `gui_id` a su `AdminTable`.
+  Usa todo lo de la sección 6: consultas de fondo silenciosas, fallos ignorados y solo se repinta la fila que cambió.
+- Los diálogos abiertos (cambiar cupo, cambiar guía, guía por rango) no se cierran ni cambian: trabajan con la copia del
+  turno que se abrió. Al guardar, la tabla recarga como hoy.
+- Si el rango de fechas deja fuera un turno, se queda visible hasta la próxima carga normal (igual que la decisión 7).
+- Las pestañas Horarios y Fechas bloqueadas no cambian: solo las modifica el admin.
+
 ## Archivos
 
 | Archivo | Cambio |
@@ -124,6 +140,7 @@ vuelve a consultar.
 | `src/pages/admin/AdminOperationsPages.tsx` | Reservas con polling de 5 s; se quita la recarga única de 4 s (ampliación) |
 | `src/pages/admin/AdminCheckinPage.tsx` | La reserva elegida se consulta cada 5 s (ampliación) |
 | `src/hooks/usePolling.ts` | `intervalMs = 0` sin consultas de fondo (ampliación) |
+| `src/pages/admin/AdminAvailabilityPage.tsx` | Pestaña Turnos con polling de 3,5 s (ampliación 7) |
 
 Verificación: `tsc` y una prueba en el navegador real con dos sesiones (una reserva o cancela y la otra ve el cambio). Sin pruebas automatizadas.
 

@@ -101,6 +101,13 @@ export default function AdminAvailabilityPage() {
   );
 }
 
+/** Los turnos se consultan en segundo plano cada 3,5 s (compras y cancelaciones de la web o de Booking cambian los cupos). */
+const SLOTS_POLL_MS = 3500;
+
+/** En el polling, un turno solo se vuelve a pintar si cambió lo que muestra la fila. */
+const sameSlot = (a: Slot, b: Slot) =>
+  a.cupo_reservado === b.cupo_reservado && a.cupo_total === b.cupo_total && a.cerrada === b.cerrada && a.gui_id === b.gui_id;
+
 function SlotsTab({ attraction, guides }: { attraction: AdminAttraction; guides: Guide[] }) {
   const notify = useUiStore((s) => s.notify);
   const [reload, setReload] = useState(0);
@@ -150,6 +157,8 @@ function SlotsTab({ attraction, guides }: { attraction: AdminAttraction; guides:
         rowKey={(s) => s.slot_id}
         dateLabel="Fecha"
         reloadKey={reload}
+        pollMs={SLOTS_POLL_MS}
+        rowEqual={sameSlot}
         actions={
           <Button variant="secondary" onClick={() => setRange(true)}>
             <CalendarRange size={16} aria-hidden="true" /> Asignar guía a un rango
