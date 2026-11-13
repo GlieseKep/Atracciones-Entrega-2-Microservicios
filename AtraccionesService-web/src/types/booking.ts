@@ -74,8 +74,27 @@ export interface Reservation {
   /** Turista de `cliente_api` (solo compras de Booking). */
   client_id?: string;
   notificacion_booking?: BookingNotificationStatus;
-  /** `WEB` (página web, cancelable antes del check-in) o `SOCIO` (Booking: no se cancela desde la web). */
+  /** `WEB` (página web) o `SOCIO` (Booking). Las dos se cancelan antes del check-in. */
   canal?: 'WEB' | 'SOCIO';
+  /** Solo en reservas `CANCELLED`: comprobante, reembolso del 100 % y cupos devueltos al turno. */
+  cancel_code?: string;
+  refund?: CancellationRefund;
+  stock_restoration?: StockRestoration;
+  message?: string;
+}
+
+export interface CancellationRefund {
+  refund_id: string;
+  status: 'PROCESSED';
+  amount: number;
+  currency: string;
+  message: string;
+}
+
+export interface StockRestoration {
+  status: 'RESTORED';
+  restored_spots: number;
+  message: string;
 }
 
 /** Aviso del check-in a Booking Central. */

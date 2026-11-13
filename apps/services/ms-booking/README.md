@@ -16,8 +16,11 @@ Una compra de Booking Prototipo responde `CONFIRMED`. Una del portal responde `P
 
 Solo antes del check-in (`PENDING` o `CONFIRMED`).
 
-- **Reservas de la web** (`res_canal = 'WEB'`): las cancelan el cliente o un `ADMIN`, sin reembolso y sin plazo de Catalog. Se cancela la orden si sigue sin pagar (una pagada queda pagada) y los cupos vuelven al turno en Inventory.
-- **Reservas de Booking** (`res_canal = 'SOCIO'`): solo las cancela la compensación de la saga (`SAGA_ORCHESTRATOR`), como siempre: reembolso, cupos y estado; sin pago aprobado, se cancela la orden. Desde la web responden `409 RESERVATION_NOT_CANCELLABLE`.
+Cualquier canal: la cancelan el cliente dueño, un `ADMIN` o la saga de Booking (`SAGA_ORCHESTRATOR`). En `CHECKED_IN`/`COMPLETED` responde `409 RESERVATION_NOT_CANCELLABLE` («Cancelación No Permitida»); una ya cancelada se devuelve tal cual (sin liberar cupos otra vez).
+
+- **Reembolso del 100 %:** en reservas de Booking (`SOCIO`) con pago aprobado, reembolso real por Refund. En las demás, reembolso simulado `REF-ATR-<reservation_code>` por el total; la orden se cancela si sigue sin pagar (una pagada queda pagada).
+- **Stock:** los boletos vuelven al turno en Inventory (`ReleaseSeats`, una sola vez) y se publica `STOCK_ACTUALIZADO`.
+- **Respuesta:** además de `reembolso_id` y `monto_reembolsado`, las extensiones `cancel_code`, `refund`, `stock_restoration` y `message`.
 
 ## Check-in
 

@@ -197,7 +197,7 @@ export const operationsApi = {
     gql
       .query<ReservationPage>('bookingListReservations', clean({ ...p, todas: true }), { signal })
       .then((r) => ({ total: r.total_results, items: r.items ?? [] }) as AdminPage<Reservation>),
-  /** Solo reservas de la página web, antes del check-in. Sin reembolso: Booking libera los cupos y cancela la orden si no está pagada. */
+  /** Cualquier reserva antes del check-in: Booking reembolsa el 100 % y devuelve los cupos al turno. */
   cancelReservation: (id: string, reason: string, idempotencyKey: string) =>
     gql.mutation<Reservation>('bookingCancelReservation', { id, reason, solicitante: 'ADMIN' }, { idempotencyKey }),
   orders: (p: PageParams & { estado?: OrderState | '' }, signal?: Signal) =>

@@ -5,17 +5,19 @@ import type { ReservationRepository, ReservationRow } from '../persistence/reser
 import { onceByKey } from './idempotency';
 import { reservationEvent, stockEvent } from './purchase-flow';
 import { seatKey, type Remote, type Refund } from './remote';
+import { simulatedRefundId } from './reservation-mapper';
 import type { ReservationService } from './reservation-service';
 
 const DEFAULT_REASON = 'Cancelación de la reserva';
 
+/** Reembolso simulado del 100 % del total, cuando no hubo un reembolso real por Refund. */
+const simulatedRefund = (row: ReservationRow): Refund => ({ reembolso_id: simulatedRefundId(row), monto_reembolsado: Number(row.res_precio_total) });
+
 /**
- * Dos caminos, según el canal de la reserva:
- * - `WEB` (página web): la cancelan el cliente o un `ADMIN`, solo antes del check-in y sin reembolso. Se cancela la orden
- *   si sigue sin pagar (una pagada queda pagada) y los cupos vuelven al turno.
- * - `SOCIO` (Booking): solo la compensación de la saga (`SAGA_ORCHESTRATOR`) la cancela, como siempre: reembolso si hay
- *   pago aprobado (si no, se cancela la orden), cupos y estado.
- * Cada paso es idempotente: un reintento no devuelve ni reintegra dos veces.
+ * Cancela cualquier reserva antes del check-in, sea de la web (`WEB`) o de Booking (`SOCIO`), con reembolso del 100 %:
+ * - `SOCIO`: reembolso real por Refund si hay pago aprobado; si no, se cancela la orden y el reembolso es simulado.
+ * - `WEB`: reembolso simulado (`REF-ATR-<código>`); se cancela la orden si sigue sin pagar (una pagada queda pagada).
+ * En los dos casos los cupos vuelven al turno. Cada paso es idempotente: un reintento no devuelve ni reintegra dos veces.
  */
 export class CancellationFlow {
   constructor(
@@ -37,22 +39,15 @@ export class CancellationFlow {
     if (solicitante === 'SAGA_ORCHESTRATOR' && principal.tipo !== 'API_CLIENTE') throw AppError.forbidden('Solo un socio puede cancelar por saga.');
   }
 
-  /** Las reservas de Booking solo las cancela su saga; las de la web, el cliente o un `ADMIN`. */
-  private assertChannel(row: ReservationRow, solicitante: Solicitante): void {
-    if (row.res_canal === 'SOCIO' && solicitante !== 'SAGA_ORCHESTRATOR') {
-      throw AppError.conflict('RESERVATION_NOT_CANCELLABLE', 'Las reservas hechas desde Booking no se pueden cancelar desde la página web.');
-    }
-  }
-
   private assertBeforeCheckin(row: ReservationRow): void {
     if (row.est_codigo === 'PENDING' || row.est_codigo === 'CONFIRMED') return;
     if (row.est_codigo === 'CHECKED_IN' || row.est_codigo === 'COMPLETED') {
-      throw AppError.conflict('RESERVATION_NOT_CANCELLABLE', 'La reserva ya tiene check-in y no se puede cancelar.');
+      throw AppError.conflict('RESERVATION_NOT_CANCELLABLE', 'No se puede cancelar una reserva que ya realizó check-in o fue asistida.');
     }
     throw AppError.conflict('RESERVATION_NOT_CANCELLABLE', `La reserva está ${row.est_codigo}.`);
   }
 
-  /** Web: sin reembolso. Una orden ya pagada no se cancela; queda pagada y solo se liberan los cupos. */
+  /** Web: una orden ya pagada no se cancela; queda pagada y el reembolso es simulado. */
   private async cancelUnpaidOrder(ordNumero: string, reason: string): Promise<void> {
     try {
       await this.remote.cancelOrder(ordNumero, reason);
@@ -75,12 +70,12 @@ export class CancellationFlow {
     await this.service.assertOwner(row, principal);
     this.assertRequester(solicitante, principal);
     if (row.est_codigo === 'CANCELLED') return this.service.present(row);
-    this.assertChannel(row, solicitante);
     this.assertBeforeCheckin(row);
 
     let refund: Refund | null = null;
     if (row.res_canal === 'SOCIO') refund = await this.refundOrCancelOrder(row, reason);
     else await this.cancelUnpaidOrder(row.ord_numero, reason);
+    refund ??= simulatedRefund(row);
     const seats = await this.remote.releaseSeats(seatKey(row.ord_numero));
     const updated = await this.reservations.transition(
       row.res_id,
@@ -90,7 +85,8 @@ export class CancellationFlow {
         res_motivo_cancelacion: reason.slice(0, 255),
         res_cancelado_por: solicitante,
         res_cancelado_en: new Date(),
-        ...(refund ? { res_reembolso_id: refund.reembolso_id, res_monto_reembolsado: refund.monto_reembolsado } : {}),
+        res_reembolso_id: refund.reembolso_id,
+        res_monto_reembolsado: refund.monto_reembolsado,
       },
       (current) => [
         { tipo: 'RESERVA_CANCELADA', payload: reservationEvent(current) },

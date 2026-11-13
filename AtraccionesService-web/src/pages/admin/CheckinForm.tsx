@@ -43,7 +43,14 @@ export function CheckinForm({ reservation, voucher = null, onDone }: Props) {
     event.preventDefault();
     setError(null);
     const count = Number(asistentes);
-    if (!Number.isInteger(count) || count < 1 || count > reservation.ticket_count) {
+    if (Number.isInteger(count) && count > reservation.ticket_count) {
+      // Regla del negocio: la reserva no se modifica; las personas extra compran una reserva nueva si hay cupos.
+      setError(
+        `Llegaron más personas que boletos (${reservation.ticket_count}). La reserva no se modifica: los ${count - reservation.ticket_count} boletos adicionales se compran como una reserva nueva (desde Booking o la web) si hay cupos en este turno.`,
+      );
+      return;
+    }
+    if (!Number.isInteger(count) || count < 1) {
       setError(`Los asistentes deben ser entre 1 y ${reservation.ticket_count}.`);
       return;
     }
@@ -73,7 +80,7 @@ export function CheckinForm({ reservation, voucher = null, onDone }: Props) {
   return (
     <form className="mt-5 grid gap-4 border-t border-line pt-5 sm:grid-cols-2" onSubmit={onSubmit}>
       <Input label="Documento del titular" value={documento} onChange={(e) => setDocumento(e.target.value)} required autoComplete="off" />
-      <Input label="Asistentes reales" type="number" min={1} max={reservation.ticket_count} value={asistentes} onChange={(e) => setAsistentes(e.target.value)} required />
+      <Input label="Asistentes reales" type="number" min={1} value={asistentes} onChange={(e) => setAsistentes(e.target.value)} required />
       <Input label="Código del guía (opcional)" value={guiaCodigo} onChange={(e) => setGuiaCodigo(e.target.value)} maxLength={30} />
       <TextArea label="Observaciones (opcional)" value={observaciones} onChange={(e) => setObservaciones(e.target.value)} maxLength={500} rows={2} className="sm:col-span-2" />
       <label className="flex items-center gap-2 text-sm sm:col-span-2">

@@ -49,8 +49,8 @@ export function reservationHandlers(esb: EsbClient, logger: Logger) {
     },
 
     /**
-     * POST /reservas/{id}/cancel: compensación de la saga de Booking (sus reservas `SOCIO`), o cancelación del cliente o de
-     * un `ADMIN` (solo reservas `WEB`, sin reembolso). Las reglas las aplica Booking.
+     * POST /reservas/{id}/cancel (alias /api/v3/reservas/{id}/cancel): compensación de la saga de Booking, o cancelación del
+     * cliente o de un `ADMIN`, antes del check-in, con reembolso del 100 % y cupos de vuelta. Las reglas las aplica Booking.
      */
     async cancel(req: Request, res: Response) {
       const principal = (req as ContractRequest).principal!;

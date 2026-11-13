@@ -84,7 +84,9 @@ export class CheckinService {
     if (input.documento.toUpperCase() !== row.pax_documento) throw AppError.forbidden('El documento no es el del titular.', 'DOCUMENT_MISMATCH');
     if (input.voucher && !verifyVoucher(input.voucher, row.res_uuid, this.secrets.voucher)) throw AppError.forbidden('El código QR no es válido.', 'INVALID_VOUCHER');
     if (input.asistentes !== null && input.asistentes > row.res_numero_tickets) {
-      throw AppError.validation(`'asistentes_reales' no puede ser mayor que los boletos de la reserva (${row.res_numero_tickets}).`, [
+      // Regla del negocio: la reserva no se modifica; las personas extra compran una reserva nueva si hay cupos en el turno.
+      const extra = input.asistentes - row.res_numero_tickets;
+      throw AppError.validation(`Llegaron más personas que boletos (${row.res_numero_tickets}). La reserva no se modifica: los ${extra} boletos adicionales se compran como una reserva nueva (desde Booking o la web) si hay cupos en este turno.`, [
         { name: 'asistentes_reales', reason: 'Mayor que los boletos de la reserva.' },
       ]);
     }

@@ -16,11 +16,13 @@ import {
   Users,
 } from 'lucide-react';
 import { getReservation } from '@/api/bookings';
+import { getAvailability } from '@/api/catalog';
 import { getOrder, getOrderInvoice } from '@/api/orders';
 import { Button, ButtonLink } from '@/components/common/Button';
 import { Alert, ErrorState } from '@/components/common/Feedback';
 import { TextArea } from '@/components/common/Input';
 import { Modal } from '@/components/common/Modal';
+import { Badge } from '@/components/common/Badge';
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
 import { OrderStatusBadge, ReservationStatusBadge } from '@/components/profile/StatusBadge';
 import { photoAt } from '@/features/content/photos';
@@ -36,9 +38,10 @@ import { describeTickets, formatMoney, lineAttractionName } from '@/utils/format
 import { paths } from '@/utils/routes';
 import { cancelReasonSchema, type CancelReasonValues } from '@/utils/validation';
 
-/** Solo reservas de la página web y antes del check-in. Sin reembolso: se liberan los cupos. */
-const CANCELLABLE = ['PENDING', 'CONFIRMED'];
-const canCancel = (r: Reservation) => r.canal !== 'SOCIO' && CANCELLABLE.includes(r.status);
+/** Cualquier reserva antes del check-in (web o Booking): reembolso del 100 % y los cupos vuelven al turno. */
+const NOT_CANCELLABLE = ['CHECKED_IN', 'COMPLETED', 'CANCELLED', 'EXPIRED'];
+const canCancel = (r: Reservation) => !NOT_CANCELLABLE.includes(r.status);
+const checkedIn = (r: Reservation) => r.status === 'CHECKED_IN' || r.status === 'COMPLETED';
 
 const METHOD_LABEL: Record<string, string> = {
   CREDIT_CARD: 'Tarjeta de crédito',
@@ -68,6 +71,7 @@ export default function ReservationDetailPage() {
   // Ficha de la atracción (código público que devuelve Booking): foto y enlace.
   const attraction = useAttraction(reservation.data?.attraction_id || undefined);
   const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelled, setCancelled] = useState<Reservation | null>(null);
 
   if (reservation.status === 'error') {
     return (
@@ -167,7 +171,7 @@ export default function ReservationDetailPage() {
                   </li>
                 )}
               </ul>
-              {(attractionId || canCancel(r)) && (
+              {(attractionId || canCancel(r) || checkedIn(r)) && (
                 <div className="mt-6 flex flex-wrap gap-3 border-t border-line pt-5">
                   {attractionId && (
                     <ButtonLink to={paths.attraction(attractionId)} variant="secondary">
@@ -178,6 +182,11 @@ export default function ReservationDetailPage() {
                     <Button variant="danger" onClick={() => setCancelOpen(true)}>
                       Cancelar reserva
                     </Button>
+                  )}
+                  {checkedIn(r) && (
+                    <Badge tone="neutral" className="self-center px-3 py-1.5 text-sm">
+                      <CheckCircle2 size={16} aria-hidden="true" /> Check-in realizado (Servicio iniciado, no cancelable)
+                    </Badge>
                   )}
                 </div>
               )}
@@ -236,8 +245,10 @@ export default function ReservationDetailPage() {
         onCancelled={(updated) => {
           reservation.setData(updated);
           setCancelOpen(false);
+          setCancelled(updated);
         }}
       />
+      {cancelled && <CancelledDialog reservation={cancelled} onClose={() => setCancelled(null)} />}
     </div>
   );
 }
@@ -364,7 +375,7 @@ function CancelDialog({
   const submit = handleSubmit(async ({ reason }) => {
     try {
       const updated = await run(reason.trim());
-      notify('Reserva cancelada. Los cupos quedaron liberados.', 'success');
+      notify('Reserva cancelada y reembolsada. Los cupos quedaron liberados.', 'success');
       onCancelled(updated);
     } catch {
       /* se muestra abajo */
@@ -390,11 +401,42 @@ function CancelDialog({
     >
       <form onSubmit={submit} noValidate className="space-y-4">
         <p className="text-ink-soft">
-          Esta acción no se puede deshacer. Los cupos se liberan y no se emite reembolso del pago.
+          Esta acción no se puede deshacer: se anulará la reserva y se liberarán sus cupos en el turno para otros
+          viajeros. Recibirás el reembolso del 100 % del total.
         </p>
         <TextArea label="Motivo de la cancelación" error={errors.reason?.message} {...register('reason')} />
         {!!error && <Alert tone="error">{errorMessage(error)}</Alert>}
       </form>
+    </Modal>
+  );
+}
+
+/** Resultado de la cancelación: comprobante del reembolso y cupos del turno consultados en ese momento (sin caché). */
+function CancelledDialog({ reservation: r, onClose }: { reservation: Reservation; onClose: () => void }) {
+  const code = r.refund?.refund_id || r.cancel_code || r.reembolso_id || '';
+  const amount = r.refund?.amount ?? r.monto_reembolsado ?? r.total_price;
+  const spots = r.stock_restoration?.restored_spots ?? r.ticket_count;
+  const availability = useAsync(
+    (signal) => getAvailability(r.attraction_id!, r.date, signal),
+    [r.attraction_id, r.date],
+    !!r.attraction_id,
+  );
+  const slot = availability.data?.time_slots.find((s) => s.time === r.time);
+
+  return (
+    <Modal open onClose={onClose} title="Reserva cancelada" size="sm" footer={<Button onClick={onClose}>Entendido</Button>}>
+      <div className="space-y-4">
+        <Badge tone="success" className="px-3 py-1.5 text-sm">
+          <CheckCircle2 size={16} aria-hidden="true" /> ¡Cancelación y Reembolso Exitosos!
+        </Badge>
+        <dl className="grid gap-2 text-sm">
+          <Row label="Código de Reembolso" value={code} />
+          <Row label="Monto Reembolsado" value={`100 % (${formatMoney(amount, r.currency)})`} />
+          <Row label="Stock Reincorporado" value={`✓ Cupos liberados (${spots})`} />
+          {slot && <Row label="Cupos disponibles del turno" value={`${slot.available_slots} de ${slot.total_slots}`} />}
+        </dl>
+        {r.message && <p className="text-sm text-ink-soft">{r.message}</p>}
+      </div>
     </Modal>
   );
 }

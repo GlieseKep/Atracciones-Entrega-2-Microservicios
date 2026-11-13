@@ -104,6 +104,10 @@ export function createPartnerApi(config: PartnerApiConfig): PartnerApi {
     req.url = req.url.replace('/api/v3/reservas', '/api/v3/atracciones/reservas');
     next();
   });
+  app.post('/api/v3/reservas/:id/cancel', (req, _res, next) => {
+    req.url = req.url.replace('/api/v3/reservas/', '/api/v3/atracciones/reservas/');
+    next();
+  });
   // Módulo de clientes pedido por Booking: no está en el contrato v3, así que va antes de su validador.
   for (const base of BASE_PATHS) app.use(base, clientRoutes(esb, logger));
   // GET /eventos no documenta 400: un `limit` mayor que el máximo del contrato (200) se acota en vez de rechazarse.

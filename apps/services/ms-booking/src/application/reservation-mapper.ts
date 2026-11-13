@@ -1,5 +1,5 @@
 import { timeLabel } from '@atracciones/platform';
-import type { NotificacionBooking, ReservaResponse } from '../contract';
+import type { NotificacionBooking, RefundInfo, ReservaResponse, StockRestoration } from '../contract';
 import { MAX_NOTIFICATION_ATTEMPTS } from '../persistence/checkin-notification-repository';
 import type { ReservationRow } from '../persistence/reservation-repository';
 import type { Logistics, Slot } from './remote';
@@ -13,6 +13,27 @@ export function notificationStatus(row: ReservationRow): NotificacionBooking {
   if (row.nch_intentos === null || row.nch_intentos === undefined) return 'NO_APLICA';
   if (row.nch_enviado_en) return 'ENVIADA';
   return row.nch_intentos >= MAX_NOTIFICATION_ATTEMPTS ? 'FALLIDA' : 'PENDIENTE';
+}
+
+/** Comprobante del reembolso simulado: `REF-ATR-<reservation_code>` (cabe en `res_reembolso_id VARCHAR(30)`). */
+export const simulatedRefundId = (row: ReservationRow) => `REF-ATR-${row.res_codigo}`;
+
+/** Comprobante, reembolso y cupos devueltos de una reserva cancelada; sale de lo guardado, así que un reintento devuelve lo mismo. */
+function cancellation(row: ReservationRow): Pick<ReservaResponse, 'cancel_code' | 'refund' | 'stock_restoration' | 'message'> {
+  const code = row.res_reembolso_id ?? simulatedRefundId(row);
+  const refund: RefundInfo = {
+    refund_id: code,
+    status: 'PROCESSED',
+    amount: Number(row.res_monto_reembolsado ?? 0),
+    currency: 'USD',
+    message: code === simulatedRefundId(row) ? 'Reembolso simulado del 100% procesado.' : 'Reembolso del 100% procesado.',
+  };
+  const stock: StockRestoration = {
+    status: 'RESTORED',
+    restored_spots: row.res_numero_tickets,
+    message: 'Cupos reincorporados a la disponibilidad del operador local.',
+  };
+  return { cancel_code: code, refund, stock_restoration: stock, message: 'Reserva cancelada exitosamente y cupos restituidos.' };
 }
 
 /** `ReservaConfirmadaResponseV2`, con sus alias. La moneda es siempre USD. */
@@ -60,7 +81,7 @@ export function toResponse(row: ReservationRow, slot: Slot, logistics: Logistics
     guia_asignado: guideName(logistics),
     punto_encuentro: logistics?.punto_encuentro ?? '',
     voucher_qr_payload: row.res_voucher_qr ?? '',
-    reembolso_id: row.res_reembolso_id ?? '',
+    reembolso_id: row.res_reembolso_id ?? (row.est_codigo === 'CANCELLED' ? simulatedRefundId(row) : ''),
     monto_reembolsado: Number(row.res_monto_reembolsado ?? 0),
     _links: { self, checkin: `${self}/checkin`, cancel: `${self}/cancel` },
     client_id: row.cla_id_cliente === null ? '' : String(row.cla_id_cliente),
@@ -68,5 +89,6 @@ export function toResponse(row: ReservationRow, slot: Slot, logistics: Logistics
     attraction_id: slot.atraccion_id,
     attraction_name: logistics?.nombre ?? '',
     canal: row.res_canal,
+    ...(row.est_codigo === 'CANCELLED' ? cancellation(row) : {}),
   };
 }

@@ -14,7 +14,7 @@ export const FAQ = [
   },
   {
     q: '¿Puedo cancelar mi reserva?',
-    a: 'Las reservas hechas en nuestra página se cancelan desde el detalle de la reserva en “Mi cuenta”, en cualquier momento antes del check-in. No hay reembolso del pago; los cupos se liberan para otros viajeros. Las reservas hechas por medio de Booking se gestionan con Booking.',
+    a: 'Sí, desde el detalle de la reserva en “Mi cuenta”, en cualquier momento antes del check-in. Recibes el reembolso del 100 % del total y los cupos se liberan para otros viajeros. Después del check-in el servicio ya inició y no se puede cancelar.',
   },
   {
     q: '¿Recibo factura?',

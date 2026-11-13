@@ -41,7 +41,7 @@ const METHOD_LABEL: Record<PaymentMethodCode, string> = { CREDIT_CARD: 'Tarjeta 
 const NOTICE_REFRESH_MS = 4000;
 
 /**
- * Reservas de Booking (todas, rol ADMIN). Solo las de la página web se cancelan aquí (sin reembolso, antes del check-in);
+ * Reservas de Booking (todas, rol ADMIN). Cualquiera se cancela aquí antes del check-in (reembolso del 100 % y cupos de vuelta);
  * el check-in solo se confirma el día del turno.
  */
 export function AdminReservationsPage() {
@@ -118,7 +118,7 @@ export function AdminReservationsPage() {
               Confirmar Asistencia
             </Button>
           )}
-          {r.canal !== 'SOCIO' && (r.status === 'PENDING' || r.status === 'CONFIRMED') && (
+          {(r.status === 'PENDING' || r.status === 'CONFIRMED') && (
             <Button size="sm" variant="danger" onClick={() => setCancelling(r)}>
               Cancelar
             </Button>
@@ -171,7 +171,8 @@ function CancelReservationDialog({ reservation, onClose, onDone }: { reservation
   const submit = async () => {
     try {
       const updated = await run(reason.trim());
-      notify(`Reserva ${updated.reservation_code} cancelada. Los cupos quedaron liberados.`, 'success');
+      const code = updated.refund?.refund_id || updated.cancel_code || updated.reembolso_id;
+      notify(`Reserva ${updated.reservation_code} cancelada. Reembolso del 100 %${code ? ` (${code})` : ''}; los cupos quedaron liberados.`, 'success');
       onDone();
     } catch {
       /* se muestra abajo */
@@ -197,7 +198,7 @@ function CancelReservationDialog({ reservation, onClose, onDone }: { reservation
     >
       <div className="space-y-4">
         <p className="text-ink-soft">
-          No hay reembolso. Booking libera los cupos del turno y cancela la orden si aún no está pagada.
+          Se anula la reserva, se reembolsa el 100 % del total y los cupos vuelven al turno.
         </p>
         <TextArea label="Motivo" maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} />
         {!!error && <Alert tone="error">{errorMessage(error)}</Alert>}

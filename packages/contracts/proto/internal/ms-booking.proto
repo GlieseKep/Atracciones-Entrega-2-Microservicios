@@ -130,6 +130,26 @@ message ReservaConfirmadaResponseV2 {
   string notificacion_booking = 33;   // NO_APLICA | PENDIENTE | ENVIADA | FALLIDA
   string attraction_id = 34;          // codigo publico de la atraccion (atr_codigo)
   string attraction_name = 35;
+  // Extensiones de la cancelacion (solo con status CANCELLED): comprobante, reembolso del 100% y cupos devueltos al turno.
+  string cancel_code = 36;
+  RefundInfo refund = 37;
+  StockRestoration stock_restoration = 38;
+  string message = 39;
+  string canal = 40;                  // WEB | SOCIO
+}
+
+message RefundInfo {
+  string refund_id = 1;
+  string status = 2;                  // PROCESSED
+  double amount = 3;
+  string currency = 4;
+  string message = 5;
+}
+
+message StockRestoration {
+  string status = 1;                  // RESTORED
+  int32 restored_spots = 2;
+  string message = 3;
 }
 
 message GetReservationRequest {

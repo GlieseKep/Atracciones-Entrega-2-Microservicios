@@ -83,8 +83,27 @@ export interface ReservaResponse {
   /** Extensión: código público de la atracción (`atr_codigo`) y su nombre, para enlazar la reserva con su ficha. */
   attraction_id: string;
   attraction_name: string;
-  /** Extensión: `WEB` (página web, cancelable desde la web antes del check-in) o `SOCIO` (Booking, solo la cancela su saga). */
+  /** Extensión: `WEB` (página web) o `SOCIO` (Booking). Las dos se cancelan antes del check-in. */
   canal: 'WEB' | 'SOCIO';
+  /** Extensiones de la cancelación: solo cuando `status = CANCELLED`. */
+  cancel_code?: string;
+  refund?: RefundInfo;
+  stock_restoration?: StockRestoration;
+  message?: string;
+}
+
+export interface RefundInfo {
+  refund_id: string;
+  status: 'PROCESSED';
+  amount: number;
+  currency: 'USD';
+  message: string;
+}
+
+export interface StockRestoration {
+  status: 'RESTORED';
+  restored_spots: number;
+  message: string;
 }
 
 export interface CheckinResponse {

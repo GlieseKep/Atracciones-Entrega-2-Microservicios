@@ -1,5 +1,7 @@
 # Plan · Cancelación sin reembolso (solo reservas web)
 
+> **Reemplazado (cancelación):** la parte de cancelación de este plan la reemplaza `PLAN_CANCELACION_CON_REEMBOLSO.md`. La sección «Corrección: check-in solo el día del turno» sigue vigente.
+
 ## Decisión tomada: opción B
 
 Desde nuestra web (cliente o `ADMIN`) solo se cancelan reservas hechas en la página web. La cancelación de Booking (compensación de su saga, `SAGA_ORCHESTRATOR`, sobre sus reservas `SOCIO`) queda **igual que antes**, como pide el contrato v3.

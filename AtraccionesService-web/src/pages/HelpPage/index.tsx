@@ -17,7 +17,7 @@ const SECTIONS = [
   {
     id: 'cancelacion',
     title: 'Política de cancelación',
-    text: 'Las reservas hechas en nuestra página se pueden cancelar desde el detalle de la reserva hasta antes del check-in. Al cancelar, los cupos se liberan y no se emite reembolso del pago. Las reservas hechas por medio de Booking no se cancelan desde aquí: gestiónalas con Booking.',
+    text: 'Las reservas se pueden cancelar desde el detalle de la reserva hasta antes del check-in, con reembolso del 100 % del total; los cupos se liberan para otros viajeros. Después del check-in no se cancela. No hay reembolsos parciales: si en el check-in llegan menos personas que los boletos, se registra a los asistentes y la reserva queda completada. Si llegan más, la reserva no cambia y los boletos adicionales se compran como una reserva nueva, si quedan cupos en ese turno.',
   },
   {
     id: 'pagos',
