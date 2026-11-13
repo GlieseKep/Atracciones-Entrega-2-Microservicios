@@ -33,14 +33,18 @@ import { useUiStore } from '@/stores/uiStore';
 import type { Reservation } from '@/types/booking';
 import type { OrderDetail } from '@/types/order';
 import { errorMessage } from '@/utils/api';
-import { formatDate, formatDateTime } from '@/utils/dates';
+import { formatDate, formatDateTime, withinCancellationWindow } from '@/utils/dates';
 import { describeTickets, formatMoney, lineAttractionName } from '@/utils/formatters';
 import { paths } from '@/utils/routes';
 import { cancelReasonSchema, type CancelReasonValues } from '@/utils/validation';
 
-/** Cualquier reserva antes del check-in (web o Booking): reembolso del 100 % y los cupos vuelven al turno. */
-const NOT_CANCELLABLE = ['CHECKED_IN', 'COMPLETED', 'CANCELLED', 'EXPIRED'];
-const canCancel = (r: Reservation) => !NOT_CANCELLABLE.includes(r.status);
+/**
+ * Solo reservas `CONFIRMED` (web o Booking), sin check-in y con al menos 24 horas antes del turno: reembolso del 100 % y
+ * los cupos vuelven al turno.
+ */
+const canCancel = (r: Reservation) => r.status === 'CONFIRMED' && withinCancellationWindow(r.date, r.time);
+/** Confirmada, pero ya a menos de 24 horas del turno: en lugar del botón va el aviso. */
+const pastDeadline = (r: Reservation) => r.status === 'CONFIRMED' && !withinCancellationWindow(r.date, r.time);
 const checkedIn = (r: Reservation) => r.status === 'CHECKED_IN' || r.status === 'COMPLETED';
 
 const METHOD_LABEL: Record<string, string> = {
@@ -171,7 +175,7 @@ export default function ReservationDetailPage() {
                   </li>
                 )}
               </ul>
-              {(attractionId || canCancel(r) || checkedIn(r)) && (
+              {(attractionId || canCancel(r) || pastDeadline(r) || checkedIn(r)) && (
                 <div className="mt-6 flex flex-wrap gap-3 border-t border-line pt-5">
                   {attractionId && (
                     <ButtonLink to={paths.attraction(attractionId)} variant="secondary">
@@ -182,6 +186,12 @@ export default function ReservationDetailPage() {
                     <Button variant="danger" onClick={() => setCancelOpen(true)}>
                       Cancelar reserva
                     </Button>
+                  )}
+                  {pastDeadline(r) && (
+                    <Alert className="w-full">
+                      Cancelación no disponible (menos de 24h antes del inicio de la actividad). La política de
+                      cancelación gratuita aplica hasta 24h antes.
+                    </Alert>
                   )}
                   {checkedIn(r) && (
                     <Badge tone="neutral" className="self-center px-3 py-1.5 text-sm">
@@ -402,7 +412,7 @@ function CancelDialog({
       <form onSubmit={submit} noValidate className="space-y-4">
         <p className="text-ink-soft">
           Esta acción no se puede deshacer: se anulará la reserva y se liberarán sus cupos en el turno para otros
-          viajeros. Recibirás el reembolso del 100 % del total.
+          viajeros. Recibirás el reembolso del 100 % del total (se permite hasta 24 horas antes del turno).
         </p>
         <TextArea label="Motivo de la cancelación" error={errors.reason?.message} {...register('reason')} />
         {!!error && <Alert tone="error">{errorMessage(error)}</Alert>}

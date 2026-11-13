@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CalendarDays, ChevronRight, Ticket } from 'lucide-react';
 import { getOrder } from '@/api/orders';
@@ -73,8 +73,11 @@ export function ReservationHistory() {
   );
 }
 
-/** Booking trae el nombre de la atracción; si falta (reservas anteriores), se toma de la orden. */
-function ReservationRow({ reservation: r }: { reservation: Reservation }) {
+/**
+ * Booking trae el nombre de la atracción; si falta (reservas anteriores), se toma de la orden.
+ * Memoizada: en el polling silencioso solo se vuelve a pintar la tarjeta cuya reserva cambió (su badge).
+ */
+const ReservationRow = memo(function ReservationRow({ reservation: r }: { reservation: Reservation }) {
   const order = useAsync((signal) => getOrder(r.external_order_id, signal), [r.external_order_id], !r.attraction_name);
   const line = order.data?.lineas[0];
   const name = r.attraction_name || (line ? lineAttractionName(line.descripcion) : 'Experiencia');
@@ -102,4 +105,4 @@ function ReservationRow({ reservation: r }: { reservation: Reservation }) {
       </Link>
     </li>
   );
-}
+});

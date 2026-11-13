@@ -9,7 +9,7 @@ import { Input } from '@/components/common/Input';
 import { adminReservationStatusLabel, AdminReservationStatusBadge } from '@/components/profile/StatusBadge';
 import { useAuth } from '@/hooks/useAuth';
 import type { BookingNotificationStatus, CheckinResult, Reservation } from '@/types/booking';
-import { formatDate, isCheckinDay } from '@/utils/dates';
+import { canCheckIn, formatDate } from '@/utils/dates';
 import { CheckinForm, checkinMessage } from './CheckinForm';
 
 /** `BarcodeDetector` (Chrome, Edge, Android) todavía no está en los tipos de TypeScript. */
@@ -270,12 +270,12 @@ export default function AdminCheckinPage() {
           </dl>
           {voucher && <p className="mt-3 text-xs text-success">QR leído: se validará la firma del voucher.</p>}
 
-          {reservation.status === 'CONFIRMED' && !result && !isCheckinDay(reservation.date) && (
+          {reservation.status === 'CONFIRMED' && !result && !canCheckIn(reservation.date) && (
             <Alert tone="info" className="mt-4">
-              Esta reserva es para el {formatDate(reservation.date)}: el check-in solo se hace el día del turno.
+              El turno de esta reserva fue el {formatDate(reservation.date)}: ya no se puede hacer el check-in.
             </Alert>
           )}
-          {reservation.status === 'CONFIRMED' && !result && isCheckinDay(reservation.date) && <CheckinForm key={reservation.reservation_id} reservation={reservation} voucher={voucher} onDone={onCheckedIn} />}
+          {reservation.status === 'CONFIRMED' && !result && canCheckIn(reservation.date) &&<CheckinForm key={reservation.reservation_id} reservation={reservation} voucher={voucher} onDone={onCheckedIn} />}
           {reservation.status !== 'CONFIRMED' && !result && (
             <Alert tone="info" className="mt-4">
               Esta reserva está en estado {adminReservationStatusLabel(reservation.status)}: solo una reserva pendiente de asistencia admite el check-in.

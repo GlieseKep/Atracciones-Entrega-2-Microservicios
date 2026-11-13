@@ -73,14 +73,8 @@ export class CheckinService {
     const slot = await this.remote.slot(Number(row.dis_id));
     await this.assertStaff(slot.atraccion_id, principal);
     if (row.est_codigo !== 'CONFIRMED') throw AppError.conflict('RESERVATION_NOT_CONFIRMED', `La reserva está ${row.est_codigo}.`);
-    // Solo el día del turno (fecha de negocio, como en Lifecycle); a cualquier hora de ese día.
-    const today = todayIn();
-    if (slot.fecha !== today) {
-      throw AppError.conflict(
-        'CHECKIN_OUT_OF_DATE',
-        slot.fecha > today ? `El check-in solo se hace el día del turno (${slot.fecha}).` : `El turno de esta reserva ya pasó (${slot.fecha}).`,
-      );
-    }
+    // Antes del turno o el mismo día (fecha de negocio, como en Lifecycle), a cualquier hora; después de la fecha, no.
+    if (slot.fecha < todayIn()) throw AppError.conflict('CHECKIN_OUT_OF_DATE', `El turno de esta reserva ya pasó (${slot.fecha}).`);
     if (input.documento.toUpperCase() !== row.pax_documento) throw AppError.forbidden('El documento no es el del titular.', 'DOCUMENT_MISMATCH');
     if (input.voucher && !verifyVoucher(input.voucher, row.res_uuid, this.secrets.voucher)) throw AppError.forbidden('El código QR no es válido.', 'INVALID_VOUCHER');
     if (input.asistentes !== null && input.asistentes > row.res_numero_tickets) {

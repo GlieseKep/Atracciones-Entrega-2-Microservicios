@@ -6,6 +6,7 @@ import { AvailabilityCalendar } from '@/components/reservation/AvailabilityCalen
 import { AvailabilitySelector } from '@/components/reservation/AvailabilitySelector';
 import { DEFAULT_TICKETS, TicketSelector } from '@/components/reservation/TicketSelector';
 import { slotTime, toCheckoutQuery } from '@/features/attractions/checkoutQuery';
+import { slotUnavailable } from '@/features/attractions/slots';
 import { useAuth } from '@/hooks/useAuth';
 import { useUiStore } from '@/stores/uiStore';
 import type { AttractionDetail, TimeSlot } from '@/types/attraction';
@@ -83,7 +84,14 @@ export function BookingCard({ attraction }: { attraction: AttractionDetail }) {
       {date && (
         <div className="fade-in mt-5">
           <p className="mb-2 font-bold">Elige un horario</p>
-          <AvailabilitySelector attractionId={attraction.id} date={date} quantity={quantity} value={slot?.slot_id ?? ''} onChange={setSlot} />
+          <AvailabilitySelector
+            attractionId={attraction.id}
+            date={date}
+            quantity={quantity}
+            value={slot?.slot_id ?? ''}
+            onChange={setSlot}
+            onSelectedSlotUpdate={setSlot}
+          />
         </div>
       )}
 
@@ -97,7 +105,7 @@ export function BookingCard({ attraction }: { attraction: AttractionDetail }) {
         </div>
       )}
 
-      <Button className="mt-5" size="lg" fullWidth disabled={!slot || slot.available_slots < quantity} onClick={proceed}>
+      <Button className="mt-5" size="lg" fullWidth disabled={!slot || slotUnavailable(slot, quantity)} onClick={proceed}>
         Continuar con la compra
       </Button>
 

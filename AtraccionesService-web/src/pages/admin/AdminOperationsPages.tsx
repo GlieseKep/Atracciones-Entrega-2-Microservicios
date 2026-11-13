@@ -13,7 +13,7 @@ import { useUiStore } from '@/stores/uiStore';
 import type { Payment, PaymentState } from '@/types/admin';
 import type { BookingNotificationStatus, CheckinResult, PaymentMethodCode, Reservation, ReservationStatus } from '@/types/booking';
 import { errorMessage } from '@/utils/api';
-import { formatDate, formatDateTime, isCheckinDay } from '@/utils/dates';
+import { canCheckIn, formatDate, formatDateTime, withinCancellationWindow } from '@/utils/dates';
 import { describeTickets, formatMoney } from '@/utils/formatters';
 import { paths } from '@/utils/routes';
 import { AdminTable, Sub, type Column } from './AdminTable';
@@ -41,8 +41,9 @@ const METHOD_LABEL: Record<PaymentMethodCode, string> = { CREDIT_CARD: 'Tarjeta 
 const NOTICE_REFRESH_MS = 4000;
 
 /**
- * Reservas de Booking (todas, rol ADMIN). Cualquiera se cancela aquí antes del check-in (reembolso del 100 % y cupos de vuelta);
- * el check-in solo se confirma el día del turno.
+ * Reservas de Booking (todas, rol ADMIN). Las `CONFIRMED` se cancelan aquí hasta 24 horas antes del turno (reembolso del
+ * 100 % y cupos de vuelta);
+ * el check-in se confirma antes del turno o el mismo día, nunca después.
  */
 export function AdminReservationsPage() {
   const notify = useUiStore((s) => s.notify);
@@ -113,12 +114,12 @@ export function AdminReservationsPage() {
       align: 'right',
       cell: (r) => (
         <span className="inline-flex flex-wrap justify-end gap-2">
-          {r.status === 'CONFIRMED' && isCheckinDay(r.date) && (
+          {r.status === 'CONFIRMED' && canCheckIn(r.date) && (
             <Button size="sm" onClick={() => setCheckingIn(r)}>
               Confirmar Asistencia
             </Button>
           )}
-          {(r.status === 'PENDING' || r.status === 'CONFIRMED') && (
+          {r.status === 'CONFIRMED' && withinCancellationWindow(r.date, r.time) && (
             <Button size="sm" variant="danger" onClick={() => setCancelling(r)}>
               Cancelar
             </Button>

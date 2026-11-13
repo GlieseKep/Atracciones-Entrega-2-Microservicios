@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-export type BadgeTone = 'neutral' | 'brand' | 'success' | 'warning' | 'danger' | 'overlay';
+export type BadgeTone = 'neutral' | 'brand' | 'success' | 'warning' | 'danger' | 'cancelled' | 'overlay';
 
 const tones: Record<BadgeTone, string> = {
   neutral: 'bg-surface text-ink',
@@ -8,12 +8,14 @@ const tones: Record<BadgeTone, string> = {
   success: 'bg-[#E3F1EA] text-success',
   warning: 'bg-[#FBF0DD] text-[#7A5418]',
   danger: 'bg-[#F8E1E3] text-danger',
+  /** Reservas canceladas o vencidas. */
+  cancelled: 'bg-[#FEE2E2] text-[#b91c1c]',
   overlay: 'bg-white text-ink shadow-card',
 };
 
 export function Badge({ tone = 'neutral', children, className = '' }: { tone?: BadgeTone; children: ReactNode; className?: string }) {
   return (
-    <span className={`inline-flex items-center gap-1 rounded-sm px-2 py-0.5 text-xs font-semibold ${tones[tone]} ${className}`}>
+    <span className={`inline-flex items-center gap-1 rounded-sm px-2 py-0.5 text-xs font-semibold transition-colors duration-300 ${tones[tone]} ${className}`}>
       {children}
     </span>
   );

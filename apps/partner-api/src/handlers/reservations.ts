@@ -63,7 +63,7 @@ export function reservationHandlers(esb: EsbClient, logger: Logger) {
       }, { idempotencyKey: key }));
     },
 
-    /** POST /reservas/{id}/checkin: identidad, voucher y fecha (solo el día del turno) los valida Booking (idempotente por cabecera). */
+    /** POST /reservas/{id}/checkin: identidad, voucher y fecha (hasta el día del turno) los valida Booking (idempotente por cabecera). */
     async checkIn(req: Request, res: Response) {
       const body = (req.body ?? {}) as Record<string, unknown>;
       const text = (value: unknown) => (typeof value === 'string' ? value : '');

@@ -14,7 +14,7 @@ export const FAQ = [
   },
   {
     q: '¿Puedo cancelar mi reserva?',
-    a: 'Sí, desde el detalle de la reserva en “Mi cuenta”, en cualquier momento antes del check-in. Recibes el reembolso del 100 % del total y los cupos se liberan para otros viajeros. Después del check-in el servicio ya inició y no se puede cancelar.',
+    a: 'Sí, desde el detalle de la reserva en “Mi cuenta”, cuando ya está confirmada y hasta 24 horas antes del inicio del turno (fecha y hora de la actividad). Recibes el reembolso del 100 % del total y los cupos se liberan para otros viajeros. Después del check-in el servicio ya inició y no se puede cancelar.',
   },
   {
     q: '¿Recibo factura?',

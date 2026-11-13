@@ -186,12 +186,4 @@ export class ReservationRepository {
   byState(state: ReservationState, olderThanMinutes: number): Promise<ReservationRow[]> {
     return this.db.query(`${SELECT} WHERE e.est_codigo = $1 AND r.res_creado_en < now() - make_interval(mins => $2) ORDER BY r.res_id LIMIT 200`, [state, olderThanMinutes]);
   }
-
-  /** `CHECKED_IN` de días anteriores en la zona del negocio. */
-  checkedInBefore(today: string, timeZone: string): Promise<ReservationRow[]> {
-    return this.db.query(
-      `${SELECT} WHERE e.est_codigo = 'CHECKED_IN' AND (r.res_checkin_en AT TIME ZONE $2)::date < $1::date ORDER BY r.res_id LIMIT 200`,
-      [today, timeZone],
-    );
-  }
 }

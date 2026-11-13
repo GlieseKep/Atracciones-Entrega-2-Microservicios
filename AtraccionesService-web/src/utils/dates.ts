@@ -29,8 +29,28 @@ export const today = (): IsoDate => toIsoDate(new Date());
 export const todayInEcuador = (): IsoDate =>
   new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Guayaquil', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
 
-/** El check-in solo se hace el día del turno. */
-export const isCheckinDay = (value: IsoDate) => value === todayInEcuador();
+/** El check-in se hace antes del turno o el mismo día; después de la fecha del turno, no. */
+export const canCheckIn = (value: IsoDate) => value >= todayInEcuador();
+
+/**
+ * Inicio del turno: fecha `YYYY-MM-DD` y hora (`10:30 a.m.` como la devuelve Booking, o `HH:mm`) en Ecuador, que es UTC-5
+ * todo el año. `null` si la hora no se entiende.
+ */
+export function slotStart(date: IsoDate, time: string): Date | null {
+  const match = /^(\d{1,2}):(\d{2})(?::\d{2})?\s*([ap])?\.?\s*m?\.?$/i.exec(time.trim());
+  if (!match) return null;
+  let hour = Number(match[1]) % (match[3] ? 12 : 24);
+  if (match[3]?.toLowerCase() === 'p') hour += 12;
+  const start = new Date(`${date}T${String(hour).padStart(2, '0')}:${match[2]}:00-05:00`);
+  return Number.isNaN(start.getTime()) ? null : start;
+}
+
+/** Cancelación con reembolso del 100 %: hasta 24 horas antes del inicio del turno (la regla la impone Booking). */
+export const CANCELLATION_DEADLINE_HOURS = 24;
+export function withinCancellationWindow(date: IsoDate, time: string, now = new Date()): boolean {
+  const start = slotStart(date, time);
+  return !!start && start.getTime() - now.getTime() >= CANCELLATION_DEADLINE_HOURS * 3_600_000;
+}
 
 export function addDays(value: IsoDate, days: number): IsoDate {
   const date = parseIsoDate(value);

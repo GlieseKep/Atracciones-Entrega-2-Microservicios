@@ -11,7 +11,8 @@ const CHECKIN_MESSAGES: Record<string, string> = {
   DOCUMENT_MISMATCH: 'El documento no coincide con el del titular de la reserva.',
   INVALID_VOUCHER: 'El código QR no es válido para esta reserva.',
   RESERVATION_NOT_CONFIRMED: 'La reserva no está confirmada: no se puede hacer el check-in.',
-  CHECKIN_OUT_OF_WINDOW: 'El check-in solo se puede hacer el día de la actividad.',
+  CHECKIN_OUT_OF_WINDOW: 'El turno de esta reserva ya pasó: no se puede hacer el check-in.',
+  CHECKIN_OUT_OF_DATE: 'El turno de esta reserva ya pasó: no se puede hacer el check-in.',
   RESERVATION_NOT_FOUND: 'No existe una reserva con ese código.',
 };
 

@@ -17,7 +17,7 @@ const SECTIONS = [
   {
     id: 'cancelacion',
     title: 'Política de cancelación',
-    text: 'Las reservas se pueden cancelar desde el detalle de la reserva hasta antes del check-in, con reembolso del 100 % del total; los cupos se liberan para otros viajeros. Después del check-in no se cancela. No hay reembolsos parciales: si en el check-in llegan menos personas que los boletos, se registra a los asistentes y la reserva queda completada. Si llegan más, la reserva no cambia y los boletos adicionales se compran como una reserva nueva, si quedan cupos en ese turno.',
+    text: 'Las reservas se pueden cancelar desde el detalle de la reserva cuando ya están confirmadas y hasta 24 horas antes del inicio del turno (fecha y hora de la actividad), con reembolso del 100 % del total; los cupos se liberan para otros viajeros. Con menos de 24 horas, o después del check-in, ya no se cancelan. No hay reembolsos parciales: si en el check-in llegan menos personas que los boletos, se registra a los asistentes y la reserva queda completada. Si llegan más, la reserva no cambia y los boletos adicionales se compran como una reserva nueva, si quedan cupos en ese turno.',
   },
   {
     id: 'pagos',

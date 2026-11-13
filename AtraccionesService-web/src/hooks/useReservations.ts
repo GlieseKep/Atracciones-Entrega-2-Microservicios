@@ -1,9 +1,10 @@
 import { useCallback, useRef, useState } from 'react';
 import { cancelReservation, createReservation, listMyReservations } from '@/api/bookings';
-import type { CreateReservationRequest, Reservation, ReservationStatus } from '@/types/booking';
+import type { CreateReservationRequest, Reservation, ReservationPage, ReservationStatus } from '@/types/booking';
 import { isApiError } from '@/utils/api';
+import { mergeById } from '@/utils/diff';
 import { IdempotencyKeyManager } from '@/utils/idempotency';
-import { useAsync } from './useAsync';
+import { usePolling } from './usePolling';
 
 /** Ejecuta una mutación conservando el Idempotency-Key mientras se reintenta el mismo payload. */
 export function useIdempotentMutation<TPayload, TResult>(
@@ -49,6 +50,21 @@ export function useCancelReservation(reservationId: string) {
   );
 }
 
+/** Mis Reservas se consulta en segundo plano cada 5 s (check-in presencial, cancelaciones). */
+const RESERVATIONS_POLL_MS = 5000;
+
+/**
+ * Las reservas que cambiaron se reemplazan; las demás conservan su objeto. Las que ya no coinciden con el filtro
+ * (p. ej. una confirmada que se canceló) se quedan visibles con su estado nuevo hasta la próxima carga normal.
+ */
+function mergeReservationPage(prev: ReservationPage, next: ReservationPage): ReservationPage {
+  const items = mergeById(prev.items, next.items, (r) => r.reservation_id, { keepMissing: true });
+  return items === prev.items && prev.total_results === next.total_results ? prev : { ...next, items };
+}
+
 export function useMyReservations(params: { estado?: ReservationStatus; page: number; limit: number }) {
-  return useAsync((signal) => listMyReservations(params, signal), [JSON.stringify(params)]);
+  return usePolling((signal) => listMyReservations(params, signal), [JSON.stringify(params)], {
+    intervalMs: RESERVATIONS_POLL_MS,
+    merge: mergeReservationPage,
+  });
 }

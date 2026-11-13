@@ -15,11 +15,13 @@ import { AvailabilityCalendar } from '@/components/reservation/AvailabilityCalen
 import { AvailabilitySelector } from '@/components/reservation/AvailabilitySelector';
 import { TicketSelector } from '@/components/reservation/TicketSelector';
 import { parseCheckoutQuery, slotTime, toCheckoutQuery } from '@/features/attractions/checkoutQuery';
+import { slotUnavailable } from '@/features/attractions/slots';
 import { useAsync } from '@/hooks/useAsync';
 import { useAttraction } from '@/hooks/useAttractions';
 import { useAuth } from '@/hooks/useAuth';
 import { useCreateReservation } from '@/hooks/useReservations';
 import { useUiStore } from '@/stores/uiStore';
+import type { TimeSlot } from '@/types/attraction';
 import type { TicketCounts } from '@/types/booking';
 import type { User } from '@/types/identity';
 import type { CouponValidation, PaymentMethodInfo } from '@/types/payment';
@@ -66,6 +68,8 @@ export default function CheckoutPage() {
   const [tickets, setTickets] = useState<TicketCounts>(initial.tickets);
   const [slot, setSlot] = useState(initial.slotId ? { slotId: initial.slotId, time: initial.time } : null);
   const [availabilityKey, setAvailabilityKey] = useState(0);
+  /** Cupos en vivo del turno elegido (polling silencioso del selector). */
+  const [slotLive, setSlotLive] = useState<TimeSlot | null>(null);
   const [method, setMethod] = useState<PaymentMethodInfo | null>(null);
   const [couponCode, setCouponCode] = useState('');
   const [coupon, setCoupon] = useState<CouponValidation | null>(null);
@@ -89,6 +93,7 @@ export default function CheckoutPage() {
   const a = attraction.data;
   const quantity = ticketTotal(tickets);
   const subtotal = estimateTotal(a.price, tickets);
+  const slotBlocked = !!slot && slotLive?.slot_id === slot.slotId && slotUnavailable(slotLive, quantity);
 
   /** Mantiene la selección en la URL para poder recargar o compartir el paso. */
   const select = (next: { date?: string; tickets?: TicketCounts; slot?: { slotId: string; time: string } | null }) => {
@@ -121,6 +126,7 @@ export default function CheckoutPage() {
   const submit = customer.handleSubmit(async (values) => {
     setFormError('');
     if (!date || !slot) return setFormError('Elige la fecha y el horario de la actividad.');
+    if (slotBlocked) return setFormError('El horario elegido ya no tiene cupos suficientes. Elige otro horario para continuar.');
     if (!method) return setFormError('Elige un método de pago.');
     if (!acceptPolicy) return setFormError('Debes aceptar la política de cancelación y los términos de uso.');
     let tarjeta;
@@ -183,6 +189,7 @@ export default function CheckoutPage() {
                   onChange={(d) => {
                     setDate(d);
                     setSlot(null);
+                    setSlotLive(null);
                     select({ date: d, slot: null });
                   }}
                 />
@@ -208,8 +215,10 @@ export default function CheckoutPage() {
                     onChange={(s) => {
                       const next = { slotId: s.slot_id, time: slotTime(s) };
                       setSlot(next);
+                      setSlotLive(s);
                       select({ slot: next });
                     }}
+                    onSelectedSlotUpdate={setSlotLive}
                   />
                 </div>
               </div>
@@ -319,12 +328,15 @@ export default function CheckoutPage() {
 
           {formError && <Alert tone="error">{formError}</Alert>}
           {!!purchase.error && <Alert tone="error">{errorMessage(purchase.error)}</Alert>}
+          {slotBlocked && (
+            <Alert tone="error">El horario elegido se agotó o ya no tiene cupos suficientes. Elige otro horario para continuar.</Alert>
+          )}
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="flex items-center gap-2 text-sm text-ink-soft">
               <ShieldCheck size={18} className="text-success" aria-hidden="true" /> Orden, cupos y pago se confirman juntos: si algo falla, no se cobra.
             </p>
-            <Button type="submit" size="lg" loading={purchase.pending}>
+            <Button type="submit" size="lg" loading={purchase.pending} disabled={slotBlocked}>
               Pagar y confirmar
             </Button>
           </div>

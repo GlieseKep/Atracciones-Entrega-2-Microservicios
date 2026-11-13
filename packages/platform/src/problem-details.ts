@@ -27,6 +27,7 @@ const TITLES_BY_CODE: Record<string, string> = {
   FORBIDDEN: 'Acceso Prohibido',
   INSUFFICIENT_SCOPE: 'Acceso Prohibido',
   RESERVATION_NOT_CANCELLABLE: 'Cancelación No Permitida',
+  CANCELLATION_DEADLINE_PASSED: 'Cancelación Fuera de Plazo',
 };
 const TITLES_BY_STATUS: Record<number, string> = {
   400: 'Solicitud inválida',

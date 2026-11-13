@@ -1,4 +1,4 @@
-import { AppError, hasRole, requirePrincipal, type Principal } from '@atracciones/platform';
+import { AppError, hasRole, requirePrincipal, zonedToUtc, type Principal } from '@atracciones/platform';
 import type { ReservaResponse, Solicitante } from '../contract';
 import type { IdempotencyRepository, IdempotencySubject } from '../persistence/idempotency-repository';
 import type { ReservationRepository, ReservationRow } from '../persistence/reservation-repository';
@@ -9,12 +9,17 @@ import { simulatedRefundId } from './reservation-mapper';
 import type { ReservationService } from './reservation-service';
 
 const DEFAULT_REASON = 'Cancelación de la reserva';
+/** Plazo de la cancelación con reembolso del 100 %: hasta 24 horas antes del inicio del turno (fecha + hora, en Ecuador). */
+const CANCELLATION_DEADLINE_HOURS = 24;
 
 /** Reembolso simulado del 100 % del total, cuando no hubo un reembolso real por Refund. */
 const simulatedRefund = (row: ReservationRow): Refund => ({ reembolso_id: simulatedRefundId(row), monto_reembolsado: Number(row.res_precio_total) });
 
 /**
- * Cancela cualquier reserva antes del check-in, sea de la web (`WEB`) o de Booking (`SOCIO`), con reembolso del 100 %:
+ * Cancela reservas `CONFIRMED` (sin check-in), sea de la web (`WEB`) o de Booking (`SOCIO`), con reembolso del 100 %. El
+ * cliente y el `ADMIN` solo con al menos 24 horas de anticipación al turno; la compensación de la saga (`SAGA_ORCHESTRATOR`)
+ * no tiene plazo. Una `PENDING` (pago sin confirmar) no se cancela: se resuelve con el evento del pago o con `Lifecycle`.
+ * Reembolso, según el canal:
  * - `SOCIO`: reembolso real por Refund si hay pago aprobado; si no, se cancela la orden y el reembolso es simulado.
  * - `WEB`: reembolso simulado (`REF-ATR-<código>`); se cancela la orden si sigue sin pagar (una pagada queda pagada).
  * En los dos casos los cupos vuelven al turno. Cada paso es idempotente: un reintento no devuelve ni reintegra dos veces.
@@ -39,12 +44,28 @@ export class CancellationFlow {
     if (solicitante === 'SAGA_ORCHESTRATOR' && principal.tipo !== 'API_CLIENTE') throw AppError.forbidden('Solo un socio puede cancelar por saga.');
   }
 
+  /** Solo `CONFIRMED`: con check-in ya no se cancela y una `PENDING` todavía no tiene pago confirmado. */
   private assertBeforeCheckin(row: ReservationRow): void {
-    if (row.est_codigo === 'PENDING' || row.est_codigo === 'CONFIRMED') return;
+    if (row.est_codigo === 'CONFIRMED') return;
     if (row.est_codigo === 'CHECKED_IN' || row.est_codigo === 'COMPLETED') {
       throw AppError.conflict('RESERVATION_NOT_CANCELLABLE', 'No se puede cancelar una reserva que ya realizó check-in o fue asistida.');
     }
+    if (row.est_codigo === 'PENDING') {
+      throw AppError.conflict('RESERVATION_NOT_CANCELLABLE', 'La reserva aún no está confirmada (pago pendiente); no se puede cancelar.');
+    }
     throw AppError.conflict('RESERVATION_NOT_CANCELLABLE', `La reserva está ${row.est_codigo}.`);
+  }
+
+  /** Cliente y `ADMIN`: al menos 24 horas antes del inicio del turno. La compensación de la saga de Booking no tiene plazo. */
+  private async assertDeadline(row: ReservationRow, solicitante: Solicitante): Promise<void> {
+    if (solicitante === 'SAGA_ORCHESTRATOR') return;
+    const slot = await this.remote.slot(Number(row.dis_id));
+    const start = zonedToUtc(slot.fecha, slot.hora.slice(0, 5));
+    if (start.getTime() - Date.now() >= CANCELLATION_DEADLINE_HOURS * 3_600_000) return;
+    throw AppError.conflict(
+      'CANCELLATION_DEADLINE_PASSED',
+      'La cancelación y reembolso solo están permitidos con al menos 24 horas de anticipación al horario reservado.',
+    );
   }
 
   /** Web: una orden ya pagada no se cancela; queda pagada y el reembolso es simulado. */
@@ -71,6 +92,7 @@ export class CancellationFlow {
     this.assertRequester(solicitante, principal);
     if (row.est_codigo === 'CANCELLED') return this.service.present(row);
     this.assertBeforeCheckin(row);
+    await this.assertDeadline(row, solicitante);
 
     let refund: Refund | null = null;
     if (row.res_canal === 'SOCIO') refund = await this.refundOrCancelOrder(row, reason);
@@ -79,7 +101,7 @@ export class CancellationFlow {
     const seats = await this.remote.releaseSeats(seatKey(row.ord_numero));
     const updated = await this.reservations.transition(
       row.res_id,
-      ['PENDING', 'CONFIRMED'],
+      ['CONFIRMED'],
       'CANCELLED',
       {
         res_motivo_cancelacion: reason.slice(0, 255),

@@ -7,8 +7,8 @@ const RESERVATION: Record<string, [string, BadgeTone]> = {
   CONFIRMED: ['Confirmada', 'success'],
   CHECKED_IN: ['Check-in hecho', 'success'],
   COMPLETED: ['Completada', 'neutral'],
-  CANCELLED: ['Cancelada', 'danger'],
-  EXPIRED: ['Vencida', 'danger'],
+  CANCELLED: ['Cancelada', 'cancelled'],
+  EXPIRED: ['Vencida', 'cancelled'],
 };
 
 const ORDER: Record<string, [string, BadgeTone]> = {

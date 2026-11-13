@@ -1,4 +1,4 @@
-import { AppError, BUSINESS_TIME_ZONE, errorFields, todayIn, type Logger } from '@atracciones/platform';
+import { AppError, errorFields, todayIn, type Logger } from '@atracciones/platform';
 import type { IdempotencyRepository } from '../persistence/idempotency-repository';
 import type { ReservationRepository, ReservationRow } from '../persistence/reservation-repository';
 import { reservationEvent, stockEvent } from './purchase-flow';
@@ -45,14 +45,24 @@ export class Lifecycle {
     }
   }
 
+  /** `CHECKED_IN` cuyo turno ya pasó: el check-in puede ser anterior al día del turno, así que cuenta la fecha del turno. */
+  private async completeCheckedIn(): Promise<void> {
+    const rows = await this.reservations.byState('CHECKED_IN', 0);
+    if (rows.length === 0) return;
+    const today = todayIn();
+    const slots = await this.remote.slots(rows.map((row) => Number(row.dis_id)));
+    const past = new Set(slots.filter((slot) => slot.fecha < today).map((slot) => slot.dis_id));
+    for (const row of rows) {
+      if (past.has(Number(row.dis_id))) await this.reservations.transition(row.res_id, ['CHECKED_IN'], 'COMPLETED', {}, () => []);
+    }
+  }
+
   private async run(): Promise<void> {
     try {
       await this.idempotency.purgeExpired();
       for (const row of await this.reservations.byState('PENDING', PENDING_MINUTES)) await this.expirePending(row);
       await this.expireNoShows();
-      for (const row of await this.reservations.checkedInBefore(todayIn(), BUSINESS_TIME_ZONE)) {
-        await this.reservations.transition(row.res_id, ['CHECKED_IN'], 'COMPLETED', {}, () => []);
-      }
+      await this.completeCheckedIn();
     } catch (error) {
       this.logger.error('no se pudieron actualizar los estados de las reservas', errorFields(error));
     }

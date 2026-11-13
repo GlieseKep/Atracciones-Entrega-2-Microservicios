@@ -14,9 +14,9 @@ Una compra de Booking Prototipo responde `CONFIRMED`. Una del portal responde `P
 
 ## Cancelación
 
-Solo antes del check-in (`PENDING` o `CONFIRMED`).
+Solo `CONFIRMED`. Una `PENDING` (pago sin confirmar) responde `409 RESERVATION_NOT_CANCELLABLE`: se resuelve con el evento del pago o la expira `Lifecycle`.
 
-Cualquier canal: la cancelan el cliente dueño, un `ADMIN` o la saga de Booking (`SAGA_ORCHESTRATOR`). En `CHECKED_IN`/`COMPLETED` responde `409 RESERVATION_NOT_CANCELLABLE` («Cancelación No Permitida»); una ya cancelada se devuelve tal cual (sin liberar cupos otra vez).
+Cualquier canal: la cancelan el cliente dueño, un `ADMIN` o la saga de Booking (`SAGA_ORCHESTRATOR`). En `CHECKED_IN`/`COMPLETED` responde `409 RESERVATION_NOT_CANCELLABLE` («Cancelación No Permitida»). El cliente y el `ADMIN` solo cancelan con al menos 24 horas de anticipación al inicio del turno (fecha + hora en `America/Guayaquil`); si no, `409 CANCELLATION_DEADLINE_PASSED` («Cancelación Fuera de Plazo»). La compensación de la saga no tiene plazo; una ya cancelada se devuelve tal cual (sin liberar cupos otra vez).
 
 - **Reembolso del 100 %:** en reservas de Booking (`SOCIO`) con pago aprobado, reembolso real por Refund. En las demás, reembolso simulado `REF-ATR-<reservation_code>` por el total; la orden se cancela si sigue sin pagar (una pagada queda pagada).
 - **Stock:** los boletos vuelven al turno en Inventory (`ReleaseSeats`, una sola vez) y se publica `STOCK_ACTUALIZADO`.
@@ -24,11 +24,11 @@ Cualquier canal: la cancelan el cliente dueño, un `ADMIN` o la saga de Booking 
 
 ## Check-in
 
-Solo el día del turno (fecha de negocio, `America/Guayaquil`), a cualquier hora de ese día. Otro día responde `409 CHECKIN_OUT_OF_DATE`.
+Antes del turno o el mismo día (fecha de negocio, `America/Guayaquil`), a cualquier hora. Después de la fecha del turno responde `409 CHECKIN_OUT_OF_DATE`.
 
 ## Estados automáticos
 
-Cada 5 minutos: `PENDING` de más de 30 minutos y `CONFIRMED` sin check-in con fecha pasada pasan a `EXPIRED`; `CHECKED_IN` de días anteriores, a `COMPLETED`.
+Cada 5 minutos: `PENDING` de más de 30 minutos y `CONFIRMED` sin check-in con fecha pasada pasan a `EXPIRED`; `CHECKED_IN` cuyo turno ya pasó (por la fecha del turno, no la del check-in), a `COMPLETED`.
 
 ## Reglas
 

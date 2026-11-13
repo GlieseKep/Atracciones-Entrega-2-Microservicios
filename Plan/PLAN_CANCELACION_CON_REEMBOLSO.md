@@ -1,5 +1,7 @@
 # Plan · Cancelación con reembolso simulado y restitución de stock
 
+> **Ampliación:** el plazo de 24 horas y la regla «solo `CONFIRMED`» están en `PLAN_CANCELACION_PLAZO_24H.md`.
+
 Reemplaza la «opción B» de `PLAN_CANCELACION_SIN_REEMBOLSO.md` en la parte de la cancelación. La parte de **check-in solo el día del turno** de ese plan sigue vigente y no se toca.
 
 No se cambian tablas, esquemas, puertos gRPC ni endpoints existentes. Solo se **agregan** campos a la respuesta de la cancelación (el contrato v3 no prohíbe propiedades extra en `ReservaConfirmadaResponseV2`) y un alias de ruta.
