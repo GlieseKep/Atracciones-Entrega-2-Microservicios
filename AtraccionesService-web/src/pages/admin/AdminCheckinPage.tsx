@@ -8,9 +8,13 @@ import { Alert } from '@/components/common/Feedback';
 import { Input } from '@/components/common/Input';
 import { adminReservationStatusLabel, AdminReservationStatusBadge } from '@/components/profile/StatusBadge';
 import { useAuth } from '@/hooks/useAuth';
+import { usePolling } from '@/hooks/usePolling';
 import type { BookingNotificationStatus, CheckinResult, Reservation } from '@/types/booking';
 import { canCheckIn, formatDate } from '@/utils/dates';
 import { CheckinForm, checkinMessage } from './CheckinForm';
+
+/** La reserva elegida se consulta en segundo plano cada 5 s. */
+const RESERVATION_POLL_MS = 5000;
 
 /** `BarcodeDetector` (Chrome, Edge, Android) todavía no está en los tipos de TypeScript. */
 interface DetectedBarcode {
@@ -112,6 +116,23 @@ export default function AdminCheckinPage() {
   const [matches, setMatches] = useState<Reservation[]>([]);
   const [refreshError, setRefreshError] = useState<string | null>(null);
   const [result, setResult] = useState<CheckinResult | null>(null);
+
+  // La reserva elegida se vuelve a leer en segundo plano (p. ej. Booking la cancela, o el aviso a Booking ya se envió).
+  // Solo se reemplaza si cambió lo que decide el formulario y el aviso; el formulario no se desmonta mientras siga CONFIRMED.
+  const reservationId = reservation?.reservation_id;
+  const live = usePolling((signal) => getReservation(reservationId!, signal), [reservationId], {
+    intervalMs: RESERVATION_POLL_MS,
+    enabled: !!reservationId,
+  });
+  useEffect(() => {
+    const next = live.status === 'success' ? live.data : undefined;
+    if (!next) return;
+    setReservation((current) =>
+      current && current.reservation_id === next.reservation_id && (current.status !== next.status || current.notificacion_booking !== next.notificacion_booking)
+        ? next
+        : current,
+    );
+  }, [live.status, live.data]);
 
   function select(found: Reservation, scannedVoucher: string | null) {
     setReservation(found);

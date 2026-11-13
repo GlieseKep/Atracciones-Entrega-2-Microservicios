@@ -70,6 +70,41 @@ Con eso, `React.memo` en la fila o el turno hace que solo se vuelva a pintar el 
 - **`BookingCard`**: con `onSelectedSlotUpdate` actualiza su copia de `slot`. «Continuar» se habilita o deshabilita según los cupos en vivo. La fecha, los boletos y el calendario no cambian.
 - **`CheckoutPage`**: guarda los cupos en vivo del turno elegido (`slotLive`) y deshabilita «Pagar» con un aviso si el turno se agota o ya no alcanza. Los datos del titular, la tarjeta y el cupón (react-hook-form) no se tocan: el selector se vuelve a renderizar por su cuenta y su `key={availabilityKey}` solo cambia ante un `409` de pago, como hoy.
 
+### 6. Panel de administración (ampliación)
+
+**Situación actual.** Todas las tablas del panel usan `AdminTable` (`src/pages/admin/AdminTable.tsx`, 19 pantallas), que carga
+con `useAsync` y solo recarga al cambiar la página, los filtros o `reloadKey`. Una cancelación hecha desde Booking (o desde
+otra sesión) no aparece hasta salir y volver a entrar. `AdminReservationsPage` además programa una recarga única a los 4 s
+(`NOTICE_REFRESH_MS`) para ver si el aviso a Booking ya se envió. `AdminCheckinPage` muestra una reserva buscada y no la
+vuelve a consultar.
+
+**Cambios.**
+
+- **`AdminTable`**: prop opcional `pollMs?: number` y `rowEqual?: (a: T, b: T) => boolean`. Con `pollMs`, la tabla usa
+  `usePolling` en lugar de `useAsync`; sin ella, todo sigue igual en las demás pantallas.
+  - Primera carga y cambios de página, búsqueda, filtros o `reloadKey`: carga normal, como hoy (skeleton o tabla al 60 %).
+  - Consultas de fondo: silenciosas, sin opacidad ni skeleton; un fallo se ignora y se conserva la última tabla.
+  - `merge` con `mergeById(rowKey, rowEqual)`: si nada cambió, no se vuelve a pintar. Las filas se separan en un `AdminRow`
+    memoizado, así solo se repinta la fila que cambió; el `Badge` ya tiene `transition-colors`.
+  - Se actualiza también el total de resultados.
+  - Si cambia la página mientras corre una consulta de fondo, esa consulta se cancela (ya lo hace `usePolling`).
+- **`AdminReservationsPage`** (Reservas): `pollMs = 5000` y `rowEqual` por `status`, `notificacion_booking` y `guia_asignado`.
+  - Se quita la recarga de 4 s (`NOTICE_REFRESH_MS` y `noticeTimer`): el polling ya muestra cuando el aviso pasa a «Enviado».
+  - Los botones «Confirmar Asistencia» y «Cancelar» dependen de `status`, así que desaparecen solos si Booking cancela.
+  - Si un modal de check-in o cancelación está abierto y la reserva cambia, el modal no se cierra; el backend responde `409`
+    y se muestra el error que ya existe («La reserva no está confirmada…»).
+- **`AdminCheckinPage`** (página de check-in): con una reserva elegida, se vuelve a consultar en segundo plano cada 5 s
+  (`getReservation`, el mismo que ya usa «Actualizar aviso»). Si cambian `status` o `notificacion_booking`, se actualiza la
+  reserva mostrada; si no, no se vuelve a pintar.
+  - Si Booking la cancela, el formulario se reemplaza por el aviso que ya existe («Esta reserva está en estado Cancelada…»).
+  - Mientras siga `CONFIRMED`, el formulario no se desmonta (`key` por `reservation_id`): lo escrito no se pierde.
+  - Después de un check-in, el aviso a Booking pasa a «Enviado» solo; el botón «Actualizar aviso» se mantiene.
+  - Un fallo de fondo se ignora; al buscar otra reserva o limpiar la búsqueda, el polling se detiene o cambia de reserva.
+- **`usePolling`**: `intervalMs` en `0` desactiva las consultas de fondo (se comporta como `useAsync`), para que
+  `AdminTable` use un solo hook con o sin `pollMs`.
+- **Filtro de estado**: ver la decisión 7.
+- **Alcance en el panel**: ver la decisión 8.
+
 ## Archivos
 
 | Archivo | Cambio |
@@ -85,6 +120,10 @@ Con eso, `React.memo` en la fila o el turno hace que solo se vuelva a pintar el 
 | `src/components/reservation/AvailabilitySelector/index.tsx` | Skeleton solo en la primera carga, `SlotOption` memoizado, AGOTADO al llegar a 0, `onSelectedSlotUpdate` |
 | `src/components/attractions/BookingCard.tsx` | Sincroniza el turno elegido |
 | `src/pages/CheckoutPage/index.tsx` | Cupos en vivo del turno elegido y bloqueo de «Pagar» si se agota |
+| `src/pages/admin/AdminTable.tsx` | `pollMs` y `rowEqual` opcionales, `usePolling` con `mergeById`, `AdminRow` memoizado (ampliación) |
+| `src/pages/admin/AdminOperationsPages.tsx` | Reservas con polling de 5 s; se quita la recarga única de 4 s (ampliación) |
+| `src/pages/admin/AdminCheckinPage.tsx` | La reserva elegida se consulta cada 5 s (ampliación) |
+| `src/hooks/usePolling.ts` | `intervalMs = 0` sin consultas de fondo (ampliación) |
 
 Verificación: `tsc` y una prueba en el navegador real con dos sesiones (una reserva o cancela y la otra ve el cambio). Sin pruebas automatizadas.
 
@@ -96,3 +135,7 @@ Verificación: `tsc` y una prueba en el navegador real con dos sesiones (una res
 4. **Filtro de estado** (decidido): la reserva que cambia de estado **se queda visible** con su badge nuevo (por ejemplo, rojo de Cancelada) aunque ya no coincida con el filtro. En las consultas de fondo, `merge` actualiza las reservas que ya están en la lista y no quita las que dejaron de venir. Las reservas nuevas que traiga el servidor se agregan. La lista se reemplaza completa solo con una carga normal (cambio de página o de filtro, o al volver a entrar a la pestaña).
 5. **Alcance** (decidido): solo el listado de Mis Reservas. `ReservationDetailPage` no cambia.
 6. **Intervalos** (decidido): 5 s para Mis Reservas y 3,5 s para turnos, en pausa mientras la pestaña está oculta.
+7. **Filtro de estado en el panel** (decidido): igual que en Mis Reservas (decisión 4). Con el filtro «Confirmada», una
+   reserva que Booking cancela se queda visible en rojo hasta cambiar de página o de filtro (`keepMissing`).
+8. **Alcance en el panel** (decidido): la tabla de Reservas y la reserva que se muestra en la página de check-in. Órdenes,
+   pagos, reembolsos y las demás tablas siguen sin polling.

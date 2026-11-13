@@ -1,11 +1,12 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { memo, useEffect, useState, type ReactNode } from 'react';
 import { Search } from 'lucide-react';
 import { EmptyState, ErrorState } from '@/components/common/Feedback';
 import { Input } from '@/components/common/Input';
 import { Select } from '@/components/common/Select';
 import { Pagination } from '@/components/search/SearchResults';
-import { useAsync } from '@/hooks/useAsync';
+import { usePolling } from '@/hooks/usePolling';
 import type { AdminPage } from '@/types/admin';
+import { mergeById } from '@/utils/diff';
 import { errorMessage } from '@/utils/api';
 
 export interface Column<T> {
@@ -46,7 +47,29 @@ interface Props<T> {
   pageSize?: number;
   /** Encabezado propio (en pestañas no hace falta el título grande). */
   hideTitle?: boolean;
+  /** Consulta silenciosa en segundo plano cada `pollMs` (sin skeleton; los fallos se ignoran). Sin valor, no hay polling. */
+  pollMs?: number;
+  /** Igualdad de dos versiones de la misma fila para el polling. Por defecto compara su JSON. */
+  rowEqual?: (prev: T, next: T) => boolean;
 }
+
+interface RowProps<T> {
+  row: T;
+  columns: Column<T>[];
+}
+
+/** Fila memoizada: en el polling, solo se vuelve a pintar la fila cuyo objeto cambió. */
+const AdminRow = memo(function AdminRow<T>({ row, columns }: RowProps<T>) {
+  return (
+    <tr className="align-top hover:bg-brand-50/50">
+      {columns.map((c) => (
+        <td key={c.header} className={`px-4 py-3 ${c.align === 'right' ? 'text-right' : ''}`}>
+          {c.cell(row)}
+        </td>
+      ))}
+    </tr>
+  );
+}) as <T>(props: RowProps<T>) => ReactNode;
 
 /** Tabla administrativa: búsqueda con espera, filtro de estado, rango de fechas y paginación en el servidor. */
 export function AdminTable<T>({
@@ -64,6 +87,8 @@ export function AdminTable<T>({
   reloadKey = 0,
   pageSize = 15,
   hideTitle = false,
+  pollMs = 0,
+  rowEqual,
 }: Props<T>) {
   const [page, setPage] = useState(1);
   const [typed, setTyped] = useState('');
@@ -80,10 +105,18 @@ export function AdminTable<T>({
   const filters = JSON.stringify({ search, status, from, to, extraKey });
   useEffect(() => setPage(1), [filters]);
 
-  const result = useAsync(
+  const result = usePolling(
     (signal) =>
       load({ page, limit: pageSize, search: search || undefined, status: status || undefined, from: from || undefined, to: to || undefined }, signal),
     [page, filters, reloadKey],
+    {
+      intervalMs: pollMs,
+      // Las filas que ya no coinciden con el filtro se quedan visibles con su estado nuevo hasta la próxima carga normal.
+      merge: (prev, next) => {
+        const items = mergeById(prev.items, next.items, rowKey, { equal: rowEqual, keepMissing: true });
+        return items === prev.items && prev.total === next.total ? prev : { total: next.total, items };
+      },
+    },
   );
   const totalPages = Math.max(1, Math.ceil((result.data?.total ?? 0) / pageSize));
 
@@ -148,13 +181,7 @@ export function AdminTable<T>({
                 </thead>
                 <tbody className="divide-y divide-line">
                   {result.data.items.map((row) => (
-                    <tr key={rowKey(row)} className="align-top hover:bg-brand-50/50">
-                      {columns.map((c) => (
-                        <td key={c.header} className={`px-4 py-3 ${c.align === 'right' ? 'text-right' : ''}`}>
-                          {c.cell(row)}
-                        </td>
-                      ))}
-                    </tr>
+                    <AdminRow key={rowKey(row)} row={row} columns={columns} />
                   ))}
                 </tbody>
               </table>

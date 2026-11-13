@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type DependencyList } from 'r
 import type { AsyncState } from './useAsync';
 
 interface PollingOptions<T> {
-  /** Espera entre el fin de una consulta y el inicio de la siguiente. */
+  /** Espera entre el fin de una consulta y el inicio de la siguiente. `0` = sin consultas de fondo (como `useAsync`). */
   intervalMs: number;
   enabled?: boolean;
   /**
@@ -40,7 +40,7 @@ export function usePolling<T>(
 
     const schedule = () => {
       clearTimeout(timer);
-      if (disposed || document.hidden) return;
+      if (disposed || document.hidden || intervalMs <= 0) return;
       timer = setTimeout(() => {
         if (!document.hidden) run(true);
       }, intervalMs);
@@ -81,7 +81,7 @@ export function usePolling<T>(
 
     const onVisibility = () => {
       if (document.hidden) clearTimeout(timer);
-      else if (loaded && !inFlight) run(true);
+      else if (intervalMs > 0 && loaded && !inFlight) run(true);
     };
 
     document.addEventListener('visibilitychange', onVisibility);

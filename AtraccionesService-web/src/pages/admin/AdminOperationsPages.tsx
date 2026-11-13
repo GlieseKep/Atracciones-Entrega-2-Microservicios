@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { operationsApi } from '@/api/admin';
 import { Badge, type BadgeTone } from '@/components/common/Badge';
@@ -37,8 +37,12 @@ const NOTICE: Record<BookingNotificationStatus, [string, BadgeTone]> = {
 
 const METHOD_LABEL: Record<PaymentMethodCode, string> = { CREDIT_CARD: 'Tarjeta de crédito', DEBIT_CARD: 'Tarjeta de débito', PAYPAL: 'PayPal', TRANSFER: 'Transferencia' };
 
-/** El aviso a Booking sale en segundo plano: unos segundos después ya se sabe si se envió. */
-const NOTICE_REFRESH_MS = 4000;
+/** Las reservas se consultan en segundo plano cada 5 s (cancelaciones desde Booking, check-in, aviso a Booking). */
+const RESERVATIONS_POLL_MS = 5000;
+
+/** En el polling, una fila solo cambia si cambió lo que el panel muestra o permite según el estado. */
+const sameReservation = (a: Reservation, b: Reservation) =>
+  a.status === b.status && a.notificacion_booking === b.notificacion_booking && a.guia_asignado === b.guia_asignado;
 
 /**
  * Reservas de Booking (todas, rol ADMIN). Las `CONFIRMED` se cancelan aquí hasta 24 horas antes del turno (reembolso del
@@ -50,17 +54,11 @@ export function AdminReservationsPage() {
   const [reload, setReload] = useState(0);
   const [cancelling, setCancelling] = useState<Reservation | null>(null);
   const [checkingIn, setCheckingIn] = useState<Reservation | null>(null);
-  const noticeTimer = useRef<number | undefined>(undefined);
-  useEffect(() => () => window.clearTimeout(noticeTimer.current), []);
-
+  // El aviso a Booking (PENDIENTE → ENVIADO) lo trae el polling; no hace falta otra recarga.
   const onCheckedIn = (result: CheckinResult) => {
     setCheckingIn(null);
     setReload((n) => n + 1);
     notify(`Asistencia de ${result.titular_nombre} confirmada.`, 'success');
-    if (result.notificacion_booking === 'PENDIENTE') {
-      window.clearTimeout(noticeTimer.current);
-      noticeTimer.current = window.setTimeout(() => setReload((n) => n + 1), NOTICE_REFRESH_MS);
-    }
   };
 
   const columns: Column<Reservation>[] = [
@@ -139,6 +137,8 @@ export function AdminReservationsPage() {
         searchPlaceholder="Código, cédula o correo"
         statuses={RESERVATION_STATES}
         reloadKey={reload}
+        pollMs={RESERVATIONS_POLL_MS}
+        rowEqual={sameReservation}
       />
       {checkingIn && (
         <Modal open onClose={() => setCheckingIn(null)} title={`Confirmar asistencia · ${checkingIn.reservation_code}`}>
