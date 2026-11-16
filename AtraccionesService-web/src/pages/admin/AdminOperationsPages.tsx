@@ -113,15 +113,16 @@ export function AdminReservationsPage() {
       header: 'Acciones',
       align: 'right',
       cell: (r) => {
-        if (r.status !== 'CONFIRMED') return <span className="text-ink-muted">—</span>;
-        const checkinOk = canCheckIn(r.date);
-        const cancelOk = withinCancellationWindow(r.date, r.time);
+        const confirmed = r.status === 'CONFIRMED';
+        const checkinOk = confirmed && canCheckIn(r.date);
+        const cancelOk = confirmed && withinCancellationWindow(r.date, r.time);
+        const notConfirmed = 'Solo una reserva confirmada (pendiente de asistencia) admite esta acción.';
         return (
-          <span className="inline-flex flex-wrap justify-end gap-2">
+          <span className="inline-flex flex-nowrap justify-end gap-2">
             <Button
               size="sm"
               disabled={!checkinOk}
-              title={checkinOk ? undefined : 'El turno ya pasó: no se puede hacer el check-in.'}
+              title={checkinOk ? undefined : confirmed ? 'El turno ya pasó: no se puede hacer el check-in.' : notConfirmed}
               onClick={() => setCheckingIn(r)}
             >
               Check-in
@@ -130,7 +131,7 @@ export function AdminReservationsPage() {
               size="sm"
               variant="danger"
               disabled={!cancelOk}
-              title={cancelOk ? undefined : 'Solo se cancela hasta 24 horas antes del turno.'}
+              title={cancelOk ? undefined : confirmed ? 'Solo se cancela hasta 24 horas antes del turno.' : notConfirmed}
               onClick={() => setCancelling(r)}
             >
               Cancelar
