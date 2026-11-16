@@ -1,8 +1,8 @@
 import { useCallback, useRef, useState } from 'react';
-import { cancelReservation, createReservation, listMyReservations } from '@/api/bookings';
+import { cancelReservation, createReservation, getReservation, listMyReservations } from '@/api/bookings';
 import type { CreateReservationRequest, Reservation, ReservationPage, ReservationStatus } from '@/types/booking';
 import { isApiError } from '@/utils/api';
-import { mergeById } from '@/utils/diff';
+import { mergeById, refreshMissing } from '@/utils/diff';
 import { IdempotencyKeyManager } from '@/utils/idempotency';
 import { usePolling } from './usePolling';
 
@@ -55,7 +55,8 @@ const RESERVATIONS_POLL_MS = 5000;
 
 /**
  * Las reservas que cambiaron se reemplazan; las demás conservan su objeto. Las que ya no coinciden con el filtro
- * (p. ej. una confirmada que se canceló) se quedan visibles con su estado nuevo hasta la próxima carga normal.
+ * (p. ej. una confirmada que se canceló) se releen en `useMyReservations` y se quedan visibles con su estado nuevo
+ * hasta la próxima carga normal.
  */
 function mergeReservationPage(prev: ReservationPage, next: ReservationPage): ReservationPage {
   const items = mergeById(prev.items, next.items, (r) => r.reservation_id, { keepMissing: true });
@@ -63,8 +64,18 @@ function mergeReservationPage(prev: ReservationPage, next: ReservationPage): Res
 }
 
 export function useMyReservations(params: { estado?: ReservationStatus; page: number; limit: number }) {
-  return usePolling((signal) => listMyReservations(params, signal), [JSON.stringify(params)], {
-    intervalMs: RESERVATIONS_POLL_MS,
-    merge: mergeReservationPage,
-  });
+  const shown = useRef<Reservation[] | undefined>(undefined);
+  const result = usePolling(
+    async (signal, isSilent) => {
+      const page = await listMyReservations(params, signal);
+      if (!isSilent) return page;
+      // Las que se muestran y ya no vinieron (cambiaron de estado con un filtro activo) se releen una por una.
+      const items = await refreshMissing(shown.current, page.items ?? [], (r) => r.reservation_id, (r, s) => getReservation(r.reservation_id, s), signal);
+      return { ...page, items };
+    },
+    [JSON.stringify(params)],
+    { intervalMs: RESERVATIONS_POLL_MS, merge: mergeReservationPage },
+  );
+  shown.current = result.data?.items;
+  return result;
 }

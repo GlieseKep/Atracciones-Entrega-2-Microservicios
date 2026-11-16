@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { operationsApi } from '@/api/admin';
+import { getReservation } from '@/api/bookings';
 import { Badge, type BadgeTone } from '@/components/common/Badge';
 import { Button } from '@/components/common/Button';
 import { Alert } from '@/components/common/Feedback';
@@ -163,6 +164,7 @@ export function AdminReservationsPage() {
         reloadKey={reload}
         pollMs={RESERVATIONS_POLL_MS}
         rowEqual={sameReservation}
+        refreshRow={(r, signal) => getReservation(r.reservation_id, signal)}
       />
       {checkingIn && (
         <Modal open onClose={() => setCheckingIn(null)} title={`Confirmar asistencia · ${checkingIn.reservation_code}`}>

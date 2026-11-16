@@ -1,4 +1,4 @@
-import { memo, useEffect, useState, type ReactNode } from 'react';
+import { memo, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Search } from 'lucide-react';
 import { EmptyState, ErrorState } from '@/components/common/Feedback';
 import { Input } from '@/components/common/Input';
@@ -6,7 +6,7 @@ import { Select } from '@/components/common/Select';
 import { Pagination } from '@/components/search/SearchResults';
 import { usePolling } from '@/hooks/usePolling';
 import type { AdminPage } from '@/types/admin';
-import { mergeById } from '@/utils/diff';
+import { mergeById, refreshMissing } from '@/utils/diff';
 import { errorMessage } from '@/utils/api';
 
 export interface Column<T> {
@@ -51,6 +51,11 @@ interface Props<T> {
   pollMs?: number;
   /** Igualdad de dos versiones de la misma fila para el polling. Por defecto compara su JSON. */
   rowEqual?: (prev: T, next: T) => boolean;
+  /**
+   * Relee una fila que se muestra pero ya no vino en el polling (dejó de coincidir con el filtro o la búsqueda), para
+   * pintarla con su estado real. Sin valor, la fila se queda como estaba hasta la próxima carga normal.
+   */
+  refreshRow?: (row: T, signal: AbortSignal) => Promise<T>;
 }
 
 interface RowProps<T> {
@@ -89,6 +94,7 @@ export function AdminTable<T>({
   hideTitle = false,
   pollMs = 0,
   rowEqual,
+  refreshRow,
 }: Props<T>) {
   const [page, setPage] = useState(1);
   const [typed, setTyped] = useState('');
@@ -105,19 +111,28 @@ export function AdminTable<T>({
   const filters = JSON.stringify({ search, status, from, to, extraKey });
   useEffect(() => setPage(1), [filters]);
 
+  const shown = useRef<T[] | undefined>(undefined);
   const result = usePolling(
-    (signal) =>
-      load({ page, limit: pageSize, search: search || undefined, status: status || undefined, from: from || undefined, to: to || undefined }, signal),
+    async (signal, isSilent) => {
+      const data = await load(
+        { page, limit: pageSize, search: search || undefined, status: status || undefined, from: from || undefined, to: to || undefined },
+        signal,
+      );
+      if (!isSilent || !refreshRow) return data;
+      return { ...data, items: await refreshMissing(shown.current, data.items, rowKey, refreshRow, signal) };
+    },
     [page, filters, reloadKey],
     {
       intervalMs: pollMs,
-      // Las filas que ya no coinciden con el filtro se quedan visibles con su estado nuevo hasta la próxima carga normal.
+      // Las filas que ya no coinciden con el filtro se releen (`refreshRow`) y se quedan visibles con su estado real
+      // hasta la próxima carga normal.
       merge: (prev, next) => {
         const items = mergeById(prev.items, next.items, rowKey, { equal: rowEqual, keepMissing: true });
         return items === prev.items && prev.total === next.total ? prev : { total: next.total, items };
       },
     },
   );
+  shown.current = result.data?.items;
   const totalPages = Math.max(1, Math.ceil((result.data?.total ?? 0) / pageSize));
 
   return (
