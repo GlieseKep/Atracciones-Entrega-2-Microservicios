@@ -53,6 +53,8 @@ export function AdminReservationsPage() {
   const notify = useUiStore((s) => s.notify);
   const [reload, setReload] = useState(0);
   const [cancelling, setCancelling] = useState<Reservation | null>(null);
+  // Reservas canceladas desde este panel: la fila muestra el estado de la respuesta del POST aunque la lista llegue atrasada.
+  const [cancelled, setCancelled] = useState<Record<string, Reservation>>({});
   const [checkingIn, setCheckingIn] = useState<Reservation | null>(null);
   // El aviso a Booking (PENDIENTE → ENVIADO) lo trae el polling; no hace falta otra recarga.
   const onCheckedIn = (result: CheckinResult) => {
@@ -131,7 +133,16 @@ export function AdminReservationsPage() {
     <>
       <AdminTable
         title="Reservas"
-        load={(p, signal) => operationsApi.reservations({ page: p.page, limit: Math.min(p.limit, 50), estado: (p.status as ReservationStatus | '') ?? '', q: p.search }, signal)}
+        load={(p, signal) =>
+          operationsApi
+            .reservations({ page: p.page, limit: Math.min(p.limit, 50), estado: (p.status as ReservationStatus | '') ?? '', q: p.search }, signal)
+            .then((res) => ({
+              ...res,
+              items: res.items.map((r) => {
+                return cancelled[r.reservation_id] && r.status === 'CONFIRMED' ? { ...r, status: 'CANCELLED' as ReservationStatus } : r;
+              }),
+            }))
+        }
         columns={columns}
         rowKey={(r) => r.reservation_id}
         searchPlaceholder="Código, cédula o correo"
@@ -152,8 +163,9 @@ export function AdminReservationsPage() {
         <CancelReservationDialog
           reservation={cancelling}
           onClose={() => setCancelling(null)}
-          onDone={() => {
+          onDone={(updated) => {
             setCancelling(null);
+            setCancelled((prev) => ({ ...prev, [updated.reservation_id || cancelling.reservation_id]: updated }));
             setReload((n) => n + 1);
           }}
         />
@@ -162,7 +174,7 @@ export function AdminReservationsPage() {
   );
 }
 
-function CancelReservationDialog({ reservation, onClose, onDone }: { reservation: Reservation; onClose: () => void; onDone: () => void }) {
+function CancelReservationDialog({ reservation, onClose, onDone }: { reservation: Reservation; onClose: () => void; onDone: (updated: Reservation) => void }) {
   const notify = useUiStore((s) => s.notify);
   const [reason, setReason] = useState('');
   const { run, pending, error } = useIdempotentMutation<string, Reservation>(
@@ -174,7 +186,7 @@ function CancelReservationDialog({ reservation, onClose, onDone }: { reservation
       const updated = await run(reason.trim());
       const code = updated.refund?.refund_id || updated.cancel_code || updated.reembolso_id;
       notify(`Reserva ${updated.reservation_code} cancelada. Reembolso del 100 %${code ? ` (${code})` : ''}; los cupos quedaron liberados.`, 'success');
-      onDone();
+      onDone(updated);
     } catch {
       /* se muestra abajo */
     }
