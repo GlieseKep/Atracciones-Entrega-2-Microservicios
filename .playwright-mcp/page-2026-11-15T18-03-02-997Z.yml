@@ -1,0 +1,350 @@
+- main [ref=f3e2]:
+  - 'heading "Microservicios: tablas y relaciones" [level=1] [ref=f3e3]'
+  - paragraph [ref=f3e4]:
+    - text: Tablas implementadas en las migraciones de los 16 microservicios (
+    - code [ref=f3e5]: apps/services/ms-*
+    - text: ), uno por funcionalidad específica. Cada servicio tiene su propia base de datos (
+    - code [ref=f3e6]: ms_<servicio>
+    - text: ); las relaciones entre servicios son IDs lógicos sin FK. Detalle de atributos en
+    - code [ref=f3e7]: MODELO_BASE_DE_DATOS.md
+    - text: .
+  - generic [ref=f3e8]:
+    - generic [ref=f3e9]: REST
+    - generic [ref=f3e11]: gRPC (contrato .proto; JSON sobre HTTP vía ESB)
+    - generic [ref=f3e13]: SOAP (SOA)
+    - generic [ref=f3e15]:
+      - generic [ref=f3e16]: 1 ——— N
+      - text: relación (cardinalidad)
+    - generic [ref=f3e17]: tabla intermedia (N:M)
+  - generic [ref=f3e19]:
+    - generic [ref=f3e20]:
+      - heading "1 Identity & Access Service" [level=2] [ref=f3e21]
+      - generic [ref=f3e22]: REST
+      - paragraph [ref=f3e24]: Registro, inicio de sesión, verificación de correo, roles y clientes API (socios y turistas).
+      - img "Tablas de Identity & Access Service" [ref=f3e25]:
+        - generic [ref=f3e26]: "1"
+        - generic [ref=f3e27]: "N"
+        - generic [ref=f3e28]: "1"
+        - generic [ref=f3e29]: "N"
+        - generic [ref=f3e30]: "1"
+        - generic [ref=f3e31]: "N"
+        - generic [ref=f3e32]: "1"
+        - generic [ref=f3e33]: "N"
+        - generic [ref=f3e34]: rol
+        - generic [ref=f3e37]: usuario_rol
+        - generic [ref=f3e40]: cliente_api
+        - generic [ref=f3e43]: usuario
+        - generic [ref=f3e46]: sesion
+        - generic [ref=f3e49]: token_verificacion
+      - paragraph [ref=f3e52]: "Sin referencias externas. usuario_rol.usr_asignado_por → usuario (interna). cliente_api: SOCIO (hash de la X-API-Key) o TURISTA (cliente de un socio)."
+    - generic [ref=f3e53]:
+      - heading "2 Billing Profile Service" [level=2] [ref=f3e54]
+      - generic [ref=f3e55]: REST
+      - paragraph [ref=f3e57]: Datos de facturación del cliente, distintos en cada compra.
+      - img "Tablas de Billing Profile Service" [ref=f3e58]:
+        - generic [ref=f3e59]: dato_facturacion
+      - paragraph [ref=f3e62]: "Ref. externa: dato_facturacion → usuario o cliente_api turista (Identity); uno de los dos."
+    - generic [ref=f3e63]:
+      - heading "3 Location Service" [level=2] [ref=f3e64]
+      - generic [ref=f3e65]: REST
+      - paragraph [ref=f3e67]: Regiones, provincias y ciudades (destinos).
+      - img "Tablas de Location Service" [ref=f3e68]:
+        - generic [ref=f3e69]: "1"
+        - generic [ref=f3e70]: "N"
+        - generic [ref=f3e71]: "1"
+        - generic [ref=f3e72]: "N"
+        - generic [ref=f3e73]: region
+        - generic [ref=f3e76]: provincia
+        - generic [ref=f3e79]: ciudad
+      - paragraph [ref=f3e82]: Sin referencias externas. Catálogo de solo lectura que consultan otros servicios.
+    - generic [ref=f3e83]:
+      - heading "4 Catalog & Attractions Service" [level=2] [ref=f3e84]
+      - generic [ref=f3e85]: REST
+      - paragraph [ref=f3e87]: Ficha de la atracción, árbol de categorías, idiomas, inclusiones, fotos, itinerario, operadores y guías.
+      - img "Tablas de Catalog & Attractions Service" [ref=f3e88]:
+        - generic [ref=f3e90]: "1"
+        - generic [ref=f3e91]: "N"
+        - generic [ref=f3e92]: "1"
+        - generic [ref=f3e93]: "N"
+        - generic [ref=f3e95]: "1"
+        - generic [ref=f3e96]: "N"
+        - generic [ref=f3e98]: "1"
+        - generic [ref=f3e99]: "N"
+        - generic [ref=f3e101]: "1"
+        - generic [ref=f3e102]: "N"
+        - generic [ref=f3e103]: "1"
+        - generic [ref=f3e104]: "N"
+        - generic [ref=f3e105]: "1"
+        - generic [ref=f3e106]: "N"
+        - generic [ref=f3e108]: "1"
+        - generic [ref=f3e109]: "N"
+        - generic [ref=f3e111]: "1"
+        - generic [ref=f3e112]: "N"
+        - generic [ref=f3e113]: "1"
+        - generic [ref=f3e114]: "N"
+        - generic [ref=f3e116]: "1"
+        - generic [ref=f3e117]: "N"
+        - generic [ref=f3e118]: "1"
+        - generic [ref=f3e119]: "N"
+        - generic [ref=f3e120]: categoria
+        - generic [ref=f3e123]: atraccion_categoria
+        - generic [ref=f3e126]: atraccion_foto
+        - generic [ref=f3e129]: atraccion_itinerario
+        - generic [ref=f3e132]: operador_usuario
+        - generic [ref=f3e135]: operador
+        - generic [ref=f3e138]: atraccion
+        - generic [ref=f3e141]: guia
+        - generic [ref=f3e144]: idioma
+        - generic [ref=f3e147]: atraccion_idioma
+        - generic [ref=f3e150]: atraccion_inclusion
+        - generic [ref=f3e153]: inclusion
+      - paragraph [ref=f3e156]: "Ref. externa: atraccion → ciudad (Location); operador → provincia (Location); operador_usuario, guia → usuario (Identity). Árbol de categorías por cat_padre_id. Consume RESENA_PUBLICADA (Review) para las calificaciones y TARIFA_ACTUALIZADA (Pricing) para el precio \"desde\"."
+    - generic [ref=f3e157]:
+      - heading "5 Review Service" [level=2] [ref=f3e158]
+      - generic [ref=f3e159]: REST
+      - paragraph [ref=f3e161]: Reseñas y puntuaciones de los clientes.
+      - img "Tablas de Review Service" [ref=f3e162]:
+        - generic [ref=f3e163]: resena
+      - paragraph [ref=f3e166]: "Ref. externa: resena → atraccion (Catalog), usuario (Identity). Publica el evento RESENA_PUBLICADA."
+    - generic [ref=f3e167]:
+      - heading "6 Pricing Service" [level=2] [ref=f3e168]
+      - generic [ref=f3e169]:
+        - generic [ref=f3e170]: gRPC
+        - generic [ref=f3e171]: .proto sobre HTTP
+      - paragraph [ref=f3e172]: Tarifas versionadas por tipo de boleto.
+      - img "Tablas de Pricing Service" [ref=f3e173]:
+        - generic [ref=f3e174]: tarifa
+      - paragraph [ref=f3e177]: "Ref. externa: tarifa → atraccion (Catalog, por atr_codigo). Order la consulta al crear la orden. Publica TARIFA_ACTUALIZADA."
+    - generic [ref=f3e178]:
+      - heading "7 Inventory & Availability Service" [level=2] [ref=f3e179]
+      - generic [ref=f3e180]:
+        - generic [ref=f3e181]: gRPC
+        - generic [ref=f3e182]: .proto sobre HTTP
+      - paragraph [ref=f3e183]: Turnos, cupos por fecha, días bloqueados y bloqueos de cupo.
+      - img "Tablas de Inventory & Availability Service" [ref=f3e184]:
+        - generic [ref=f3e185]: "1"
+        - generic [ref=f3e186]: "N"
+        - generic [ref=f3e187]: "1"
+        - generic [ref=f3e188]: "N"
+        - generic [ref=f3e189]: horario
+        - generic [ref=f3e192]: disponibilidad
+        - generic [ref=f3e195]: fecha_bloqueada
+        - generic [ref=f3e198]: bloqueo_cupo
+      - paragraph [ref=f3e201]: "Ref. externa: horario, disponibilidad, fecha_bloqueada → atraccion (Catalog, por atr_codigo); horario, disponibilidad → guia (Catalog). FK compuesta interna (hor_id, atr_codigo) → horario."
+    - generic [ref=f3e202]:
+      - heading "8 Cart Service" [level=2] [ref=f3e203]
+      - generic [ref=f3e204]: REST
+      - paragraph [ref=f3e206]: Carrito de compras; cada ítem se compra como una orden.
+      - img "Tablas de Cart Service" [ref=f3e207]:
+        - generic [ref=f3e208]: "1"
+        - generic [ref=f3e209]: "N"
+        - generic [ref=f3e210]: carrito
+        - generic [ref=f3e213]: carrito_item
+      - paragraph [ref=f3e216]: "Ref. externa: carrito → usuario (Identity); carrito_item → atraccion (atr_codigo, Catalog), disponibilidad (dis_slot_codigo, Inventory), orden (cai_ord_numero, Order)."
+    - generic [ref=f3e217]:
+      - heading "9 Coupon & Promotions Service" [level=2] [ref=f3e218]
+      - generic [ref=f3e219]: REST
+      - paragraph [ref=f3e221]: Cupones de descuento y acuerdos de promoción con los socios.
+      - img "Tablas de Coupon & Promotions Service" [ref=f3e222]:
+        - generic [ref=f3e223]: "1"
+        - generic [ref=f3e224]: "N"
+        - generic [ref=f3e225]: cupon
+        - generic [ref=f3e228]: acuerdo_promocion
+        - generic [ref=f3e231]: acuerdo_promocion_destino
+      - paragraph [ref=f3e234]: "Ref. externa: acuerdo_promocion_destino → ciudad (Location). Los usos del cupón se cuentan en orden_cupon (Order)."
+    - generic [ref=f3e235]:
+      - heading "10 Order Management Service" [level=2] [ref=f3e236]
+      - generic [ref=f3e237]:
+        - generic [ref=f3e238]: gRPC
+        - generic [ref=f3e239]: .proto sobre HTTP
+      - paragraph [ref=f3e240]: Órdenes de compra, sus líneas, cupones aplicados e idempotencia.
+      - img "Tablas de Order Management Service" [ref=f3e241]:
+        - generic [ref=f3e242]: "1"
+        - generic [ref=f3e243]: "N"
+        - generic [ref=f3e245]: "1"
+        - generic [ref=f3e246]: "N"
+        - generic [ref=f3e248]: "1"
+        - generic [ref=f3e249]: "N"
+        - generic [ref=f3e250]: orden
+        - generic [ref=f3e253]: orden_cupon
+        - generic [ref=f3e256]: orden_detalle
+        - generic [ref=f3e259]: estado
+        - generic [ref=f3e262]: idempotencia
+      - paragraph [ref=f3e265]: "Ref. externa: orden → usuario o cliente_api (Identity), carrito_item (Cart), metodo_pago (Payment); idempotencia → usuario o cliente_api; orden_cupon → cupon (Coupon); orden_detalle → atraccion (Catalog)."
+    - generic [ref=f3e266]:
+      - heading "11 Booking Service" [level=2] [ref=f3e267]
+      - generic [ref=f3e268]:
+        - generic [ref=f3e269]: gRPC
+        - generic [ref=f3e270]: .proto sobre HTTP
+      - paragraph [ref=f3e271]: Reservas, pasajeros, cancelación, check-in y eventos para los socios.
+      - img "Tablas de Booking Service" [ref=f3e272]:
+        - generic [ref=f3e273]: "1"
+        - generic [ref=f3e274]: "N"
+        - generic [ref=f3e275]: "1"
+        - generic [ref=f3e276]: "N"
+        - generic [ref=f3e278]: "1"
+        - generic [ref=f3e279]: "1"
+        - generic [ref=f3e280]: reserva
+        - generic [ref=f3e283]: estado
+        - generic [ref=f3e286]: reserva_pasajero
+        - generic [ref=f3e289]: notificacion_checkin
+        - generic [ref=f3e292]: idempotencia
+        - generic [ref=f3e295]: outbox_evento
+      - paragraph [ref=f3e298]: "Ref. externa: reserva → orden, orden_detalle (Order), disponibilidad (Inventory), guia (Catalog), cliente_api (Identity), reembolso (Refund). outbox_evento alimenta GET /atracciones/eventos."
+    - generic [ref=f3e299]:
+      - heading "12 Payment Service" [level=2] [ref=f3e300]
+      - generic [ref=f3e301]: REST
+      - paragraph [ref=f3e303]: Cobros por tarjeta o transferencia.
+      - img "Tablas de Payment Service" [ref=f3e304]:
+        - generic [ref=f3e305]: "1"
+        - generic [ref=f3e306]: "N"
+        - generic [ref=f3e308]: "1"
+        - generic [ref=f3e309]: "1"
+        - generic [ref=f3e311]: "1"
+        - generic [ref=f3e312]: "1"
+        - generic [ref=f3e313]: "1"
+        - generic [ref=f3e314]: "N"
+        - generic [ref=f3e315]: metodo_pago
+        - generic [ref=f3e318]: pago
+        - generic [ref=f3e321]: pago_tarjeta
+        - generic [ref=f3e324]: pago_transferencia
+        - generic [ref=f3e327]: estado
+      - paragraph [ref=f3e330]: "Ref. externa: pago → orden (Order)."
+    - generic [ref=f3e331]:
+      - heading "13 Refund Service" [level=2] [ref=f3e332]
+      - generic [ref=f3e333]: REST
+      - paragraph [ref=f3e335]: Devoluciones totales o parciales de un pago.
+      - img "Tablas de Refund Service" [ref=f3e336]:
+        - generic [ref=f3e337]: reembolso
+      - paragraph [ref=f3e340]: "Ref. externa: reembolso → pago (Payment). Valida con Payment que no se devuelva más de lo cobrado."
+    - generic [ref=f3e341]:
+      - heading "14 Electronic Invoicing Service" [level=2] [ref=f3e342]
+      - generic [ref=f3e343]: SOAP
+      - paragraph [ref=f3e345]: Facturas electrónicas autorizadas por el SRI.
+      - img "Tablas de Electronic Invoicing Service" [ref=f3e346]:
+        - generic [ref=f3e347]: "1"
+        - generic [ref=f3e348]: "N"
+        - generic [ref=f3e349]: "1"
+        - generic [ref=f3e350]: "N"
+        - generic [ref=f3e351]: factura
+        - generic [ref=f3e354]: estado
+        - generic [ref=f3e357]: factura_detalle
+      - paragraph [ref=f3e360]: "Ref. externa: factura → orden (Order), dato_facturacion (Billing Profile); factura_detalle → orden_detalle (Order). Se emite al recibir OrdenPagada."
+    - generic [ref=f3e361]:
+      - heading "15 Support Service" [level=2] [ref=f3e362]
+      - generic [ref=f3e363]: REST
+      - paragraph [ref=f3e365]: Mensajes de contacto de los visitantes.
+      - img "Tablas de Support Service" [ref=f3e366]:
+        - generic [ref=f3e367]: mensaje_contacto
+      - paragraph [ref=f3e370]: Sin referencias externas.
+    - generic [ref=f3e371]:
+      - heading "16 Audit Service" [level=2] [ref=f3e372]
+      - generic [ref=f3e373]:
+        - generic [ref=f3e374]: REST
+        - generic [ref=f3e375]: Consumidor de eventos
+      - paragraph [ref=f3e376]: Bitácora de todos los eventos del sistema.
+      - img "Tablas de Audit Service" [ref=f3e377]:
+        - generic [ref=f3e378]: bitacora
+      - paragraph [ref=f3e381]: "Ref. externa: bitacora → usuario (Identity)."
+  - generic [ref=f3e382]:
+    - generic [ref=f3e383]:
+      - heading "Cambios respecto al diseño v2" [level=3] [ref=f3e384]
+      - list [ref=f3e385]:
+        - listitem [ref=f3e386]:
+          - text: "Catalog: se agregan"
+          - code [ref=f3e387]: guia
+          - text: (operador 1:N guía, con credencial del Ministerio de Turismo) y
+          - code [ref=f3e388]: atraccion_itinerario
+          - text: (paradas de la atracción).
+        - listitem [ref=f3e389]:
+          - text: "Coupon & Promotions: se agregan"
+          - code [ref=f3e390]: acuerdo_promocion
+          - text: "y"
+          - code [ref=f3e391]: acuerdo_promocion_destino
+          - text: para
+          - code [ref=f3e392]: GET
+          - text: /
+          - code [ref=f3e393]: PUT /promociones/contrato
+          - text: .
+        - listitem [ref=f3e394]:
+          - text: "Inventory:"
+          - code [ref=f3e395]: bloqueo_cupo
+          - text: registra cada bloqueo de cupos con su clave de idempotencia; horarios y turnos tienen guía (
+          - code [ref=f3e396]: gui_id
+          - text: ). Las referencias a la atracción usan su código público
+          - code [ref=f3e397]: atr_codigo
+          - text: .
+        - listitem [ref=f3e398]:
+          - text: "Booking: se agregan"
+          - code [ref=f3e399]: idempotencia
+          - text: ","
+          - code [ref=f3e400]: outbox_evento
+          - text: (eventos que leen los socios) y
+          - code [ref=f3e401]: notificacion_checkin
+          - text: (aviso del check-in a Booking Central con reintentos). La reserva guarda el canal (WEB o SOCIO), el cliente turista, la cancelación con reembolso y el check-in.
+        - listitem [ref=f3e402]:
+          - text: "Identity:"
+          - code [ref=f3e403]: cliente_api
+          - text: distingue SOCIO (con
+          - code [ref=f3e404]: X-API-Key
+          - text: ) y TURISTA (cliente de un socio). Billing Profile, Order y Booking pueden apuntar a un turista en lugar de un usuario web.
+        - listitem [ref=f3e405]: "Cart: cada ítem pasa por PENDIENTE → EN_PAGO → COMPRADO y se convierte en una orden propia."
+        - listitem [ref=f3e406]:
+          - code [ref=f3e408]: estado
+          - text: "sigue dividido: Order, Booking, Payment e Invoicing tienen cada uno su propia tabla."
+    - generic [ref=f3e409]:
+      - heading "Qué cambia al separar las bases de datos" [level=3] [ref=f3e410]
+      - list [ref=f3e411]:
+        - listitem [ref=f3e412]:
+          - text: "Las FK entre servicios pasan a ser IDs lógicos que se validan por API o por eventos. Ejemplo:"
+          - code [ref=f3e413]: carrito_item (atr_codigo, dis_slot_codigo)
+          - text: no tiene FK hacia
+          - code [ref=f3e414]: atraccion
+          - text: ni
+          - code [ref=f3e415]: disponibilidad
+          - text: .
+        - listitem [ref=f3e416]:
+          - text: "Se mantiene interna: la FK compuesta"
+          - code [ref=f3e417]: disponibilidad (hor_id, atr_codigo) → horario
+          - text: (Inventory).
+        - listitem [ref=f3e418]:
+          - generic [ref=f3e419]:
+            - text: Tabla
+            - code [ref=f3e420]: outbox
+            - text: "(no dibujada):"
+          - text: Identity, Inventory, Pricing, Order, Payment, Refund, Invoicing y Review guardan sus eventos en
+          - code [ref=f3e421]: outbox
+          - text: en la misma transacción y un relay los publica en RabbitMQ. En Inventory también deja el stock que se envía a Booking Prototipo.
+        - listitem [ref=f3e422]:
+          - text: "Triggers que ahora cruzan servicios:"
+          - list [ref=f3e423]:
+            - listitem [ref=f3e424]:
+              - code [ref=f3e425]: trg_resena_calificacion
+              - text: se reemplaza por un evento
+              - code [ref=f3e426]: RESENA_PUBLICADA
+              - text: de Review; Catalog lo consume y actualiza el promedio de la atracción.
+            - listitem [ref=f3e427]:
+              - code [ref=f3e428]: trg_reembolso_no_excede
+              - text: "pasa a ser una validación de Refund: consulta a Payment el monto cobrado antes de procesar el reembolso."
+        - listitem [ref=f3e429]: "Moneda del pago y del reembolso: se obtiene de la orden, que vive en Order, así que Payment y Refund deben consultarla."
+        - listitem [ref=f3e430]: "Precios en un servicio propio (Pricing): Order lo consulta al crear la orden, y Catalog recibe los precios por eventos para la búsqueda."
+        - listitem [ref=f3e431]:
+          - text: "Vistas:"
+          - code [ref=f3e432]: v_atraccion_completa
+          - text: queda en Catalog y
+          - code [ref=f3e433]: v_usuario_roles
+          - text: en Identity.
+          - code [ref=f3e434]: v_orden_financiero
+          - text: (Order) ya no puede unirse con
+          - code [ref=f3e435]: usuario
+          - text: ; debe usar
+          - code [ref=f3e436]: usu_id
+          - text: .
+  - generic [ref=f3e437]:
+    - text: 55 tablas dibujadas (
+    - code [ref=f3e438]: estado
+    - text: en 4 copias e
+    - code [ref=f3e439]: idempotencia
+    - text: en 2) más
+    - code [ref=f3e440]: outbox
+    - text: "en 8 servicios: 63 en total."

@@ -54,6 +54,7 @@
     "test:unit": "jest --selectProjects unit",
     "test:e2e": "jest --selectProjects e2e --runInBand",
     "test:db": "jest --selectProjects db --runInBand",
+    "test:integration": "jest --selectProjects integration --runInBand --passWithNoTests",
     "db:local": "node tools/local-db.mjs",
     "db:migrate": "node tools/migrate-services.mjs",
     "contract:lint": "npx -y @stoplight/spectral-cli@6.17.0 lint packages/contracts/openapi/atracciones-openapi-v2.yaml --ruleset packages/contracts/.spectral.yaml --fail-severity error",

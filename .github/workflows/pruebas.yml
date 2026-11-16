@@ -1,0 +1,105 @@
+# Pruebas del plan Calidad/PLAN_PRUEBAS_UNIT_INTEGRACION_E2E.md (sección 6.1).
+# Orden de fallo rápido: lint → unitarias → integración → E2E; si un paso falla, los siguientes no corren.
+# No usa secretos: los de la suite son valores fijos de prueba. No modifica ni espera a deploy-azure.yml.
+name: Pruebas
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: pruebas-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # `npm run lint` (tsc -b --noEmit) falla con TS6310 por las referencias entre proyectos (DEFECTO-03 en
+      # Calidad/DEFECTOS_ENCONTRADOS.md); mientras tanto el chequeo de tipos se hace con la compilación completa.
+      - name: Chequeo de tipos (tsc -b)
+        run: npm run build
+
+  unit:
+    name: unit
+    needs: lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Pruebas unitarias con reporte de cobertura (informativo, sin mínimo)
+        run: npx jest --selectProjects unit --coverage --coverageReporters=text-summary --coverageReporters=lcov
+      - name: Subir el reporte de cobertura
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cobertura-unitarias
+          path: coverage/
+          if-no-files-found: ignore
+
+  integration:
+    name: integration
+    needs: unit
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      rabbitmq:
+        image: rabbitmq:3.13-management-alpine
+        ports:
+          - 5672:5672
+        options: >-
+          --health-cmd "rabbitmq-diagnostics -q ping"
+          --health-interval 10s
+          --health-timeout 10s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # PostgreSQL: embedded-postgres (tools/test/global-setup.js), el mismo que en local.
+      - name: Pruebas de integración
+        run: npm run test:integration
+
+  e2e:
+    name: e2e
+    needs: integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      rabbitmq:
+        image: rabbitmq:3.13-management-alpine
+        ports:
+          - 5672:5672
+        options: >-
+          --health-cmd "rabbitmq-diagnostics -q ping"
+          --health-interval 10s
+          --health-timeout 10s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Pruebas E2E del contrato v3 (Gateway /api/v3)
+        run: npx jest --selectProjects e2e --runInBand test/system/v3

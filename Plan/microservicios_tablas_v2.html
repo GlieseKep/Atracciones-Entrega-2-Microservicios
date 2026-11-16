@@ -91,11 +91,11 @@
 <body>
 <main>
   <h1>Microservicios: tablas y relaciones</h1>
-  <p class="sub">División de <code>Script Base de dats.txt</code> (v1.2, revisado a 3FN) en 16 microservicios, uno por funcionalidad específica. Cada servicio tiene su propia base de datos; las relaciones entre servicios son IDs lógicos sin FK.</p>
+  <p class="sub">Tablas implementadas en las migraciones de los 16 microservicios (<code>apps/services/ms-*</code>), uno por funcionalidad específica. Cada servicio tiene su propia base de datos (<code>ms_&lt;servicio&gt;</code>); las relaciones entre servicios son IDs lógicos sin FK. Detalle de atributos en <code>MODELO_BASE_DE_DATOS.md</code>.</p>
 
   <div class="legend">
     <span><i class="sw rest"></i>REST</span>
-    <span><i class="sw grpc"></i>gRPC</span>
+    <span><i class="sw grpc"></i>gRPC (contrato .proto; JSON sobre HTTP vía ESB)</span>
     <span><i class="sw soap"></i>SOAP (SOA)</span>
     <span><span class="rel">1 ——— N</span>relación (cardinalidad)</span>
     <span><i class="sw bridge"></i>tabla intermedia (N:M)</span>
@@ -105,20 +105,23 @@
 
   <div class="notes">
     <div class="note">
-      <h3>Cambios respecto a microservicios_tablas.png</h3>
+      <h3>Cambios respecto al diseño v2</h3>
       <ul>
-        <li><b>Un servicio por funcionalidad:</b> de los 9 servicios de la imagen salen 16. Se separan en servicios propios Geografía (Location), Reseñas (Review), Tarifas (Pricing), Cupones (Coupon), Reembolsos (Refund), Datos de facturación (Billing Profile), Soporte (Support) y Auditoría (Audit).</li>
-        <li><b>Sin tabla <code>foto</code>:</b> <code>atraccion_foto</code> es 1:N directa con <code>atraccion</code>, como en el script.</li>
-        <li><b><code>estado</code> dividido:</b> Order, Booking, Payment e Invoicing tienen cada uno su propia tabla <code>estado</code>, solo con los estados de su grupo. Ya no hace falta <code>est_grupo</code>.</li>
-        <li><b>Tablas del script que no estaban en la imagen:</b> <code>operador_usuario</code>, <code>atraccion_categoria</code>, <code>atraccion_idioma</code> y <code>atraccion_inclusion</code>, que están en Catalog.</li>
-        <li><b><code>idempotencia</code></b> se relaciona con el usuario (Identity), no con <code>orden</code>, porque así está en el script.</li>
+        <li><b>Catalog:</b> se agregan <code>guia</code> (operador 1:N guía, con credencial del Ministerio de Turismo) y <code>atraccion_itinerario</code> (paradas de la atracción).</li>
+        <li><b>Coupon &amp; Promotions:</b> se agregan <code>acuerdo_promocion</code> y <code>acuerdo_promocion_destino</code> para <code>GET</code> / <code>PUT /promociones/contrato</code>.</li>
+        <li><b>Inventory:</b> <code>bloqueo_cupo</code> registra cada bloqueo de cupos con su clave de idempotencia; horarios y turnos tienen guía (<code>gui_id</code>). Las referencias a la atracción usan su código público <code>atr_codigo</code>.</li>
+        <li><b>Booking:</b> se agregan <code>idempotencia</code>, <code>outbox_evento</code> (eventos que leen los socios) y <code>notificacion_checkin</code> (aviso del check-in a Booking Central con reintentos). La reserva guarda el canal (WEB o SOCIO), el cliente turista, la cancelación con reembolso y el check-in.</li>
+        <li><b>Identity:</b> <code>cliente_api</code> distingue SOCIO (con <code>X-API-Key</code>) y TURISTA (cliente de un socio). Billing Profile, Order y Booking pueden apuntar a un turista en lugar de un usuario web.</li>
+        <li><b>Cart:</b> cada ítem pasa por PENDIENTE → EN_PAGO → COMPRADO y se convierte en una orden propia.</li>
+        <li><b><code>estado</code></b> sigue dividido: Order, Booking, Payment e Invoicing tienen cada uno su propia tabla.</li>
       </ul>
     </div>
     <div class="note">
       <h3>Qué cambia al separar las bases de datos</h3>
       <ul>
-        <li><b>Las FK entre servicios pasan a ser IDs lógicos</b> que se validan por API o por eventos. Ejemplo: <code>carrito_item (dis_id, atr_id)</code> ya no tiene FK compuesta hacia <code>disponibilidad</code>.</li>
-        <li><b>Se mantiene interna:</b> la FK compuesta <code>disponibilidad (hor_id, atr_id) → horario</code> (Inventory).</li>
+        <li><b>Las FK entre servicios pasan a ser IDs lógicos</b> que se validan por API o por eventos. Ejemplo: <code>carrito_item (atr_codigo, dis_slot_codigo)</code> no tiene FK hacia <code>atraccion</code> ni <code>disponibilidad</code>.</li>
+        <li><b>Se mantiene interna:</b> la FK compuesta <code>disponibilidad (hor_id, atr_codigo) → horario</code> (Inventory).</li>
+        <li><b>Tabla <code>outbox</code> (no dibujada):</b> Identity, Inventory, Pricing, Order, Payment, Refund, Invoicing y Review guardan sus eventos en <code>outbox</code> en la misma transacción y un relay los publica en RabbitMQ. En Inventory también deja el stock que se envía a Booking Prototipo.</li>
         <li><b>Triggers que ahora cruzan servicios:</b>
           <ul>
             <li><code>trg_resena_calificacion</code> se reemplaza por un evento <code>RESENA_PUBLICADA</code> de Review; Catalog lo consume y actualiza el promedio de la atracción.</li>
@@ -131,7 +134,7 @@
       </ul>
     </div>
   </div>
-  <footer>46 tablas, con <code>estado</code> repartida en 4 copias.</footer>
+  <footer>55 tablas dibujadas (<code>estado</code> en 4 copias e <code>idempotencia</code> en 2) más <code>outbox</code> en 8 servicios: 63 en total.</footer>
 </main>
 
 <script>
@@ -139,18 +142,18 @@ const SERVICES = [
   // Fila 1 · Usuarios y ubicación
   {
     n: 1, name: 'Identity & Access Service', proto: 'rest', span: 5, w: 570, h: 280,
-    fn: 'Registro, inicio de sesión, verificación de correo y roles.',
-    nodes: { rol: [80, 50], usuario_rol: [300, 50, 'b'], usuario: [300, 145], sesion: [80, 145], token_verificacion: [300, 240] },
+    fn: 'Registro, inicio de sesión, verificación de correo, roles y clientes API (socios y turistas).',
+    nodes: { rol: [80, 50], usuario_rol: [300, 50, 'b'], cliente_api: [480, 145], usuario: [300, 145], sesion: [80, 145], token_verificacion: [300, 240] },
     edges: [['rol', 'usuario_rol', '1', 'N'], ['usuario', 'usuario_rol', '1', 'N'], ['usuario', 'sesion', '1', 'N'],
             ['usuario', 'token_verificacion', '1', 'N']],
-    ext: 'Sin referencias externas. usuario_rol.usr_asignado_por → usuario (interna).'
+    ext: 'Sin referencias externas. usuario_rol.usr_asignado_por → usuario (interna). cliente_api: SOCIO (hash de la X-API-Key) o TURISTA (cliente de un socio).'
   },
   {
     n: 2, name: 'Billing Profile Service', proto: 'rest', span: 3, w: 320, h: 280,
     fn: 'Datos de facturación del cliente, distintos en cada compra.',
     nodes: { dato_facturacion: [160, 140] },
     edges: [],
-    ext: 'Ref. externa: dato_facturacion → usuario (Identity).'
+    ext: 'Ref. externa: dato_facturacion → usuario o cliente_api turista (Identity); uno de los dos.'
   },
   {
     n: 3, name: 'Location Service', proto: 'rest', span: 4, w: 450, h: 280,
@@ -162,15 +165,16 @@ const SERVICES = [
   // Fila 2 · Catálogo
   {
     n: 4, name: 'Catalog & Attractions Service', proto: 'rest', span: 9, w: 1060, h: 380,
-    fn: 'Ficha de la atracción, árbol de categorías, idiomas, inclusiones, fotos y operadores.',
-    nodes: { categoria: [110, 60], atraccion_categoria: [320, 60, 'b'], atraccion_foto: [700, 60],
-             operador_usuario: [90, 190, 'b'], operador: [290, 190], atraccion: [540, 190],
+    fn: 'Ficha de la atracción, árbol de categorías, idiomas, inclusiones, fotos, itinerario, operadores y guías.',
+    nodes: { categoria: [110, 60], atraccion_categoria: [320, 60, 'b'], atraccion_foto: [700, 60], atraccion_itinerario: [930, 60],
+             operador_usuario: [90, 190, 'b'], operador: [290, 190], atraccion: [540, 190], guia: [170, 262],
              idioma: [90, 330], atraccion_idioma: [290, 330, 'b'], atraccion_inclusion: [760, 330, 'b'], inclusion: [970, 330] },
     edges: [['categoria', 'categoria', '1', 'N'], ['categoria', 'atraccion_categoria', '1', 'N'], ['atraccion', 'atraccion_categoria', '1', 'N'],
-            ['atraccion', 'atraccion_foto', '1', 'N'], ['operador', 'atraccion', '1', 'N'], ['operador', 'operador_usuario', '1', 'N'],
+            ['atraccion', 'atraccion_foto', '1', 'N'], ['atraccion', 'atraccion_itinerario', '1', 'N'],
+            ['operador', 'atraccion', '1', 'N'], ['operador', 'operador_usuario', '1', 'N'], ['operador', 'guia', '1', 'N'],
             ['atraccion', 'atraccion_idioma', '1', 'N'], ['idioma', 'atraccion_idioma', '1', 'N'],
             ['atraccion', 'atraccion_inclusion', '1', 'N'], ['inclusion', 'atraccion_inclusion', '1', 'N']],
-    ext: 'Ref. externa: atraccion → ciudad (Location); operador → provincia (Location); operador_usuario → usuario (Identity). Árbol de categorías por cat_padre_id. La calificación se actualiza con el evento RESENA_PUBLICADA (Review).'
+    ext: 'Ref. externa: atraccion → ciudad (Location); operador → provincia (Location); operador_usuario, guia → usuario (Identity). Árbol de categorías por cat_padre_id. Consume RESENA_PUBLICADA (Review) para las calificaciones y TARIFA_ACTUALIZADA (Pricing) para el precio "desde".'
   },
   {
     n: 5, name: 'Review Service', proto: 'rest', span: 3, w: 320, h: 380,
@@ -181,47 +185,48 @@ const SERVICES = [
   },
   // Fila 3 · Precios, cupos y carrito
   {
-    n: 6, name: 'Pricing Service', proto: 'grpc', span: 3, w: 320, h: 250,
+    n: 6, name: 'Pricing Service', proto: 'grpc', tag: '.proto sobre HTTP', span: 3, w: 320, h: 250,
     fn: 'Tarifas versionadas por tipo de boleto.',
     nodes: { tarifa: [160, 115] },
     edges: [],
-    ext: 'Ref. externa: tarifa → atraccion (Catalog). Order la consulta al crear la orden.'
+    ext: 'Ref. externa: tarifa → atraccion (Catalog, por atr_codigo). Order la consulta al crear la orden. Publica TARIFA_ACTUALIZADA.'
   },
   {
-    n: 7, name: 'Inventory & Availability Service', proto: 'grpc', span: 5, w: 570, h: 250,
-    fn: 'Turnos, cupos por fecha y días bloqueados.',
-    nodes: { horario: [110, 60], disponibilidad: [430, 60], fecha_bloqueada: [270, 180] },
-    edges: [['horario', 'disponibilidad', '1', 'N']],
-    ext: 'Ref. externa: horario, disponibilidad, fecha_bloqueada → atraccion (Catalog). FK compuesta interna (hor_id, atr_id) → horario.'
+    n: 7, name: 'Inventory & Availability Service', proto: 'grpc', tag: '.proto sobre HTTP', span: 5, w: 570, h: 250,
+    fn: 'Turnos, cupos por fecha, días bloqueados y bloqueos de cupo.',
+    nodes: { horario: [110, 60], disponibilidad: [430, 60], fecha_bloqueada: [110, 180], bloqueo_cupo: [430, 180] },
+    edges: [['horario', 'disponibilidad', '1', 'N'], ['disponibilidad', 'bloqueo_cupo', '1', 'N']],
+    ext: 'Ref. externa: horario, disponibilidad, fecha_bloqueada → atraccion (Catalog, por atr_codigo); horario, disponibilidad → guia (Catalog). FK compuesta interna (hor_id, atr_codigo) → horario.'
   },
   {
     n: 8, name: 'Cart Service', proto: 'rest', span: 4, w: 450, h: 250,
-    fn: 'Carrito de compras antes de generar la orden.',
+    fn: 'Carrito de compras; cada ítem se compra como una orden.',
     nodes: { carrito: [100, 115], carrito_item: [330, 115] },
     edges: [['carrito', 'carrito_item', '1', 'N']],
-    ext: 'Ref. externa: carrito → usuario (Identity); carrito_item → atraccion (Catalog), disponibilidad (Inventory).'
+    ext: 'Ref. externa: carrito → usuario (Identity); carrito_item → atraccion (atr_codigo, Catalog), disponibilidad (dis_slot_codigo, Inventory), orden (cai_ord_numero, Order).'
   },
   // Fila 4 · Cupones, órdenes y reservas
   {
-    n: 9, name: 'Coupon Service', proto: 'rest', span: 3, w: 320, h: 270,
-    fn: 'Cupones de descuento y su vigencia.',
-    nodes: { cupon: [160, 125] },
-    edges: [],
-    ext: 'Sin referencias externas. Los usos se cuentan en orden_cupon (Order).'
+    n: 9, name: 'Coupon & Promotions Service', proto: 'rest', span: 3, w: 320, h: 300,
+    fn: 'Cupones de descuento y acuerdos de promoción con los socios.',
+    nodes: { cupon: [160, 40], acuerdo_promocion: [160, 150], acuerdo_promocion_destino: [160, 250] },
+    edges: [['acuerdo_promocion', 'acuerdo_promocion_destino', '1', 'N']],
+    ext: 'Ref. externa: acuerdo_promocion_destino → ciudad (Location). Los usos del cupón se cuentan en orden_cupon (Order).'
   },
   {
-    n: 10, name: 'Order Management Service', proto: 'grpc', span: 5, w: 570, h: 270,
+    n: 10, name: 'Order Management Service', proto: 'grpc', tag: '.proto sobre HTTP', span: 5, w: 570, h: 300,
     fn: 'Órdenes de compra, sus líneas, cupones aplicados e idempotencia.',
     nodes: { orden: [100, 60], orden_cupon: [330, 60, 'b'], orden_detalle: [110, 200], estado: [300, 200], idempotencia: [470, 200] },
     edges: [['orden', 'orden_cupon', '1', 'N'], ['orden', 'orden_detalle', '1', 'N'], ['estado', 'orden', '1', 'N']],
-    ext: 'Ref. externa: orden, idempotencia → usuario (Identity); orden → carrito (Cart), metodo_pago (Payment); orden_cupon → cupon (Coupon); orden_detalle → atraccion (Catalog).'
+    ext: 'Ref. externa: orden → usuario o cliente_api (Identity), carrito_item (Cart), metodo_pago (Payment); idempotencia → usuario o cliente_api; orden_cupon → cupon (Coupon); orden_detalle → atraccion (Catalog).'
   },
   {
-    n: 11, name: 'Booking Service', proto: 'grpc', span: 4, w: 450, h: 270,
-    fn: 'Reservas confirmadas y sus pasajeros.',
-    nodes: { reserva: [130, 60], estado: [350, 60], reserva_pasajero: [130, 200] },
-    edges: [['reserva', 'reserva_pasajero', '1', 'N'], ['estado', 'reserva', '1', 'N']],
-    ext: 'Ref. externa: reserva → orden_detalle (Order), disponibilidad (Inventory).'
+    n: 11, name: 'Booking Service', proto: 'grpc', tag: '.proto sobre HTTP', span: 4, w: 450, h: 300,
+    fn: 'Reservas, pasajeros, cancelación, check-in y eventos para los socios.',
+    nodes: { reserva: [130, 50], estado: [350, 50], reserva_pasajero: [130, 150], notificacion_checkin: [330, 150],
+             idempotencia: [110, 250], outbox_evento: [330, 250] },
+    edges: [['reserva', 'reserva_pasajero', '1', 'N'], ['estado', 'reserva', '1', 'N'], ['reserva', 'notificacion_checkin', '1', '1']],
+    ext: 'Ref. externa: reserva → orden, orden_detalle (Order), disponibilidad (Inventory), guia (Catalog), cliente_api (Identity), reembolso (Refund). outbox_evento alimenta GET /atracciones/eventos.'
   },
   // Fila 5 · Pagos, reembolsos y facturación
   {
@@ -243,7 +248,7 @@ const SERVICES = [
     fn: 'Facturas electrónicas autorizadas por el SRI.',
     nodes: { factura: [140, 70], estado: [350, 70], factura_detalle: [140, 220] },
     edges: [['factura', 'factura_detalle', '1', 'N'], ['estado', 'factura', '1', 'N']],
-    ext: 'Ref. externa: factura → orden (Order), dato_facturacion (Billing Profile); factura_detalle → orden_detalle (Order).'
+    ext: 'Ref. externa: factura → orden (Order), dato_facturacion (Billing Profile); factura_detalle → orden_detalle (Order). Se emite al recibir OrdenPagada.'
   },
   // Fila 6 · Soporte y auditoría
   {

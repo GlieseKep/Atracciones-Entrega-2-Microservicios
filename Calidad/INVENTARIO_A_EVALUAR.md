@@ -13,7 +13,7 @@ Lista de los procesos, microservicios, endpoints y mensajes que entran en cada c
 | P1 | Taxonomía de categorías (árbol con `incluye_comida`, `incluye_transporte`, `incluye_guia`) | `GET /atracciones/categorias/arbol` | Partner API → ms-catalog |
 | P2 | Listado plano de categorías | `GET /atracciones/categorias` | Partner API → ms-catalog |
 | P3 | Búsqueda avanzada | `POST /atracciones/search` | Partner API → ms-catalog (→ ms-location, ms-inventory) |
-| P4 | Listado de atracciones | `GET /atracciones` | Partner API → ms-catalog |
+| P4 | Listado de atracciones | `GET /atracciones` | Partner API → ms-catalog. **Excepción aceptada:** la respuesta 200 no es `SearchAtraccionesResponseV2` (v3 del plan), sino un arreglo de `AtraccionListadoSimple` (formato de la guía de socios de Booking). Es el único cambio de la copia `packages/contracts/openapi/atracciones-openapi-v3.yaml` respecto de `Plan/PlanBooking/atracciones-openapi-v3(1).yaml`, y las pruebas de P4 se validan contra esa copia |
 | P5 | Ficha técnica (itinerario, valoraciones, punto de encuentro, tarifas por edad) | `GET /atracciones/{id}` | Partner API → ms-catalog (precios de ms-pricing y valoraciones de ms-review por eventos) |
 | P6 | Disponibilidad de turnos (`DISPONIBLE` / `ULTIMOS_CUPOS` / `AGOTADO`) | `GET /atracciones/{id}/disponibilidad` | Partner API → ms-inventory |
 | P7 | Compra con saga y compensación (`201`, `400 SLOT_TIME_MISMATCH`, `422`, `409 OUT_OF_STOCK`) | `POST /atracciones/reservas` | Partner API → ms-booking → ms-identity, ms-catalog, ms-order (→ ms-pricing, ms-payment), ms-inventory |

@@ -1,0 +1,663 @@
+- main [ref=f2e2]:
+  - 'heading "Integración de microservicios: Gateway, ESB, bus de eventos y GraphQL" [level=1] [ref=f2e3]'
+  - paragraph [ref=f2e4]:
+    - text: "Arquitectura implementada y desplegada: Gateway, Partner API, GraphQL, ESB y los 16 microservicios de"
+    - code [ref=f2e5]: microservicios_tablas_v2.html
+    - text: con las tablas de sus migraciones (
+    - code [ref=f2e6]: apps/services/ms-*
+    - text: ", contrato OpenAPI v3). Verde gRPC: contrato"
+    - code [ref=f2e7]: .proto
+    - text: cuyo mensaje viaja en JSON sobre HTTP (
+    - code [ref=f2e8]: POST /internal/rpc/<Método>
+    - text: ") a través del ESB. Flechas continuas: llamada síncrona. Flechas punteadas: evento asíncrono. Líneas grises con 1 / N: relación entre tablas. Borde punteado: tabla intermedia. Círculos numerados: medidas contra cuellos de botella. Etiqueta roja: correlation_id."
+  - 'img "Arquitectura de integración: clientes, API Gateway, GraphQL, ESB, microservicios y bus de eventos" [ref=f2e10]':
+    - generic [ref=f2e11]:
+      - generic [ref=f2e13]: Clientes
+      - generic [ref=f2e14]: Web TourGirls · App móvil
+    - generic [ref=f2e15]:
+      - generic [ref=f2e17]: Booking Prototipo (socio B2B)
+      - generic [ref=f2e18]: Agregador externo · REST /api/v3 · X-API-Key · Saga LIFO · aviso de check-in
+    - generic [ref=f2e19]:
+      - generic [ref=f2e21]: Static Web Apps + API Gateway
+      - generic [ref=f2e22]: Portal estático · auth JWT y X-API-Key · rate limiting · genera el correlation_id · /api/v3/auth directo a 1 Identity
+    - generic [ref=f2e23]: "2"
+    - generic [ref=f2e26]: "1"
+    - generic [ref=f2e29]:
+      - generic [ref=f2e31]: GraphQL (Apollo Server)
+      - generic [ref=f2e32]: Una sola API para el portal · límites de profundidad y complejidad
+    - generic [ref=f2e33]: "3"
+    - generic [ref=f2e36]:
+      - generic [ref=f2e38]: Caché de lecturas
+      - generic [ref=f2e39]: Redis o memoria · GraphQL y Partner API · se vacía con eventos
+    - generic [ref=f2e40]: "6"
+    - generic [ref=f2e43]:
+      - generic [ref=f2e45]: Partner API
+      - generic [ref=f2e46]: Contrato REST v3
+    - generic [ref=f2e47]:
+      - generic [ref=f2e49]: Pasarela de pago
+      - generic [ref=f2e50]: Simulada · webhook a cola RabbitMQ
+    - generic [ref=f2e51]: "8"
+    - generic [ref=f2e54]:
+      - generic [ref=f2e56]: SRI Ecuador
+      - generic [ref=f2e57]: Web service SOAP · simulador en Azure
+    - generic [ref=f2e58]:
+      - generic [ref=f2e60]: Booking Prototipo · stock
+      - generic [ref=f2e61]: REST POST /api/v3/inventory/stock
+    - generic [ref=f2e62]:
+      - generic [ref=f2e64]: Enterprise Service Bus (ESB)
+      - generic [ref=f2e65]: Mediación y enrutamiento · traduce JSON a REST, RPC del .proto (POST /internal/rpc) y SOAP · X-Service-Token · timeouts y circuit breaker · sin lógica de negocio
+    - generic [ref=f2e66]: "4"
+    - generic [ref=f2e69]: REST /api/v3 · X-API-Key
+    - generic [ref=f2e70]: correlation_id
+    - generic [ref=f2e73]: comandos y consultas directas
+    - generic [ref=f2e74]: correlation_id
+    - generic [ref=f2e77]: contrato REST v3 (socios)
+    - generic [ref=f2e78]: webhook HTTP
+    - generic [ref=f2e79]: SOAP/XML + firma
+    - generic [ref=f2e81]: REST · stock desde 7 Inventory (directo, sin ESB)
+    - generic [ref=f2e83]: catalog.* · pricing.* · review.* → vaciar la caché
+    - generic [ref=f2e85]: SÍNCRONO · ESB → GraphQL directo
+    - generic [ref=f2e89]: ASÍNCRONO · compra coordinada por eventos (RabbitMQ)
+    - generic [ref=f2e93]: CONSUMIDOR
+    - generic [ref=f2e96]: correlation_id
+    - generic [ref=f2e99]:
+      - generic [ref=f2e101]: 1 Identity & Access
+      - generic [ref=f2e102]: REST
+      - generic [ref=f2e105]: "1"
+      - generic [ref=f2e106]: "N"
+      - generic [ref=f2e107]: "1"
+      - generic [ref=f2e108]: "N"
+      - generic [ref=f2e109]: "1"
+      - generic [ref=f2e110]: "N"
+      - generic [ref=f2e111]: "1"
+      - generic [ref=f2e112]: "N"
+      - generic [ref=f2e113]: rol
+      - generic [ref=f2e116]: usuario_rol
+      - generic [ref=f2e119]: cliente_api
+      - generic [ref=f2e122]: sesion
+      - generic [ref=f2e125]: usuario
+      - generic [ref=f2e128]: token_verificacion
+      - generic [ref=f2e131]: "Sin referencias externas. cliente_api: SOCIO (hash de la X-API-Key) o TURISTA. Publica"
+      - generic [ref=f2e132]: eventos de bitácora. /api/v3/auth le llega directo del Gateway.
+    - generic [ref=f2e133]:
+      - generic [ref=f2e135]: 4 Catalog & Attractions
+      - generic [ref=f2e136]: REST
+      - generic [ref=f2e140]: "1"
+      - generic [ref=f2e141]: "N"
+      - generic [ref=f2e142]: "1"
+      - generic [ref=f2e143]: "N"
+      - generic [ref=f2e145]: "1"
+      - generic [ref=f2e146]: "N"
+      - generic [ref=f2e147]: "1"
+      - generic [ref=f2e148]: "N"
+      - generic [ref=f2e150]: "1"
+      - generic [ref=f2e151]: "N"
+      - generic [ref=f2e152]: "1"
+      - generic [ref=f2e153]: "N"
+      - generic [ref=f2e154]: "1"
+      - generic [ref=f2e155]: "N"
+      - generic [ref=f2e156]: "1"
+      - generic [ref=f2e157]: "N"
+      - generic [ref=f2e158]: "1"
+      - generic [ref=f2e159]: "N"
+      - generic [ref=f2e160]: "1"
+      - generic [ref=f2e161]: "N"
+      - generic [ref=f2e162]: "1"
+      - generic [ref=f2e163]: "N"
+      - generic [ref=f2e164]: "1"
+      - generic [ref=f2e165]: "N"
+      - generic [ref=f2e166]: categoria
+      - generic [ref=f2e169]: atraccion_categoria
+      - generic [ref=f2e172]: atraccion_foto
+      - generic [ref=f2e175]: atraccion_itinerario
+      - generic [ref=f2e178]: operador_usuario
+      - generic [ref=f2e181]: operador
+      - generic [ref=f2e184]: atraccion
+      - generic [ref=f2e187]: atraccion_inclusion
+      - generic [ref=f2e190]: inclusion
+      - generic [ref=f2e193]: guia
+      - generic [ref=f2e196]: atraccion_idioma
+      - generic [ref=f2e199]: idioma
+      - generic [ref=f2e202]: "Ref. externa: atraccion → ciudad (Location); operador → provincia (Location); operador_usuario, guia → usuario (Identity). Consume RESENA_PUBLICADA (Review) y TARIFA_ACTUALIZADA"
+      - generic [ref=f2e203]: (Pricing).
+    - generic [ref=f2e204]:
+      - generic [ref=f2e206]: 3 Location
+      - generic [ref=f2e207]: REST
+      - generic [ref=f2e210]: "1"
+      - generic [ref=f2e211]: "N"
+      - generic [ref=f2e212]: "1"
+      - generic [ref=f2e213]: "N"
+      - generic [ref=f2e214]: region
+      - generic [ref=f2e217]: provincia
+      - generic [ref=f2e220]: ciudad
+      - generic [ref=f2e223]: Sin referencias externas. Catálogo de solo lectura que consultan otros servicios.
+    - generic [ref=f2e224]:
+      - generic [ref=f2e226]: 2 Billing Profile
+      - generic [ref=f2e227]: REST
+      - generic [ref=f2e230]: dato_facturacion
+      - generic [ref=f2e233]: "Ref. externa: dato_facturacion →"
+      - generic [ref=f2e234]: usuario o cliente_api turista
+      - generic [ref=f2e235]: (Identity).
+    - generic [ref=f2e236]:
+      - generic [ref=f2e238]: 5 Review
+      - generic [ref=f2e239]: REST
+      - generic [ref=f2e242]: resena
+      - generic [ref=f2e245]: "Ref. externa: → atraccion (Catalog), usuario"
+      - generic [ref=f2e246]: (Identity). Publica RESENA_PUBLICADA.
+    - generic [ref=f2e247]:
+      - generic [ref=f2e249]: 6 Pricing
+      - generic [ref=f2e250]: gRPC
+      - generic [ref=f2e253]: .proto sobre HTTP
+      - generic [ref=f2e256]: tarifa
+      - generic [ref=f2e259]: "Ref. externa: → atraccion (Catalog)."
+      - generic [ref=f2e260]: ADULT, CHILD, SENIOR, INFANT,
+      - generic [ref=f2e261]: STUDENT.
+    - generic [ref=f2e262]:
+      - generic [ref=f2e264]: 8 Cart
+      - generic [ref=f2e265]: REST
+      - generic [ref=f2e268]: "1"
+      - generic [ref=f2e269]: "N"
+      - generic [ref=f2e270]: carrito
+      - generic [ref=f2e273]: carrito_item
+      - generic [ref=f2e276]: "Ref. externa: carrito → usuario (Identity); carrito_item →"
+      - generic [ref=f2e277]: atraccion (Catalog), disponibilidad (Inventory).
+    - generic [ref=f2e278]:
+      - generic [ref=f2e280]: 9 Coupon & Promotions
+      - generic [ref=f2e281]: REST
+      - generic [ref=f2e284]: "1"
+      - generic [ref=f2e285]: "N"
+      - generic [ref=f2e286]: cupon
+      - generic [ref=f2e289]: acuerdo_promocion
+      - generic [ref=f2e292]: acuerdo_promocion_destino
+      - generic [ref=f2e295]: "acuerdo_promocion: GET/PUT /promociones/contrato. Ref. externa: destino"
+      - generic [ref=f2e296]: → ciudad (Location); usos de cupón en orden_cupon (Order).
+    - generic [ref=f2e297]:
+      - generic [ref=f2e299]: 15 Support
+      - generic [ref=f2e300]: REST
+      - generic [ref=f2e303]: mensaje_contacto
+      - generic [ref=f2e306]: Sin referencias externas. Mensajes de contacto de los visitantes.
+    - generic [ref=f2e307]:
+      - generic [ref=f2e309]: 7 Inventory
+      - generic [ref=f2e310]: gRPC
+      - generic [ref=f2e313]: .proto sobre HTTP
+      - generic [ref=f2e316]: "1"
+      - generic [ref=f2e317]: "N"
+      - generic [ref=f2e318]: "1"
+      - generic [ref=f2e319]: "N"
+      - generic [ref=f2e320]: horario
+      - generic [ref=f2e323]: disponibilidad
+      - generic [ref=f2e326]: bloqueo_cupo
+      - generic [ref=f2e329]: fecha_bloqueada
+      - generic [ref=f2e332]: "Ref.: → atraccion, guia (Catalog)."
+      - generic [ref=f2e333]: Stock → Booking Prototipo por REST,
+      - generic [ref=f2e334]: sin ESB.
+    - generic [ref=f2e335]: "10"
+    - generic [ref=f2e338]:
+      - generic [ref=f2e340]: 10 Order Management
+      - generic [ref=f2e341]: gRPC
+      - generic [ref=f2e344]: .proto sobre HTTP
+      - generic [ref=f2e347]: "1"
+      - generic [ref=f2e348]: "N"
+      - generic [ref=f2e350]: "1"
+      - generic [ref=f2e351]: "N"
+      - generic [ref=f2e353]: "1"
+      - generic [ref=f2e354]: "N"
+      - generic [ref=f2e355]: orden
+      - generic [ref=f2e358]: estado
+      - generic [ref=f2e361]: orden_detalle
+      - generic [ref=f2e364]: orden_cupon
+      - generic [ref=f2e367]: idempotencia
+      - generic [ref=f2e370]: "Ref. externa: orden → usuario, cliente_api"
+      - generic [ref=f2e371]: (Identity), carrito_item, metodo_pago;
+      - generic [ref=f2e372]: orden_detalle → atraccion.
+    - generic [ref=f2e373]:
+      - generic [ref=f2e375]: 11 Booking
+      - generic [ref=f2e376]: gRPC
+      - generic [ref=f2e379]: .proto sobre HTTP
+      - generic [ref=f2e382]: "1"
+      - generic [ref=f2e383]: "N"
+      - generic [ref=f2e384]: "1"
+      - generic [ref=f2e385]: "N"
+      - generic [ref=f2e387]: "1"
+      - generic [ref=f2e388]: "1"
+      - generic [ref=f2e389]: reserva
+      - generic [ref=f2e392]: estado
+      - generic [ref=f2e395]: reserva_pasajero
+      - generic [ref=f2e398]: outbox_evento
+      - generic [ref=f2e401]: idempotencia
+      - generic [ref=f2e404]: notificacion_checkin
+      - generic [ref=f2e407]: "Ref.: → orden_detalle (Order), disponibilidad"
+      - generic [ref=f2e408]: (Inventory), guia (Catalog), cliente_api,
+      - generic [ref=f2e409]: reembolso. Outbox → bus y GET /eventos.
+    - generic [ref=f2e410]: "7"
+    - generic [ref=f2e413]:
+      - generic [ref=f2e415]: 12 Payment
+      - generic [ref=f2e416]: REST
+      - generic [ref=f2e419]: "1"
+      - generic [ref=f2e420]: "N"
+      - generic [ref=f2e421]: "1"
+      - generic [ref=f2e422]: "N"
+      - generic [ref=f2e424]: "1"
+      - generic [ref=f2e425]: "1"
+      - generic [ref=f2e427]: "1"
+      - generic [ref=f2e428]: "1"
+      - generic [ref=f2e429]: metodo_pago
+      - generic [ref=f2e432]: pago
+      - generic [ref=f2e435]: estado
+      - generic [ref=f2e438]: pago_tarjeta
+      - generic [ref=f2e441]: pago_transferencia
+      - generic [ref=f2e444]: "Ref. externa: pago → orden (Order). Métodos CREDIT_CARD,"
+      - generic [ref=f2e445]: DEBIT_CARD, PAYPAL, TRANSFER.
+    - generic [ref=f2e446]:
+      - generic [ref=f2e448]: 13 Refund
+      - generic [ref=f2e449]: REST
+      - generic [ref=f2e452]: reembolso
+      - generic [ref=f2e455]: "Ref. externa: →"
+      - generic [ref=f2e456]: pago (Payment).
+    - generic [ref=f2e457]:
+      - generic [ref=f2e459]: 14 Invoicing
+      - generic [ref=f2e460]: SOAP
+      - generic [ref=f2e463]: "1"
+      - generic [ref=f2e464]: "N"
+      - generic [ref=f2e465]: "1"
+      - generic [ref=f2e466]: "N"
+      - generic [ref=f2e467]: estado
+      - generic [ref=f2e470]: factura
+      - generic [ref=f2e473]: factura_detalle
+      - generic [ref=f2e476]: "Ref. externa: → orden,"
+      - generic [ref=f2e477]: orden_detalle (Order),
+      - generic [ref=f2e478]: dato_facturacion (Billing).
+    - generic [ref=f2e479]: "9"
+    - generic [ref=f2e482]:
+      - generic [ref=f2e484]: 16 Audit
+      - generic [ref=f2e485]: REST
+      - generic [ref=f2e488]: Consumidor de eventos
+      - generic [ref=f2e491]: bitacora
+      - generic [ref=f2e494]: "Consume todos los eventos del bus. Ref. externa: bitacora → usuario (Identity)."
+      - generic [ref=f2e495]: Guarda el correlation_id.
+    - generic [ref=f2e496]:
+      - generic [ref=f2e498]: Bus de eventos (RabbitMQ)
+      - generic [ref=f2e499]: Exchange topic · claves <servicio>.<Evento> · una cola durable por consumidor · DLX/DLQ · Outbox + relay · sobre con event_id y correlation_id
+    - generic [ref=f2e500]: "5"
+    - generic [ref=f2e503]: correlation_id
+    - generic [ref=f2e506]: Todas las llamadas entre servicios pasan por el ESB. 7 y 10–14 además coordinan la compra por eventos en RabbitMQ; Audit (16) los guarda todos. Booking Prototipo entra por el Gateway a Partner API con REST y recibe el stock por REST directo desde Inventory.
+  - generic [ref=f2e507]:
+    - generic [ref=f2e508]:
+      - heading "Clasificación" [level=3] [ref=f2e509]
+      - 'heading "Síncrono: ESB → GraphQL directo" [level=4] [ref=f2e510]'
+      - paragraph [ref=f2e512]: "1 Identity, 2 Billing Profile, 3 Location, 4 Catalog, 5 Review, 6 Pricing, 8 Cart, 9 Coupon & Promotions, 15 Support: respuesta inmediata al usuario."
+      - paragraph [ref=f2e513]:
+        - text: Review publica
+        - code [ref=f2e514]: RESENA_PUBLICADA
+        - text: y Pricing
+        - code [ref=f2e515]: TARIFA_ACTUALIZADA
+        - text: ; Catalog los consume. Identity publica eventos de bitácora (roles, clientes API, usuarios desactivados).
+      - 'heading "Asíncrono: bus de eventos (RabbitMQ)" [level=4] [ref=f2e516]'
+      - paragraph [ref=f2e518]: "7 Inventory: CupoBloqueado, CupoLiberado. El stock para Booking Prototipo va aparte, por REST."
+      - paragraph [ref=f2e519]: "10 Order: OrdenCreada, OrdenPagada. Consume PagoAprobado, PagoRechazado y ReembolsoEmitido."
+      - paragraph [ref=f2e520]: "11 Booking (Outbox): RESERVA_CREADA, RESERVA_CONFIRMADA, RESERVA_CANCELADA, STOCK_ACTUALIZADO. Consume PagoAprobado, PagoRechazado y ReembolsoEmitido."
+      - paragraph [ref=f2e521]: "12 Payment: PagoAprobado, PagoRechazado"
+      - paragraph [ref=f2e522]: "13 Refund: ReembolsoEmitido"
+      - paragraph [ref=f2e523]: "14 Invoicing: FacturaAutorizada. Consume OrdenPagada y ReembolsoEmitido (el SRI responde lento)."
+      - heading "Consumidor de eventos" [level=4] [ref=f2e524]
+      - paragraph [ref=f2e526]: "16 Audit: guarda todos los eventos en la bitácora con su correlation_id."
+      - 'heading "Socio externo: Booking Prototipo" [level=4] [ref=f2e527]'
+      - paragraph [ref=f2e529]:
+        - text: Entra por el API Gateway a Partner API con REST
+        - code [ref=f2e530]: /api/v3
+        - text: "y"
+        - code [ref=f2e531]: X-API-Key
+        - text: . Recibe el stock por REST (
+        - code [ref=f2e532]: POST /api/v3/inventory/stock
+        - text: ) directo desde Inventory, el aviso de check-in por el ESB, y lee los eventos en
+        - code [ref=f2e533]: GET /atracciones/eventos
+        - text: .
+    - generic [ref=f2e534]:
+      - heading "Comunicaciones entre servicios (por el ESB, salvo las marcadas como directas)" [level=3] [ref=f2e535]
+      - table [ref=f2e537]:
+        - rowgroup [ref=f2e538]:
+          - row [ref=f2e539]:
+            - columnheader "Origen" [ref=f2e540]
+            - columnheader "Destino" [ref=f2e541]
+            - columnheader "Tipo" [ref=f2e542]
+            - columnheader "Para qué" [ref=f2e543]
+        - rowgroup [ref=f2e544]:
+          - row [ref=f2e545]:
+            - cell "Booking Prototipo → Partner API" [ref=f2e546]
+            - cell "11 Booking" [ref=f2e547]
+            - cell "REST" [ref=f2e548]
+            - cell [ref=f2e550]:
+              - code [ref=f2e551]: POST /reservas
+              - text: (201 / 409
+              - code [ref=f2e552]: OUT_OF_STOCK
+              - text: ),
+              - code [ref=f2e553]: /cancel
+              - text: ","
+              - code [ref=f2e554]: /checkin
+              - text: ","
+              - code [ref=f2e555]: "GET /reservas/{id}"
+          - row [ref=f2e556]:
+            - cell "Booking Prototipo → Partner API" [ref=f2e557]
+            - cell "4 Catalog" [ref=f2e558]
+            - cell "REST" [ref=f2e559]
+            - cell [ref=f2e561]:
+              - code [ref=f2e562]: GET /atracciones
+              - text: ","
+              - code [ref=f2e563]: /search
+              - text: ","
+              - code [ref=f2e564]: "/{id}"
+              - text: ","
+              - code [ref=f2e565]: /categorias/arbol
+          - row [ref=f2e566]:
+            - cell "Booking Prototipo → Partner API" [ref=f2e567]
+            - cell "7 Inventory" [ref=f2e568]
+            - cell "gRPC" [ref=f2e569]
+            - cell [ref=f2e571]:
+              - code [ref=f2e572]: "GET /atracciones/{id}/disponibilidad"
+              - text: ; Partner API llama al RPC del
+              - code [ref=f2e573]: .proto
+              - text: por el ESB
+          - row [ref=f2e574]:
+            - cell "Booking Prototipo → Partner API" [ref=f2e575]
+            - cell "9 Coupon & Promotions" [ref=f2e576]
+            - cell "REST" [ref=f2e577]
+            - cell [ref=f2e579]:
+              - code [ref=f2e580]: GET
+              - text: /
+              - code [ref=f2e581]: PUT /promociones/contrato
+          - row [ref=f2e582]:
+            - cell "Booking Prototipo → Partner API" [ref=f2e583]
+            - cell "11 Booking" [ref=f2e584]
+            - cell "REST" [ref=f2e585]
+            - cell [ref=f2e587]:
+              - code [ref=f2e588]: GET /atracciones/eventos
+              - text: (lee
+              - code [ref=f2e589]: outbox_evento
+              - text: )
+          - row [ref=f2e590]:
+            - cell "API Gateway" [ref=f2e591]
+            - cell "1 Identity" [ref=f2e592]
+            - cell "REST" [ref=f2e593]
+            - cell [ref=f2e595]:
+              - text: Validar el JWT o la
+              - code [ref=f2e596]: X-API-Key
+              - text: (
+              - code [ref=f2e597]: cliente_api
+              - text: ) por el ESB
+          - row [ref=f2e598]:
+            - cell "API Gateway" [ref=f2e599]
+            - cell "1 Identity (directo)" [ref=f2e600]
+            - cell "REST" [ref=f2e601]
+            - cell [ref=f2e603]:
+              - code [ref=f2e604]: /api/v3/auth
+              - text: ": registro, login y renovación de sesión"
+          - row [ref=f2e605]:
+            - cell "7 Inventory" [ref=f2e606]
+            - cell "Booking Prototipo (directo)" [ref=f2e607]
+            - cell "REST" [ref=f2e608]
+            - cell [ref=f2e610]:
+              - code [ref=f2e611]: POST /api/v3/inventory/stock
+              - text: con
+              - code [ref=f2e612]: X-API-Key
+              - text: en cada cambio de cupo, desde
+              - code [ref=f2e613]: outbox
+              - text: con reintento
+          - row [ref=f2e614]:
+            - cell "11 Booking" [ref=f2e615]
+            - cell "Booking Central" [ref=f2e616]
+            - cell "REST" [ref=f2e617]
+            - cell [ref=f2e619]:
+              - code [ref=f2e620]: "POST /api/v3/reservas/{external_order_id}/checkin"
+              - text: tras el check-in presencial (
+              - code [ref=f2e621]: notificacion_checkin
+              - text: ", con reintento)"
+          - row [ref=f2e622]:
+            - cell "11 Booking" [ref=f2e623]
+            - cell "10 Order" [ref=f2e624]
+            - cell "gRPC" [ref=f2e625]
+            - cell [ref=f2e627]:
+              - text: Crear y cancelar la orden y sus líneas (
+              - code [ref=f2e628]: external_order_id
+              - text: )
+          - row [ref=f2e629]:
+            - cell "11 Booking" [ref=f2e630]
+            - cell "7 Inventory" [ref=f2e631]
+            - cell "gRPC" [ref=f2e632]
+            - cell [ref=f2e634]:
+              - text: Descontar cupos por
+              - code [ref=f2e635]: slot_id
+              - text: ; reintegrarlos al cancelar (compensación de la saga)
+          - row [ref=f2e636]:
+            - cell "11 Booking" [ref=f2e637]
+            - cell "4 Catalog" [ref=f2e638]
+            - cell "REST" [ref=f2e639]
+            - cell "Guía asignado y punto de encuentro de la reserva" [ref=f2e641]
+          - row [ref=f2e642]:
+            - cell "11 Booking" [ref=f2e643]
+            - cell "13 Refund · 1 Identity" [ref=f2e644]
+            - cell "REST" [ref=f2e645]
+            - cell "Reembolso al cancelar; cliente turista del socio" [ref=f2e647]
+          - row [ref=f2e648]:
+            - cell "10 Order" [ref=f2e649]
+            - cell "6 Pricing" [ref=f2e650]
+            - cell "gRPC" [ref=f2e651]
+            - cell "Tarifa vigente por tipo de boleto" [ref=f2e653]
+          - row [ref=f2e654]:
+            - cell "10 Order" [ref=f2e655]
+            - cell "8 Cart · 9 Coupon · 12 Payment" [ref=f2e656]
+            - cell "REST" [ref=f2e657]
+            - cell "Ítem del carrito que se compra; validar el cupón; iniciar el cobro" [ref=f2e659]
+          - row [ref=f2e660]:
+            - cell "8 Cart" [ref=f2e661]
+            - cell "4 Catalog · 7 Inventory" [ref=f2e662]
+            - cell "REST gRPC" [ref=f2e663]:
+              - generic [ref=f2e664]: REST
+              - generic [ref=f2e665]: gRPC
+            - cell "Validar la atracción y el turno del ítem" [ref=f2e666]
+          - row [ref=f2e667]:
+            - cell "4 Catalog" [ref=f2e668]
+            - cell "3 Location · 7 Inventory · 1 Identity" [ref=f2e669]
+            - cell "REST gRPC" [ref=f2e670]:
+              - generic [ref=f2e671]: REST
+              - generic [ref=f2e672]: gRPC
+            - cell "Ciudades, filtro por disponibilidad y usuarios de operadores y guías" [ref=f2e673]
+          - row [ref=f2e674]:
+            - cell "6 Pricing · 5 Review" [ref=f2e675]
+            - cell "4 Catalog" [ref=f2e676]
+            - cell "REST" [ref=f2e677]
+            - cell "Validar que la atracción exista (Review también consulta a Identity)" [ref=f2e679]
+          - row [ref=f2e680]:
+            - cell "9 Coupon" [ref=f2e681]
+            - cell "3 Location" [ref=f2e682]
+            - cell "REST" [ref=f2e683]
+            - cell "Destinos del acuerdo de promoción" [ref=f2e685]
+          - row [ref=f2e686]:
+            - cell "13 Refund" [ref=f2e687]
+            - cell "12 Payment" [ref=f2e688]
+            - cell "REST" [ref=f2e689]
+            - cell "Monto cobrado, para no devolver más de lo pagado" [ref=f2e691]
+          - row [ref=f2e692]:
+            - cell "14 Invoicing" [ref=f2e693]
+            - cell "2 Billing Profile · 10 Order" [ref=f2e694]
+            - cell "REST gRPC" [ref=f2e695]:
+              - generic [ref=f2e696]: REST
+              - generic [ref=f2e697]: gRPC
+            - cell "Datos de facturación y líneas de la orden" [ref=f2e698]
+          - row [ref=f2e699]:
+            - cell "14 Invoicing" [ref=f2e700]
+            - cell "SRI Ecuador" [ref=f2e701]
+            - cell "SOAP" [ref=f2e702]
+            - cell [ref=f2e704]:
+              - code [ref=f2e705]: validarComprobante
+              - text: "y"
+              - code [ref=f2e706]: autorizacionComprobante
+              - text: (en Azure, simulador SOAP)
+          - row [ref=f2e707]:
+            - cell "Pasarela de pago" [ref=f2e708]
+            - cell "12 Payment" [ref=f2e709]
+            - cell "Webhook" [ref=f2e710]
+            - cell "Resultado del cobro; Payment responde 202 y lo encola en RabbitMQ" [ref=f2e712]
+          - row [ref=f2e713]:
+            - cell "12 Payment" [ref=f2e714]
+            - cell "10 Order · 11 Booking" [ref=f2e715]
+            - cell "Evento" [ref=f2e716]
+            - cell [ref=f2e718]:
+              - code [ref=f2e719]: PagoAprobado
+              - text: /
+              - code [ref=f2e720]: PagoRechazado
+          - row [ref=f2e721]:
+            - cell "10 Order" [ref=f2e722]
+            - cell "14 Invoicing" [ref=f2e723]
+            - cell "Evento" [ref=f2e724]
+            - cell [ref=f2e726]:
+              - code [ref=f2e727]: OrdenPagada
+              - text: ": emitir la factura"
+          - row [ref=f2e728]:
+            - cell "13 Refund" [ref=f2e729]
+            - cell "10 Order · 11 Booking · 14 Invoicing" [ref=f2e730]
+            - cell "Evento" [ref=f2e731]
+            - cell [ref=f2e733]:
+              - code [ref=f2e734]: ReembolsoEmitido
+          - row [ref=f2e735]:
+            - cell "5 Review · 6 Pricing" [ref=f2e736]
+            - cell "4 Catalog" [ref=f2e737]
+            - cell "Evento" [ref=f2e738]
+            - cell [ref=f2e740]:
+              - code [ref=f2e741]: RESENA_PUBLICADA
+              - text: actualiza las calificaciones;
+              - code [ref=f2e742]: TARIFA_ACTUALIZADA
+              - text: actualiza el precio "desde"
+          - row [ref=f2e743]:
+            - cell "4 Catalog · 5 Review · 6 Pricing" [ref=f2e744]
+            - cell "GraphQL · Partner API" [ref=f2e745]
+            - cell "Evento" [ref=f2e746]
+            - cell "Vacían la caché de lecturas" [ref=f2e748]
+          - row [ref=f2e749]:
+            - cell "Todos" [ref=f2e750]
+            - cell "16 Audit" [ref=f2e751]
+            - cell "Evento" [ref=f2e752]
+            - cell "Bitácora con el correlation_id" [ref=f2e754]
+  - generic [ref=f2e755]:
+    - heading "Cómo evitar cuellos de botella" [level=3] [ref=f2e756]
+    - generic [ref=f2e757]:
+      - generic [ref=f2e758]:
+        - generic [ref=f2e759]: "1"
+        - paragraph [ref=f2e760]:
+          - generic [ref=f2e761]: Rate limiting
+          - generic [ref=f2e762]:
+            - text: Límite por IP y minuto en el Gateway para la web, GraphQL y la sesión; el exceso recibe 429 con
+            - code [ref=f2e763]: Retry-After
+            - text: y no llega al ESB. El contrato
+            - code [ref=f2e764]: /api/v3
+            - text: de los socios no responde 429.
+      - generic [ref=f2e765]:
+        - generic [ref=f2e766]: "6"
+        - paragraph [ref=f2e767]:
+          - generic [ref=f2e768]: Caché de lecturas
+          - generic [ref=f2e769]:
+            - text: GraphQL y Partner API guardan en Redis (o en memoria) las lecturas públicas y las vacían con los eventos
+            - code [ref=f2e770]: catalog.*
+            - text: ","
+            - code [ref=f2e771]: pricing.*
+            - text: "y"
+            - code [ref=f2e772]: review.*
+            - text: .
+      - generic [ref=f2e773]:
+        - generic [ref=f2e774]: "2"
+        - paragraph [ref=f2e775]:
+          - generic [ref=f2e776]: Web estática en el borde
+          - text: El portal se sirve desde Azure Static Web Apps; solo los datos entran al Gateway.
+      - generic [ref=f2e777]:
+        - generic [ref=f2e778]: "7"
+        - paragraph [ref=f2e779]:
+          - generic [ref=f2e780]: Outbox + idempotencia
+          - generic [ref=f2e781]:
+            - text: Booking (
+            - code [ref=f2e782]: outbox_evento
+            - text: ) y 8 servicios (
+            - code [ref=f2e783]: outbox
+            - text: ) escriben el evento en la misma transacción;
+            - code [ref=f2e784]: idempotencia
+            - text: (Order y Booking) devuelve la misma respuesta ante reintentos con la misma
+            - code [ref=f2e785]: Idempotency-Key
+            - text: .
+      - generic [ref=f2e786]:
+        - generic [ref=f2e787]: "3"
+        - paragraph [ref=f2e788]:
+          - generic [ref=f2e789]: GraphQL acotado
+          - text: Límite de profundidad y de complejidad por consulta; las lecturas públicas salen de la caché.
+      - generic [ref=f2e790]:
+        - generic [ref=f2e791]: "8"
+        - paragraph [ref=f2e792]:
+          - generic [ref=f2e793]: Webhook rápido
+          - text: Payment responde 202 a la pasarela y encola el procesamiento en RabbitMQ.
+      - generic [ref=f2e794]:
+        - generic [ref=f2e795]: "4"
+        - paragraph [ref=f2e796]:
+          - generic [ref=f2e797]: ESB ligero
+          - generic [ref=f2e798]:
+            - text: Solo enruta y traduce (REST, RPC del
+            - code [ref=f2e799]: .proto
+            - text: sobre HTTP, SOAP); sin estado, con timeout por ruta y circuit breaker.
+      - generic [ref=f2e800]:
+        - generic [ref=f2e801]: "9"
+        - paragraph [ref=f2e802]:
+          - generic [ref=f2e803]: Nivelación de carga
+          - generic [ref=f2e804]:
+            - text: Facturas en cola (
+            - code [ref=f2e805]: fac_estado_sri = PENDIENTE
+            - text: ); se envían al SRI a ritmo controlado con reintento exponencial.
+      - generic [ref=f2e806]:
+        - generic [ref=f2e807]: "5"
+        - paragraph [ref=f2e808]:
+          - generic [ref=f2e809]: Colas por consumidor
+          - generic [ref=f2e810]:
+            - text: Exchange topic con claves
+            - code [ref=f2e811]: <servicio>.<Evento>
+            - text: ; cada consumidor tiene su cola durable, reintenta con espera creciente y lo fallido va a la DLQ.
+      - generic [ref=f2e812]:
+        - generic [ref=f2e813]: "10"
+        - paragraph [ref=f2e814]:
+          - generic [ref=f2e815]: Stock desacoplado
+          - generic [ref=f2e816]:
+            - text: Inventory deja cada cambio de cupo en
+            - code [ref=f2e817]: outbox
+            - text: y lo envía a Booking Prototipo por REST; si Booking no responde, reintenta cada minuto sin frenar la reserva.
+  - generic [ref=f2e818]:
+    - 'heading "Correlation ID: una misma petición, rastreable en todos los servicios" [level=3] [ref=f2e819]'
+    - generic [ref=f2e820]:
+      - generic [ref=f2e821]:
+        - generic [ref=f2e822]: 1 API Gateway
+        - generic [ref=f2e823]:
+          - text: Genera
+          - code [ref=f2e824]: X-Correlation-Id
+          - text: o reutiliza el que envía el cliente o Booking Prototipo.
+        - text: →
+      - generic [ref=f2e825]:
+        - generic [ref=f2e826]: 2 GraphQL · Partner API
+        - text: Lo guardan en el contexto y lo reenvían en cada llamada al ESB. →
+      - generic [ref=f2e827]:
+        - generic [ref=f2e828]: 3 ESB
+        - text: Lo pasa en la cabecera HTTP (REST y RPC) o en el SOAP Header; hacia el SRI real se puede omitir. →
+      - generic [ref=f2e829]:
+        - generic [ref=f2e830]: 4 Microservicio
+        - generic [ref=f2e831]:
+          - text: Lo escribe en cada log y en
+          - code [ref=f2e832]: outbox.correlation_id
+          - text: u
+          - code [ref=f2e833]: outbox_evento.evt_correlation_id
+          - text: .
+        - text: →
+      - generic [ref=f2e834]:
+        - generic [ref=f2e835]: 5 Bus de eventos
+        - generic [ref=f2e836]:
+          - text: Viaja en el sobre del mensaje (
+          - code [ref=f2e837]: correlation_id
+          - text: ); cada consumidor lo continúa.
+        - text: →
+      - generic [ref=f2e838]:
+        - generic [ref=f2e839]: 6 Audit
+        - generic [ref=f2e840]:
+          - text: Lo guarda en
+          - code [ref=f2e841]: bitacora.bit_correlation_id
+          - text: para rastrear el flujo completo.

@@ -155,8 +155,8 @@
 </head>
 <body>
 <main>
-  <h1>Integración de microservicios: ESB, bus de eventos y GraphQL</h1>
-  <p class="sub">16 microservicios de <code>microservicios_tablas_v2.html</code> con las tablas de <code>02_microservicios_v2_bases_de_datos.sql</code> (contrato OpenAPI v3). Flechas continuas: llamada síncrona. Flechas punteadas: evento asíncrono. Líneas grises con 1 / N: relación entre tablas. Borde punteado: tabla intermedia. Círculos numerados: medidas contra cuellos de botella. Etiqueta roja: correlation_id.</p>
+  <h1>Integración de microservicios: Gateway, ESB, bus de eventos y GraphQL</h1>
+  <p class="sub">Arquitectura implementada y desplegada: Gateway, Partner API, GraphQL, ESB y los 16 microservicios de <code>microservicios_tablas_v2.html</code> con las tablas de sus migraciones (<code>apps/services/ms-*</code>, contrato OpenAPI v3). Verde gRPC: contrato <code>.proto</code> cuyo mensaje viaja en JSON sobre HTTP (<code>POST /internal/rpc/&lt;Método&gt;</code>) a través del ESB. Flechas continuas: llamada síncrona. Flechas punteadas: evento asíncrono. Líneas grises con 1 / N: relación entre tablas. Borde punteado: tabla intermedia. Círculos numerados: medidas contra cuellos de botella. Etiqueta roja: correlation_id.</p>
 
   <div class="scroll">
     <svg id="arq" viewBox="0 0 2420 1745" role="img" aria-label="Arquitectura de integración: clientes, API Gateway, GraphQL, ESB, microservicios y bus de eventos"></svg>
@@ -167,46 +167,55 @@
       <h3>Clasificación</h3>
       <h4><i class="sq" style="background:var(--neutral)"></i>Síncrono: ESB → GraphQL directo</h4>
       <p>1 Identity, 2 Billing Profile, 3 Location, 4 Catalog, 5 Review, 6 Pricing, 8 Cart, 9 Coupon &amp; Promotions, 15 Support: respuesta inmediata al usuario.</p>
-      <p>Review publica <code>RESENA_PUBLICADA</code> y Pricing <code>TARIFA_ACTUALIZADA</code>; Catalog los consume.</p>
-      <h4><i class="sq" style="background:var(--evt)"></i>Asíncrono: bus de eventos → read model → GraphQL</h4>
-      <p>7 Inventory: CupoBloqueado, CupoLiberado</p>
-      <p>10 Order: OrdenCreada, OrdenPagada</p>
-      <p>11 Booking (Outbox): RESERVA_CREADA, RESERVA_CONFIRMADA, RESERVA_CANCELADA, STOCK_ACTUALIZADO</p>
+      <p>Review publica <code>RESENA_PUBLICADA</code> y Pricing <code>TARIFA_ACTUALIZADA</code>; Catalog los consume. Identity publica eventos de bitácora (roles, clientes API, usuarios desactivados).</p>
+      <h4><i class="sq" style="background:var(--evt)"></i>Asíncrono: bus de eventos (RabbitMQ)</h4>
+      <p>7 Inventory: CupoBloqueado, CupoLiberado. El stock para Booking Prototipo va aparte, por REST.</p>
+      <p>10 Order: OrdenCreada, OrdenPagada. Consume PagoAprobado, PagoRechazado y ReembolsoEmitido.</p>
+      <p>11 Booking (Outbox): RESERVA_CREADA, RESERVA_CONFIRMADA, RESERVA_CANCELADA, STOCK_ACTUALIZADO. Consume PagoAprobado, PagoRechazado y ReembolsoEmitido.</p>
       <p>12 Payment: PagoAprobado, PagoRechazado</p>
       <p>13 Refund: ReembolsoEmitido</p>
-      <p>14 Invoicing: FacturaAutorizada (el SRI responde lento)</p>
+      <p>14 Invoicing: FacturaAutorizada. Consume OrdenPagada y ReembolsoEmitido (el SRI responde lento).</p>
       <h4><i class="sq" style="background:var(--soap)"></i>Consumidor de eventos</h4>
       <p>16 Audit: guarda todos los eventos en la bitácora con su correlation_id.</p>
       <h4><i class="sq" style="border:2px dashed var(--neutral)"></i>Socio externo: Booking Prototipo</h4>
-      <p>Entra por el API Gateway con REST <code>/api/v3</code> y <code>X-API-Key</code>. Recibe el stock por gRPC en el puerto 50051 y lee los eventos en <code>GET /atracciones/eventos</code>.</p>
+      <p>Entra por el API Gateway a Partner API con REST <code>/api/v3</code> y <code>X-API-Key</code>. Recibe el stock por REST (<code>POST /api/v3/inventory/stock</code>) directo desde Inventory, el aviso de check-in por el ESB, y lee los eventos en <code>GET /atracciones/eventos</code>.</p>
     </div>
 
     <div class="note">
-      <h3>Comunicaciones entre servicios (todas pasan por el ESB)</h3>
+      <h3>Comunicaciones entre servicios (por el ESB, salvo las marcadas como directas)</h3>
       <div class="tbl-wrap">
       <table>
         <thead><tr><th>Origen</th><th>Destino</th><th>Tipo</th><th>Para qué</th></tr></thead>
         <tbody>
-          <tr><td>Booking Prototipo</td><td>11 Booking</td><td><span class="chip rest">REST</span></td><td><code>POST /reservas</code> (201 / 409 <code>OUT_OF_STOCK</code>), <code>/cancel</code>, <code>/checkin</code>, <code>GET /reservas/{id}</code></td></tr>
-          <tr><td>Booking Prototipo</td><td>4 Catalog</td><td><span class="chip rest">REST</span></td><td><code>GET /atracciones</code>, <code>/search</code>, <code>/{id}</code>, <code>/categorias/arbol</code></td></tr>
-          <tr><td>Booking Prototipo</td><td>7 Inventory</td><td><span class="chip rest">REST</span></td><td><code>GET /atracciones/{id}/disponibilidad</code>; el ESB lo traduce a gRPC</td></tr>
-          <tr><td>Booking Prototipo</td><td>9 Coupon &amp; Promotions</td><td><span class="chip rest">REST</span></td><td><code>GET</code> / <code>PUT /promociones/contrato</code></td></tr>
-          <tr><td>Booking Prototipo</td><td>11 Booking</td><td><span class="chip rest">REST</span></td><td><code>GET /atracciones/eventos</code> (lee el Outbox)</td></tr>
-          <tr><td>7 Inventory</td><td>Booking Prototipo :50051</td><td><span class="chip grpc">gRPC</span></td><td><code>PushStockUpdate</code> / <code>StreamInventoryChanges</code> en cada cambio de cupo</td></tr>
-          <tr><td>11 Booking</td><td>10 Order</td><td><span class="chip grpc">gRPC</span></td><td>Crear la orden y sus líneas (<code>external_order_id</code>)</td></tr>
+          <tr><td>Booking Prototipo → Partner API</td><td>11 Booking</td><td><span class="chip rest">REST</span></td><td><code>POST /reservas</code> (201 / 409 <code>OUT_OF_STOCK</code>), <code>/cancel</code>, <code>/checkin</code>, <code>GET /reservas/{id}</code></td></tr>
+          <tr><td>Booking Prototipo → Partner API</td><td>4 Catalog</td><td><span class="chip rest">REST</span></td><td><code>GET /atracciones</code>, <code>/search</code>, <code>/{id}</code>, <code>/categorias/arbol</code></td></tr>
+          <tr><td>Booking Prototipo → Partner API</td><td>7 Inventory</td><td><span class="chip grpc">gRPC</span></td><td><code>GET /atracciones/{id}/disponibilidad</code>; Partner API llama al RPC del <code>.proto</code> por el ESB</td></tr>
+          <tr><td>Booking Prototipo → Partner API</td><td>9 Coupon &amp; Promotions</td><td><span class="chip rest">REST</span></td><td><code>GET</code> / <code>PUT /promociones/contrato</code></td></tr>
+          <tr><td>Booking Prototipo → Partner API</td><td>11 Booking</td><td><span class="chip rest">REST</span></td><td><code>GET /atracciones/eventos</code> (lee <code>outbox_evento</code>)</td></tr>
+          <tr><td>API Gateway</td><td>1 Identity</td><td><span class="chip rest">REST</span></td><td>Validar el JWT o la <code>X-API-Key</code> (<code>cliente_api</code>) por el ESB</td></tr>
+          <tr><td>API Gateway</td><td>1 Identity (directo)</td><td><span class="chip rest">REST</span></td><td><code>/api/v3/auth</code>: registro, login y renovación de sesión</td></tr>
+          <tr><td>7 Inventory</td><td>Booking Prototipo (directo)</td><td><span class="chip rest">REST</span></td><td><code>POST /api/v3/inventory/stock</code> con <code>X-API-Key</code> en cada cambio de cupo, desde <code>outbox</code> con reintento</td></tr>
+          <tr><td>11 Booking</td><td>Booking Central</td><td><span class="chip rest">REST</span></td><td><code>POST /api/v3/reservas/{external_order_id}/checkin</code> tras el check-in presencial (<code>notificacion_checkin</code>, con reintento)</td></tr>
+          <tr><td>11 Booking</td><td>10 Order</td><td><span class="chip grpc">gRPC</span></td><td>Crear y cancelar la orden y sus líneas (<code>external_order_id</code>)</td></tr>
           <tr><td>11 Booking</td><td>7 Inventory</td><td><span class="chip grpc">gRPC</span></td><td>Descontar cupos por <code>slot_id</code>; reintegrarlos al cancelar (compensación de la saga)</td></tr>
-          <tr><td>10 Order</td><td>6 Pricing</td><td><span class="chip grpc">gRPC</span></td><td>Tarifa vigente por tipo de boleto</td></tr>
-          <tr><td>10 Order</td><td>8 Cart · 9 Coupon</td><td><span class="chip rest">REST</span></td><td>Convertir el carrito en orden; validar el cupón y su vigencia</td></tr>
           <tr><td>11 Booking</td><td>4 Catalog</td><td><span class="chip rest">REST</span></td><td>Guía asignado y punto de encuentro de la reserva</td></tr>
-          <tr><td>API Gateway</td><td>1 Identity</td><td><span class="chip rest">REST</span></td><td>Validar el JWT o la <code>X-API-Key</code> (<code>cliente_api</code>)</td></tr>
+          <tr><td>11 Booking</td><td>13 Refund · 1 Identity</td><td><span class="chip rest">REST</span></td><td>Reembolso al cancelar; cliente turista del socio</td></tr>
+          <tr><td>10 Order</td><td>6 Pricing</td><td><span class="chip grpc">gRPC</span></td><td>Tarifa vigente por tipo de boleto</td></tr>
+          <tr><td>10 Order</td><td>8 Cart · 9 Coupon · 12 Payment</td><td><span class="chip rest">REST</span></td><td>Ítem del carrito que se compra; validar el cupón; iniciar el cobro</td></tr>
+          <tr><td>8 Cart</td><td>4 Catalog · 7 Inventory</td><td><span class="chip rest">REST</span> <span class="chip grpc">gRPC</span></td><td>Validar la atracción y el turno del ítem</td></tr>
+          <tr><td>4 Catalog</td><td>3 Location · 7 Inventory · 1 Identity</td><td><span class="chip rest">REST</span> <span class="chip grpc">gRPC</span></td><td>Ciudades, filtro por disponibilidad y usuarios de operadores y guías</td></tr>
+          <tr><td>6 Pricing · 5 Review</td><td>4 Catalog</td><td><span class="chip rest">REST</span></td><td>Validar que la atracción exista (Review también consulta a Identity)</td></tr>
+          <tr><td>9 Coupon</td><td>3 Location</td><td><span class="chip rest">REST</span></td><td>Destinos del acuerdo de promoción</td></tr>
           <tr><td>13 Refund</td><td>12 Payment</td><td><span class="chip rest">REST</span></td><td>Monto cobrado, para no devolver más de lo pagado</td></tr>
-          <tr><td>14 Invoicing</td><td>2 Billing Profile · 10 Order</td><td><span class="chip rest">REST</span></td><td>Datos de facturación y líneas de la orden</td></tr>
-          <tr><td>14 Invoicing</td><td>SRI Ecuador</td><td><span class="chip soap">SOAP</span></td><td>Autorización de la factura electrónica (XML firmado)</td></tr>
-          <tr><td>Pasarelas de pago</td><td>12 Payment</td><td><span class="chip http">Webhook</span></td><td>Resultado del cobro; Payment responde 202 y lo encola</td></tr>
-          <tr><td>12 Payment</td><td>10 Order · 11 Booking · 14 Invoicing</td><td><span class="chip evt">Evento</span></td><td><code>PagoAprobado</code> / <code>PagoRechazado</code></td></tr>
-          <tr><td>13 Refund</td><td>10 Order · 11 Booking</td><td><span class="chip evt">Evento</span></td><td><code>ReembolsoEmitido</code></td></tr>
+          <tr><td>14 Invoicing</td><td>2 Billing Profile · 10 Order</td><td><span class="chip rest">REST</span> <span class="chip grpc">gRPC</span></td><td>Datos de facturación y líneas de la orden</td></tr>
+          <tr><td>14 Invoicing</td><td>SRI Ecuador</td><td><span class="chip soap">SOAP</span></td><td><code>validarComprobante</code> y <code>autorizacionComprobante</code> (en Azure, simulador SOAP)</td></tr>
+          <tr><td>Pasarela de pago</td><td>12 Payment</td><td><span class="chip http">Webhook</span></td><td>Resultado del cobro; Payment responde 202 y lo encola en RabbitMQ</td></tr>
+          <tr><td>12 Payment</td><td>10 Order · 11 Booking</td><td><span class="chip evt">Evento</span></td><td><code>PagoAprobado</code> / <code>PagoRechazado</code></td></tr>
+          <tr><td>10 Order</td><td>14 Invoicing</td><td><span class="chip evt">Evento</span></td><td><code>OrdenPagada</code>: emitir la factura</td></tr>
+          <tr><td>13 Refund</td><td>10 Order · 11 Booking · 14 Invoicing</td><td><span class="chip evt">Evento</span></td><td><code>ReembolsoEmitido</code></td></tr>
           <tr><td>5 Review · 6 Pricing</td><td>4 Catalog</td><td><span class="chip evt">Evento</span></td><td><code>RESENA_PUBLICADA</code> actualiza las calificaciones; <code>TARIFA_ACTUALIZADA</code> actualiza el precio "desde"</td></tr>
-          <tr><td>Todos</td><td>16 Audit · read models</td><td><span class="chip evt">Evento</span></td><td>Bitácora y proyecciones CQRS</td></tr>
+          <tr><td>4 Catalog · 5 Review · 6 Pricing</td><td>GraphQL · Partner API</td><td><span class="chip evt">Evento</span></td><td>Vacían la caché de lecturas</td></tr>
+          <tr><td>Todos</td><td>16 Audit</td><td><span class="chip evt">Evento</span></td><td>Bitácora con el correlation_id</td></tr>
         </tbody>
       </table>
       </div>
@@ -216,16 +225,16 @@
   <div class="note" style="margin-top:16px">
     <h3>Cómo evitar cuellos de botella</h3>
     <div class="botl">
-      <div><i class="n">1</i><p style="margin:0"><b>Rate limiting</b><span>Token bucket por cliente y por <code>X-API-Key</code> en el gateway; el exceso recibe 429 y no llega al ESB.</span></p></div>
-      <div><i class="n">6</i><p style="margin:0"><b>CQRS</b><span>Las consultas masivas leen proyecciones en Redis, no llaman a los servicios.</span></p></div>
-      <div><i class="n">2</i><p style="margin:0"><b>Caché en el borde</b><span>El catálogo se sirve desde CDN; la mayoría de lecturas no entra al sistema.</span></p></div>
-      <div><i class="n">7</i><p style="margin:0"><b>Outbox + idempotencia</b><span>Booking escribe el evento en <code>outbox_evento</code> en la misma transacción; <code>idempotencia</code> devuelve la misma respuesta ante reintentos con la misma <code>Idempotency-Key</code>.</span></p></div>
-      <div><i class="n">3</i><p style="margin:0"><b>GraphQL eficiente</b><span>DataLoader agrupa llamadas (evita N+1); límite de profundidad y complejidad.</span></p></div>
-      <div><i class="n">8</i><p style="margin:0"><b>Webhook rápido</b><span>Payment responde 202 a la pasarela y encola el procesamiento.</span></p></div>
-      <div><i class="n">4</i><p style="margin:0"><b>ESB ligero</b><span>Solo enruta y transforma (REST ↔ gRPC ↔ SOAP); instancias stateless, timeouts y circuit breaker.</span></p></div>
-      <div><i class="n">9</i><p style="margin:0"><b>Nivelación de carga</b><span>Facturas en cola; los workers envían al SRI a ritmo controlado con reintento exponencial.</span></p></div>
-      <div><i class="n">5</i><p style="margin:0"><b>Particiones</b><span>Cada topic se reparte por clave (<code>atr_id</code>, <code>ord_id</code>, <code>res_id</code>); consumer groups en paralelo y DLQ.</span></p></div>
-      <div><i class="n">10</i><p style="margin:0"><b>gRPC streaming</b><span>Inventory envía los deltas de cupo a Booking Prototipo en lote por un solo canal HTTP/2 (<code>StreamInventoryChanges</code>).</span></p></div>
+      <div><i class="n">1</i><p style="margin:0"><b>Rate limiting</b><span>Límite por IP y minuto en el Gateway para la web, GraphQL y la sesión; el exceso recibe 429 con <code>Retry-After</code> y no llega al ESB. El contrato <code>/api/v3</code> de los socios no responde 429.</span></p></div>
+      <div><i class="n">6</i><p style="margin:0"><b>Caché de lecturas</b><span>GraphQL y Partner API guardan en Redis (o en memoria) las lecturas públicas y las vacían con los eventos <code>catalog.*</code>, <code>pricing.*</code> y <code>review.*</code>.</span></p></div>
+      <div><i class="n">2</i><p style="margin:0"><b>Web estática en el borde</b><span>El portal se sirve desde Azure Static Web Apps; solo los datos entran al Gateway.</span></p></div>
+      <div><i class="n">7</i><p style="margin:0"><b>Outbox + idempotencia</b><span>Booking (<code>outbox_evento</code>) y 8 servicios (<code>outbox</code>) escriben el evento en la misma transacción; <code>idempotencia</code> (Order y Booking) devuelve la misma respuesta ante reintentos con la misma <code>Idempotency-Key</code>.</span></p></div>
+      <div><i class="n">3</i><p style="margin:0"><b>GraphQL acotado</b><span>Límite de profundidad y de complejidad por consulta; las lecturas públicas salen de la caché.</span></p></div>
+      <div><i class="n">8</i><p style="margin:0"><b>Webhook rápido</b><span>Payment responde 202 a la pasarela y encola el procesamiento en RabbitMQ.</span></p></div>
+      <div><i class="n">4</i><p style="margin:0"><b>ESB ligero</b><span>Solo enruta y traduce (REST, RPC del <code>.proto</code> sobre HTTP, SOAP); sin estado, con timeout por ruta y circuit breaker.</span></p></div>
+      <div><i class="n">9</i><p style="margin:0"><b>Nivelación de carga</b><span>Facturas en cola (<code>fac_estado_sri = PENDIENTE</code>); se envían al SRI a ritmo controlado con reintento exponencial.</span></p></div>
+      <div><i class="n">5</i><p style="margin:0"><b>Colas por consumidor</b><span>Exchange topic con claves <code>&lt;servicio&gt;.&lt;Evento&gt;</code>; cada consumidor tiene su cola durable, reintenta con espera creciente y lo fallido va a la DLQ.</span></p></div>
+      <div><i class="n">10</i><p style="margin:0"><b>Stock desacoplado</b><span>Inventory deja cada cambio de cupo en <code>outbox</code> y lo envía a Booking Prototipo por REST; si Booking no responde, reintenta cada minuto sin frenar la reserva.</span></p></div>
     </div>
   </div>
 
@@ -233,10 +242,10 @@
     <h3>Correlation ID: una misma petición, rastreable en todos los servicios</h3>
     <div class="flow">
       <div><b>1 API Gateway</b><span>Genera <code>X-Correlation-Id</code> o reutiliza el que envía el cliente o Booking Prototipo.</span></div>
-      <div><b>2 GraphQL</b><span>Lo guarda en el contexto y lo reenvía en cada llamada al ESB.</span></div>
-      <div><b>3 ESB</b><span>Lo traduce: header HTTP, metadata gRPC o SOAP Header hacia el SRI.</span></div>
-      <div><b>4 Microservicio</b><span>Lo escribe en cada log y en <code>outbox_evento.evt_correlation_id</code>.</span></div>
-      <div><b>5 Bus de eventos</b><span>Viaja en los headers del mensaje (CloudEvents); cada consumidor lo continúa.</span></div>
+      <div><b>2 GraphQL · Partner API</b><span>Lo guardan en el contexto y lo reenvían en cada llamada al ESB.</span></div>
+      <div><b>3 ESB</b><span>Lo pasa en la cabecera HTTP (REST y RPC) o en el SOAP Header; hacia el SRI real se puede omitir.</span></div>
+      <div><b>4 Microservicio</b><span>Lo escribe en cada log y en <code>outbox.correlation_id</code> u <code>outbox_evento.evt_correlation_id</code>.</span></div>
+      <div><b>5 Bus de eventos</b><span>Viaja en el sobre del mensaje (<code>correlation_id</code>); cada consumidor lo continúa.</span></div>
       <div><b>6 Audit</b><span>Lo guarda en <code>bitacora.bit_correlation_id</code> para rastrear el flujo completo.</span></div>
     </div>
   </div>
@@ -314,7 +323,7 @@ const SERVICES = [
   { n: 1, name: 'Identity & Access', proto: 'rest', x: 40, y: R1, w: 580, h: R1H,
     nodes: { rol: [80, 110], usuario_rol: [300, 110, 'b'], cliente_api: [485, 110], sesion: [80, 180], usuario: [300, 180], token_verificacion: [300, 245] },
     edges: [['rol', 'usuario_rol', '1', 'N'], ['usuario', 'usuario_rol', '1', 'N'], ['usuario', 'sesion', '1', 'N'], ['usuario', 'token_verificacion', '1', 'N']],
-    ext: 'Sin referencias externas. cliente_api guarda el hash de la X-API-Key de Booking Prototipo.' },
+    ext: 'Sin referencias externas. cliente_api: SOCIO (hash de la X-API-Key) o TURISTA. Publica eventos de bitácora. /api/v3/auth le llega directo del Gateway.' },
   { n: 4, name: 'Catalog & Attractions', proto: 'rest', x: 640, y: R1, w: 1140, h: R1H,
     nodes: { categoria: [160, 110], atraccion_categoria: [400, 110, 'b'], atraccion_foto: [680, 110], atraccion_itinerario: [960, 110],
              operador_usuario: [140, 180, 'b'], operador: [400, 180], atraccion: [680, 180], atraccion_inclusion: [900, 180, 'b'], inclusion: [1070, 180],
@@ -332,11 +341,11 @@ const SERVICES = [
   // Síncronos · fila 2
   { n: 2, name: 'Billing Profile', proto: 'rest', x: 40, y: R2, w: 260, h: R2H,
     nodes: { dato_facturacion: [130, 118] }, edges: [],
-    ext: 'Ref. externa: dato_facturacion → usuario (Identity).' },
+    ext: 'Ref. externa: dato_facturacion → usuario o cliente_api turista (Identity).' },
   { n: 5, name: 'Review', proto: 'rest', x: 316, y: R2, w: 304, h: R2H,
     nodes: { resena: [152, 118] }, edges: [],
     ext: 'Ref. externa: → atraccion (Catalog), usuario (Identity). Publica RESENA_PUBLICADA.' },
-  { n: 6, name: 'Pricing', proto: 'grpc', x: 640, y: R2, w: 260, h: R2H,
+  { n: 6, name: 'Pricing', proto: 'grpc', tag: '.proto sobre HTTP', x: 640, y: R2, w: 260, h: R2H,
     nodes: { tarifa: [130, 118] }, edges: [],
     ext: 'Ref. externa: → atraccion (Catalog). ADULT, CHILD, SENIOR, INFANT, STUDENT.' },
   { n: 8, name: 'Cart', proto: 'rest', x: 916, y: R2, w: 384, h: R2H,
@@ -351,18 +360,18 @@ const SERVICES = [
     nodes: { mensaje_contacto: [280, 118] }, edges: [],
     ext: 'Sin referencias externas. Mensajes de contacto de los visitantes.' },
   // Asíncronos
-  { n: 7, name: 'Inventory', proto: 'grpc', badge: 10, x: 40, y: RA, w: 260, h: RAH,
-    nodes: { horario: [130, 100], disponibilidad: [130, 160], fecha_bloqueada: [130, 220] },
-    edges: [['horario', 'disponibilidad', '1', 'N']],
-    ext: 'Ref. externa: → atraccion (Catalog). slot_id = dis_slot_codigo. Stock → Booking Prototipo por gRPC.' },
-  { n: 10, name: 'Order Management', proto: 'grpc', x: 316, y: RA, w: 304, h: RAH,
+  { n: 7, name: 'Inventory', proto: 'grpc', tag: '.proto sobre HTTP', badge: 10, x: 40, y: RA, w: 260, h: RAH,
+    nodes: { horario: [130, 90], disponibilidad: [130, 146], bloqueo_cupo: [130, 202], fecha_bloqueada: [130, 244] },
+    edges: [['horario', 'disponibilidad', '1', 'N'], ['disponibilidad', 'bloqueo_cupo', '1', 'N']],
+    ext: 'Ref.: → atraccion, guia (Catalog). Stock → Booking Prototipo por REST, sin ESB.' },
+  { n: 10, name: 'Order Management', proto: 'grpc', tag: '.proto sobre HTTP', x: 316, y: RA, w: 304, h: RAH,
     nodes: { orden: [90, 100], estado: [240, 100], orden_detalle: [85, 165], orden_cupon: [228, 165, 'b'], idempotencia: [152, 225] },
     edges: [['estado', 'orden', '1', 'N'], ['orden', 'orden_detalle', '1', 'N'], ['orden', 'orden_cupon', '1', 'N']],
-    ext: 'Ref. externa: orden → usuario, cliente_api (Identity), carrito, metodo_pago; orden_detalle → atraccion.' },
-  { n: 11, name: 'Booking', proto: 'grpc', badge: 7, x: 640, y: RA, w: 340, h: RAH,
-    nodes: { reserva: [100, 100], estado: [262, 100], reserva_pasajero: [100, 165], outbox_evento: [262, 165], idempotencia: [100, 225] },
-    edges: [['estado', 'reserva', '1', 'N'], ['reserva', 'reserva_pasajero', '1', 'N']],
-    ext: 'Ref. externa: → orden_detalle (Order), disponibilidad (Inventory), guia (Catalog). Outbox → GET /eventos.' },
+    ext: 'Ref. externa: orden → usuario, cliente_api (Identity), carrito_item, metodo_pago; orden_detalle → atraccion.' },
+  { n: 11, name: 'Booking', proto: 'grpc', tag: '.proto sobre HTTP', badge: 7, x: 640, y: RA, w: 340, h: RAH,
+    nodes: { reserva: [100, 100], estado: [262, 100], reserva_pasajero: [100, 165], outbox_evento: [262, 165], idempotencia: [85, 225], notificacion_checkin: [250, 225] },
+    edges: [['estado', 'reserva', '1', 'N'], ['reserva', 'reserva_pasajero', '1', 'N'], ['reserva', 'notificacion_checkin', '1', '1']],
+    ext: 'Ref.: → orden_detalle (Order), disponibilidad (Inventory), guia (Catalog), cliente_api, reembolso. Outbox → bus y GET /eventos.' },
   { n: 12, name: 'Payment', proto: 'rest', x: 996, y: RA, w: 404, h: RAH,
     nodes: { metodo_pago: [85, 100], pago: [220, 100], estado: [332, 100], pago_tarjeta: [120, 175], pago_transferencia: [298, 175] },
     edges: [['metodo_pago', 'pago', '1', 'N'], ['estado', 'pago', '1', 'N'], ['pago', 'pago_tarjeta', '1', '1'], ['pago', 'pago_transferencia', '1', '1']],
@@ -435,18 +444,19 @@ function card(s) {
 // Capas superiores
 // --------------------------------------------------------------------------
 block(20, 20, 620, 64, 'neutral', 'Clientes', 'Web TourGirls · App móvil');
-block(700, 20, 620, 64, 'partner', 'Booking Prototipo (socio B2B)', 'Agregador externo · REST /api/v3 · X-API-Key · Saga LIFO');
-block(20, 124, 1300, 64, 'neutral', 'CDN + API Gateway', 'Caché estática · auth JWT y X-API-Key · rate limiting · genera el correlation_id');
+block(700, 20, 620, 64, 'partner', 'Booking Prototipo (socio B2B)', 'Agregador externo · REST /api/v3 · X-API-Key · Saga LIFO · aviso de check-in');
+block(20, 124, 1300, 64, 'neutral', 'Static Web Apps + API Gateway', 'Portal estático · auth JWT y X-API-Key · rate limiting · genera el correlation_id · /api/v3/auth directo a 1 Identity');
 num(1290, 124, 2); num(1320, 124, 1);
-block(20, 228, 620, 64, 'gql', 'GraphQL (Federation)', 'Una sola API para el frontend · DataLoader · caché de consultas');
+block(20, 228, 620, 64, 'gql', 'GraphQL (Apollo Server)', 'Una sola API para el portal · límites de profundidad y complejidad');
 num(640, 228, 3);
-block(700, 228, 480, 64, 'evt', 'Read models (CQRS)', 'Proyecciones en Redis · atienden las consultas masivas');
+block(700, 228, 480, 64, 'evt', 'Caché de lecturas', 'Redis o memoria · GraphQL y Partner API · se vacía con eventos');
 num(1180, 228, 6);
-block(1400, 228, 300, 64, 'neutral', 'Pasarelas de pago', 'PayPhone · PayPal · Kushki');
+block(1200, 228, 184, 64, 'neutral', 'Partner API', 'Contrato REST v3');
+block(1400, 228, 300, 64, 'neutral', 'Pasarela de pago', 'Simulada · webhook a cola RabbitMQ');
 num(1700, 228, 8);
-block(1740, 228, 300, 64, 'soap', 'SRI Ecuador', 'Web service SOAP');
-block(2080, 228, 300, 64, 'grpc', 'Booking · ingesta gRPC', 'InventoryStockService :50051');
-block(20, 400, 2360, 76, 'esb', 'Enterprise Service Bus (ESB)', 'Mediación y enrutamiento · transformación de protocolo con adaptadores REST ↔ gRPC ↔ SOAP · sin lógica de negocio');
+block(1740, 228, 300, 64, 'soap', 'SRI Ecuador', 'Web service SOAP · simulador en Azure');
+block(2080, 228, 300, 64, 'partner', 'Booking Prototipo · stock', 'REST POST /api/v3/inventory/stock');
+block(20, 400, 2360, 76, 'esb', 'Enterprise Service Bus (ESB)', 'Mediación y enrutamiento · traduce JSON a REST, RPC del .proto (POST /internal/rpc) y SOAP · X-Service-Token · timeouts y circuit breaker · sin lógica de negocio');
 num(2380, 400, 4);
 
 arrow([[330, 84], [330, 122]], 'gray');
@@ -456,19 +466,21 @@ corr(440, 208);
 arrow([[640, 260], [698, 260]], 'gql');
 arrow([[330, 292], [330, 398]], 'gql', { label: 'comandos y consultas directas', lx: 342, ly: 350 });
 corr(600, 345);
-arrow([[1250, 188], [1250, 398]], 'gray', { label: 'contrato REST v3 (socios)', lx: 1240, ly: 350, anchor: 'end' });
+arrow([[1292, 188], [1292, 226]], 'gray');
+arrow([[1292, 292], [1292, 398]], 'gray', { label: 'contrato REST v3 (socios)', lx: 1280, ly: 350, anchor: 'end' });
 arrow([[1550, 292], [1550, 398]], 'gray', { label: 'webhook HTTP', lx: 1562, ly: 350 });
 arrow([[1890, 296], [1890, 398]], 'soap', { both: true, label: 'SOAP/XML + firma', lx: 1902, ly: 350 });
-arrow([[2230, 400], [2230, 294]], 'grpc', { label: 'gRPC · PushStockUpdate', lx: 2242, ly: 350 });
+// Stock: 7 Inventory → Booking Prototipo por REST, directo (no pasa por el ESB)
+arrow([[100, 1540], [100, 1572], [2395, 1572], [2395, 260], [2382, 260]], 'rest', { label: 'REST · stock desde 7 Inventory (directo, sin ESB)', lx: 2372, ly: 330, anchor: 'end' });
 
-// Proyección del bus a los read models
-arrow([[2380, 1656], [2405, 1656], [2405, 205], [940, 205], [940, 226]], 'evt', { dash: true, label: 'proyección de eventos → read models', lx: 1460, ly: 198 });
+// Eventos del bus que vacían la caché de lecturas
+arrow([[2380, 1656], [2405, 1656], [2405, 205], [940, 205], [940, 226]], 'evt', { dash: true, label: 'catalog.* · pricing.* · review.* → vaciar la caché', lx: 1460, ly: 198 });
 
 // --------------------------------------------------------------------------
 // Bandas, rieles del ESB y tarjetas
 // --------------------------------------------------------------------------
 band(20, 530, 2360, 620, '', 'SÍNCRONO · ESB → GraphQL directo');
-band(20, 1200, 1770, 360, 'evt', 'ASÍNCRONO · bus de eventos → read model → GraphQL');
+band(20, 1200, 1770, 360, 'evt', 'ASÍNCRONO · compra coordinada por eventos (RabbitMQ)');
 band(1800, 1200, 580, 360, 'soap', 'CONSUMIDOR');
 corr(460, 505);
 
@@ -487,7 +499,7 @@ for (const s of SERVICES) card(s);
 // --------------------------------------------------------------------------
 // Bus de eventos
 // --------------------------------------------------------------------------
-block(20, 1620, 2360, 72, 'evt', 'Bus de eventos (Kafka / RabbitMQ)', 'Topics particionados por clave: atr_id, ord_id, res_id · consumer groups · DLQ · formato CloudEvents v1.0');
+block(20, 1620, 2360, 72, 'evt', 'Bus de eventos (RabbitMQ)', 'Exchange topic · claves <servicio>.<Evento> · una cola durable por consumidor · DLX/DLQ · Outbox + relay · sobre con event_id y correlation_id');
 num(2380, 1620, 5);
 for (const s of SERVICES) {
   if (s.y !== RA) continue;
@@ -496,7 +508,7 @@ for (const s of SERVICES) {
   else arrow([[cx, RA + RAH], [cx, 1618]], 'evt', { dash: true });
 }
 corr(1340, 1590);
-text(20, 1722, 'Las consultas de 1–6, 8, 9 y 15 pasan por el ESB en tiempo real. El estado de 7 y 10–14 llega a GraphQL desde los read models alimentados por el bus. Audit (16) consume todos los eventos para la bitácora. Booking Prototipo entra por el gateway con REST y recibe el stock por gRPC a través del ESB.', 'caption');
+text(20, 1722, 'Todas las llamadas entre servicios pasan por el ESB. 7 y 10–14 además coordinan la compra por eventos en RabbitMQ; Audit (16) los guarda todos. Booking Prototipo entra por el Gateway a Partner API con REST y recibe el stock por REST directo desde Inventory.', 'caption');
 </script>
 </body>
 </html>
