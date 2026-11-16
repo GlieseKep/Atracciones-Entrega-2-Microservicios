@@ -110,22 +110,34 @@ export function AdminReservationsPage() {
       },
     },
     {
-      header: '',
+      header: 'Acciones',
       align: 'right',
-      cell: (r) => (
-        <span className="inline-flex flex-wrap justify-end gap-2">
-          {r.status === 'CONFIRMED' && canCheckIn(r.date) && (
-            <Button size="sm" onClick={() => setCheckingIn(r)}>
-              Confirmar Asistencia
+      cell: (r) => {
+        if (r.status !== 'CONFIRMED') return <span className="text-ink-muted">—</span>;
+        const checkinOk = canCheckIn(r.date);
+        const cancelOk = withinCancellationWindow(r.date, r.time);
+        return (
+          <span className="inline-flex flex-wrap justify-end gap-2">
+            <Button
+              size="sm"
+              disabled={!checkinOk}
+              title={checkinOk ? undefined : 'El turno ya pasó: no se puede hacer el check-in.'}
+              onClick={() => setCheckingIn(r)}
+            >
+              Check-in
             </Button>
-          )}
-          {r.status === 'CONFIRMED' && withinCancellationWindow(r.date, r.time) && (
-            <Button size="sm" variant="danger" onClick={() => setCancelling(r)}>
+            <Button
+              size="sm"
+              variant="danger"
+              disabled={!cancelOk}
+              title={cancelOk ? undefined : 'Solo se cancela hasta 24 horas antes del turno.'}
+              onClick={() => setCancelling(r)}
+            >
               Cancelar
             </Button>
-          )}
-        </span>
-      ),
+          </span>
+        );
+      },
     },
   ];
 
