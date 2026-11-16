@@ -9,8 +9,10 @@ import { startBookingMock } from '../../../apps/booking-mock/src';
  * SHA-256 de la copia del contrato v3 (`Plan/PlanBooking/atracciones-openapi-v3(1).yaml`), con un solo cambio: la
  * respuesta 200 de `GET /atracciones` es el listado simple de la guía de socios. Si cambia, hay que revisar la Partner API.
  */
-const CONTRACT_SHA256 = '85A507EAEB65F5D274D39B4BF2506A38BED60EE1118CC837C184467DB6F3CD82';
-const sha256 = (file: string) => createHash('sha256').update(readFileSync(file)).digest('hex').toUpperCase();
+const CONTRACT_SHA256 = '6505DD537C5F71AFDAC27729AB3BF6652D7B3ABE4340609AD34AB7BD21F8CDE3';
+/** Hash con fin de línea LF: en Windows (`core.autocrlf`) el archivo sale con CRLF y en Linux con LF. */
+const sha256 = (file: string) =>
+  createHash('sha256').update(readFileSync(file, 'utf8').replace(/\r\n/g, '\n')).digest('hex').toUpperCase();
 
 describe('contrato congelado', () => {
   it('la copia del contrato no se modificó', () => {

@@ -43,6 +43,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # Los tests importan `dist/` de los microservicios (p. ej. apps/esb/src/routes.ts); cada job empieza sin compilar.
+      - run: npm run build
       - name: Pruebas unitarias con reporte de cobertura (informativo, sin mínimo)
         run: npx jest --selectProjects unit --coverage --coverageReporters=text-summary --coverageReporters=lcov
       - name: Subir el reporte de cobertura
@@ -75,6 +77,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # Los tests importan `dist/` de los microservicios (p. ej. apps/esb/src/routes.ts); cada job empieza sin compilar.
+      - run: npm run build
       # PostgreSQL: embedded-postgres (tools/test/global-setup.js), el mismo que en local.
       - name: Pruebas de integración
         run: npm run test:integration
@@ -101,5 +105,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # Los tests importan `dist/` de los microservicios (p. ej. apps/esb/src/routes.ts); cada job empieza sin compilar.
+      - run: npm run build
       - name: Pruebas E2E del contrato v3 (Gateway /api/v3)
         run: npx jest --selectProjects e2e --runInBand test/system/v3
